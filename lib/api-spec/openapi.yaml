@@ -3,20 +3,24 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: CPR class scheduling platform API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
+  - name: users
+  - name: classes
+  - name: enrollments
+  - name: requests
+  - name: certificates
+  - name: dashboard
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +28,762 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      parameters:
+        - name: role
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/UserRole"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/User" }
+    post:
+      operationId: createUser
+      tags: [users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UserInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
+  /users/{userId}:
+    get:
+      operationId: getUser
+      tags: [users]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
+
+  /classes:
+    get:
+      operationId: listClasses
+      tags: [classes]
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema: { $ref: "#/components/schemas/ClassStatus" }
+        - name: instructorId
+          in: query
+          required: false
+          schema: { type: integer }
+        - name: upcoming
+          in: query
+          required: false
+          schema: { type: boolean }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ClassSession" }
+    post:
+      operationId: createClass
+      tags: [classes]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ClassInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ClassSession" }
+  /classes/{classId}:
+    get:
+      operationId: getClass
+      tags: [classes]
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ClassDetail" }
+    patch:
+      operationId: updateClass
+      tags: [classes]
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ClassUpdate" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ClassSession" }
+    delete:
+      operationId: deleteClass
+      tags: [classes]
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204": { description: Deleted }
+
+  /classes/{classId}/enrollments:
+    get:
+      operationId: listClassEnrollments
+      tags: [enrollments]
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Enrollment" }
+    post:
+      operationId: enrollStudent
+      tags: [enrollments]
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EnrollmentInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Enrollment" }
+  /enrollments/{enrollmentId}:
+    patch:
+      operationId: updateEnrollment
+      tags: [enrollments]
+      parameters:
+        - name: enrollmentId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EnrollmentUpdate" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Enrollment" }
+    delete:
+      operationId: deleteEnrollment
+      tags: [enrollments]
+      parameters:
+        - name: enrollmentId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204": { description: Deleted }
+
+  /enrollments:
+    get:
+      operationId: listEnrollments
+      tags: [enrollments]
+      parameters:
+        - name: studentId
+          in: query
+          required: false
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/EnrollmentWithClass" }
+
+  /requests:
+    get:
+      operationId: listRequests
+      tags: [requests]
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema: { $ref: "#/components/schemas/RequestStatus" }
+        - name: requestorId
+          in: query
+          required: false
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ClassRequest" }
+    post:
+      operationId: createRequest
+      tags: [requests]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ClassRequestInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ClassRequest" }
+  /requests/{requestId}:
+    get:
+      operationId: getRequest
+      tags: [requests]
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ClassRequest" }
+    patch:
+      operationId: updateRequest
+      tags: [requests]
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ClassRequestUpdate" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ClassRequest" }
+
+  /certificates:
+    get:
+      operationId: listCertificates
+      tags: [certificates]
+      parameters:
+        - name: studentId
+          in: query
+          required: false
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Certificate" }
+    post:
+      operationId: createCertificate
+      tags: [certificates]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CertificateInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Certificate" }
+
+  /dashboard/admin:
+    get:
+      operationId: getAdminDashboard
+      tags: [dashboard]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminDashboard" }
+  /dashboard/instructor/{instructorId}:
+    get:
+      operationId: getInstructorDashboard
+      tags: [dashboard]
+      parameters:
+        - name: instructorId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InstructorDashboard" }
+  /dashboard/student/{studentId}:
+    get:
+      operationId: getStudentDashboard
+      tags: [dashboard]
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StudentDashboard" }
+  /dashboard/requestor/{requestorId}:
+    get:
+      operationId: getRequestorDashboard
+      tags: [dashboard]
+      parameters:
+        - name: requestorId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RequestorDashboard" }
+  /dashboard/activity:
+    get:
+      operationId: getActivityFeed
+      tags: [dashboard]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ActivityEvent" }
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
-        status:
-          type: string
-      required:
-        - status
+        status: { type: string }
 
+    UserRole:
+      type: string
+      enum: [administrator, instructor, student, requestor]
+
+    CertificationType:
+      type: string
+      enum: [adult_cpr, pediatric_cpr, cpr_aed, bls, first_aid]
+
+    ClassStatus:
+      type: string
+      enum: [scheduled, completed, cancelled]
+
+    RequestStatus:
+      type: string
+      enum: [pending, approved, rejected, scheduled]
+
+    EnrollmentStatus:
+      type: string
+      enum: [registered, attended, no_show, cancelled]
+
+    User:
+      type: object
+      required: [id, name, email, role, createdAt]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string }
+        role: { $ref: "#/components/schemas/UserRole" }
+        phone: { type: ["string", "null"] }
+        organization: { type: ["string", "null"] }
+        bio: { type: ["string", "null"] }
+        avatarUrl: { type: ["string", "null"] }
+        createdAt: { type: string }
+
+    UserInput:
+      type: object
+      required: [name, email, role]
+      properties:
+        name: { type: string, minLength: 1 }
+        email: { type: string }
+        role: { $ref: "#/components/schemas/UserRole" }
+        phone: { type: string }
+        organization: { type: string }
+        bio: { type: string }
+        avatarUrl: { type: string }
+
+    ClassSession:
+      type: object
+      required:
+        [
+          id,
+          title,
+          certificationType,
+          date,
+          startTime,
+          endTime,
+          location,
+          capacity,
+          enrolledCount,
+          status,
+          priceCents,
+        ]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        certificationType: { $ref: "#/components/schemas/CertificationType" }
+        date: { type: string }
+        startTime: { type: string }
+        endTime: { type: string }
+        location: { type: string }
+        capacity: { type: integer }
+        enrolledCount: { type: integer }
+        status: { $ref: "#/components/schemas/ClassStatus" }
+        priceCents: { type: integer }
+        instructorId: { type: ["integer", "null"] }
+        instructorName: { type: ["string", "null"] }
+        description: { type: ["string", "null"] }
+
+    ClassDetail:
+      allOf:
+        - $ref: "#/components/schemas/ClassSession"
+        - type: object
+          properties:
+            enrollments:
+              type: array
+              items: { $ref: "#/components/schemas/Enrollment" }
+
+    ClassInput:
+      type: object
+      required:
+        [title, certificationType, date, startTime, endTime, location, capacity, priceCents]
+      properties:
+        title: { type: string, minLength: 1 }
+        certificationType: { $ref: "#/components/schemas/CertificationType" }
+        date: { type: string }
+        startTime: { type: string }
+        endTime: { type: string }
+        location: { type: string }
+        capacity: { type: integer, minimum: 1 }
+        priceCents: { type: integer, minimum: 0 }
+        instructorId: { type: integer }
+        description: { type: string }
+
+    ClassUpdate:
+      type: object
+      properties:
+        title: { type: string }
+        certificationType: { $ref: "#/components/schemas/CertificationType" }
+        date: { type: string }
+        startTime: { type: string }
+        endTime: { type: string }
+        location: { type: string }
+        capacity: { type: integer }
+        priceCents: { type: integer }
+        instructorId: { type: integer }
+        description: { type: string }
+        status: { $ref: "#/components/schemas/ClassStatus" }
+
+    Enrollment:
+      type: object
+      required: [id, classId, studentId, studentName, status, enrolledAt]
+      properties:
+        id: { type: integer }
+        classId: { type: integer }
+        studentId: { type: integer }
+        studentName: { type: string }
+        studentEmail: { type: string }
+        status: { $ref: "#/components/schemas/EnrollmentStatus" }
+        certificateIssued: { type: boolean }
+        enrolledAt: { type: string }
+
+    EnrollmentWithClass:
+      type: object
+      required: [id, classId, studentId, status, enrolledAt, classSession]
+      properties:
+        id: { type: integer }
+        classId: { type: integer }
+        studentId: { type: integer }
+        status: { $ref: "#/components/schemas/EnrollmentStatus" }
+        certificateIssued: { type: boolean }
+        enrolledAt: { type: string }
+        classSession: { $ref: "#/components/schemas/ClassSession" }
+
+    EnrollmentInput:
+      type: object
+      required: [studentId]
+      properties:
+        studentId: { type: integer }
+
+    EnrollmentUpdate:
+      type: object
+      properties:
+        status: { $ref: "#/components/schemas/EnrollmentStatus" }
+        certificateIssued: { type: boolean }
+
+    ClassRequest:
+      type: object
+      required:
+        [
+          id,
+          requestorId,
+          requestorName,
+          organizationName,
+          contactEmail,
+          certificationType,
+          preferredDate,
+          attendeeCount,
+          status,
+          createdAt,
+        ]
+      properties:
+        id: { type: integer }
+        requestorId: { type: integer }
+        requestorName: { type: string }
+        organizationName: { type: string }
+        contactEmail: { type: string }
+        contactPhone: { type: ["string", "null"] }
+        certificationType: { $ref: "#/components/schemas/CertificationType" }
+        preferredDate: { type: string }
+        preferredLocation: { type: ["string", "null"] }
+        attendeeCount: { type: integer }
+        notes: { type: ["string", "null"] }
+        status: { $ref: "#/components/schemas/RequestStatus" }
+        classId: { type: ["integer", "null"] }
+        createdAt: { type: string }
+
+    ClassRequestInput:
+      type: object
+      required:
+        [
+          requestorId,
+          organizationName,
+          contactEmail,
+          certificationType,
+          preferredDate,
+          attendeeCount,
+        ]
+      properties:
+        requestorId: { type: integer }
+        organizationName: { type: string, minLength: 1 }
+        contactEmail: { type: string }
+        contactPhone: { type: string }
+        certificationType: { $ref: "#/components/schemas/CertificationType" }
+        preferredDate: { type: string }
+        preferredLocation: { type: string }
+        attendeeCount: { type: integer, minimum: 1 }
+        notes: { type: string }
+
+    ClassRequestUpdate:
+      type: object
+      properties:
+        status: { $ref: "#/components/schemas/RequestStatus" }
+        classId: { type: integer }
+        notes: { type: string }
+
+    Certificate:
+      type: object
+      required:
+        [id, studentId, studentName, certificationType, certificateNumber, issuedDate, expiryDate]
+      properties:
+        id: { type: integer }
+        studentId: { type: integer }
+        studentName: { type: string }
+        classId: { type: ["integer", "null"] }
+        certificationType: { $ref: "#/components/schemas/CertificationType" }
+        certificateNumber: { type: string }
+        issuedDate: { type: string }
+        expiryDate: { type: string }
+
+    CertificateInput:
+      type: object
+      required: [studentId, certificationType, classId]
+      properties:
+        studentId: { type: integer }
+        classId: { type: integer }
+        certificationType: { $ref: "#/components/schemas/CertificationType" }
+
+    CertificationCount:
+      type: object
+      required: [certificationType, count]
+      properties:
+        certificationType: { $ref: "#/components/schemas/CertificationType" }
+        count: { type: integer }
+
+    AdminDashboard:
+      type: object
+      required:
+        [
+          totalClasses,
+          upcomingClasses,
+          totalStudents,
+          totalInstructors,
+          pendingRequests,
+          certificatesIssued,
+          enrollmentsThisMonth,
+          revenueCents,
+          classesByCertification,
+          upcomingSchedule,
+          recentRequests,
+        ]
+      properties:
+        totalClasses: { type: integer }
+        upcomingClasses: { type: integer }
+        totalStudents: { type: integer }
+        totalInstructors: { type: integer }
+        pendingRequests: { type: integer }
+        certificatesIssued: { type: integer }
+        enrollmentsThisMonth: { type: integer }
+        revenueCents: { type: integer }
+        classesByCertification:
+          type: array
+          items: { $ref: "#/components/schemas/CertificationCount" }
+        upcomingSchedule:
+          type: array
+          items: { $ref: "#/components/schemas/ClassSession" }
+        recentRequests:
+          type: array
+          items: { $ref: "#/components/schemas/ClassRequest" }
+
+    InstructorDashboard:
+      type: object
+      required:
+        [
+          instructor,
+          upcomingClasses,
+          pastClasses,
+          totalStudentsTaught,
+          totalCertificatesIssued,
+          nextClass,
+        ]
+      properties:
+        instructor: { $ref: "#/components/schemas/User" }
+        upcomingClasses:
+          type: array
+          items: { $ref: "#/components/schemas/ClassSession" }
+        pastClasses:
+          type: array
+          items: { $ref: "#/components/schemas/ClassSession" }
+        totalStudentsTaught: { type: integer }
+        totalCertificatesIssued: { type: integer }
+        nextClass:
+          oneOf:
+            - $ref: "#/components/schemas/ClassSession"
+            - type: "null"
+
+    StudentDashboard:
+      type: object
+      required:
+        [
+          student,
+          upcomingEnrollments,
+          pastEnrollments,
+          certificates,
+          recommendedClasses,
+        ]
+      properties:
+        student: { $ref: "#/components/schemas/User" }
+        upcomingEnrollments:
+          type: array
+          items: { $ref: "#/components/schemas/EnrollmentWithClass" }
+        pastEnrollments:
+          type: array
+          items: { $ref: "#/components/schemas/EnrollmentWithClass" }
+        certificates:
+          type: array
+          items: { $ref: "#/components/schemas/Certificate" }
+        recommendedClasses:
+          type: array
+          items: { $ref: "#/components/schemas/ClassSession" }
+
+    RequestorDashboard:
+      type: object
+      required: [requestor, requests, scheduledClasses, pendingCount, approvedCount]
+      properties:
+        requestor: { $ref: "#/components/schemas/User" }
+        requests:
+          type: array
+          items: { $ref: "#/components/schemas/ClassRequest" }
+        scheduledClasses:
+          type: array
+          items: { $ref: "#/components/schemas/ClassSession" }
+        pendingCount: { type: integer }
+        approvedCount: { type: integer }
+
+    ActivityEvent:
+      type: object
+      required: [id, type, message, timestamp]
+      properties:
+        id: { type: string }
+        type:
+          type: string
+          enum:
+            [
+              class_created,
+              class_cancelled,
+              enrollment_created,
+              request_submitted,
+              request_approved,
+              certificate_issued,
+            ]
+        message: { type: string }
+        timestamp: { type: string }
+        actorName: { type: ["string", "null"] }

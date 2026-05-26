@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "CPR Class Scheduler"
+version = "1.0.0"
+id = "artifacts/cpr-scheduler"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18224
+
+[services.development]
+run = "pnpm --filter @workspace/cpr-scheduler run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/cpr-scheduler", "run", "build" ]
+publicDir = "artifacts/cpr-scheduler/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18224"
+BASE_PATH = "/"

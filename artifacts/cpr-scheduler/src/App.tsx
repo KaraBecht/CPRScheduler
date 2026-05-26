@@ -1,0 +1,56 @@
+import { Switch, Route, Router as WouterRouter } from "wouter";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { AppShell } from "@/components/AppShell";
+import NotFound from "@/pages/not-found";
+import Dashboard from "@/pages/dashboard";
+import Classes from "@/pages/classes";
+import ClassDetail from "@/pages/class-detail";
+import Requests from "@/pages/requests";
+import Certificates from "@/pages/certificates";
+import People from "@/pages/people";
+import { RoleGate } from "@/components/RoleGate";
+
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { staleTime: 10_000 } },
+});
+
+function Router() {
+  return (
+    <AppShell>
+      <Switch>
+        <Route path="/" component={Dashboard} />
+        <Route path="/classes" component={Classes} />
+        <Route path="/classes/:id" component={ClassDetail} />
+        <Route path="/requests">
+          <RoleGate allow={["administrator", "requestor"]}>
+            <Requests />
+          </RoleGate>
+        </Route>
+        <Route path="/certificates" component={Certificates} />
+        <Route path="/people">
+          <RoleGate allow={["administrator"]}>
+            <People />
+          </RoleGate>
+        </Route>
+        <Route component={NotFound} />
+      </Switch>
+    </AppShell>
+  );
+}
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+          <Router />
+        </WouterRouter>
+        <Toaster />
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+}
+
+export default App;

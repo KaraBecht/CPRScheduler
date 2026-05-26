@@ -1,0 +1,98 @@
+import { Router, type IRouter } from "express";
+import {
+  db,
+  certificatesTable,
+  usersTable,
+  enrollmentsTable,
+} from "@workspace/db";
+import { eq, desc, and } from "drizzle-orm";
+import {
+  CreateCertificateBody,
+  ListCertificatesQueryParams,
+} from "@workspace/api-zod";
+
+const router: IRouter = Router();
+
+async function serialize(row: typeof certificatesTable.$inferSelect) {
+  const [u] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.id, row.studentId));
+  return {
+    id: row.id,
+    studentId: row.studentId,
+    studentName: u?.name ?? "",
+    classId: row.classId,
+    certificationType: row.certificationType,
+    certificateNumber: row.certificateNumber,
+    issuedDate: row.issuedDate,
+    expiryDate: row.expiryDate,
+  };
+}
+
+router.get("/certificates", async (req, res) => {
+  const params = ListCertificatesQueryParams.parse(req.query);
+  const rows = await db
+    .select()
+    .from(certificatesTable)
+    .where(
+      params.studentId
+        ? eq(certificatesTable.studentId, params.studentId)
+        : undefined,
+    )
+    .orderBy(desc(certificatesTable.issuedDate));
+  res.json(await Promise.all(rows.map(serialize)));
+});
+
+router.post("/certificates", async (req, res) => {
+  const body = CreateCertificateBody.parse(req.body);
+  const [enrollment] = await db
+    .select()
+    .from(enrollmentsTable)
+    .where(
+      and(
+        eq(enrollmentsTable.classId, body.classId),
+        eq(enrollmentsTable.studentId, body.studentId),
+      ),
+    );
+  if (!enrollment) {
+    res.status(404).json({ error: "Enrollment not found for this student/class" });
+    return;
+  }
+  if (enrollment.status !== "attended") {
+    res.status(400).json({ error: "Student must be marked attended before issuing a certificate" });
+    return;
+  }
+  if (enrollment.certificateIssued) {
+    res.status(409).json({ error: "Certificate already issued for this enrollment" });
+    return;
+  }
+  const issuedDate = new Date();
+  const expiryDate = new Date();
+  expiryDate.setFullYear(expiryDate.getFullYear() + 2);
+  const certificateNumber = `PP-${body.certificationType.toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
+  const [row] = await db
+    .insert(certificatesTable)
+    .values({
+      studentId: body.studentId,
+      classId: body.classId,
+      certificationType: body.certificationType,
+      certificateNumber,
+      issuedDate: issuedDate.toISOString().split("T")[0]!,
+      expiryDate: expiryDate.toISOString().split("T")[0]!,
+    })
+    .returning();
+  // mark enrollment certificate_issued
+  await db
+    .update(enrollmentsTable)
+    .set({ certificateIssued: true })
+    .where(
+      and(
+        eq(enrollmentsTable.classId, body.classId),
+        eq(enrollmentsTable.studentId, body.studentId),
+      ),
+    );
+  res.status(201).json(await serialize(row));
+});
+
+export default router;
