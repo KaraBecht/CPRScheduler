@@ -23,11 +23,8 @@ export type CertificationType = typeof CertificationType[keyof typeof Certificat
 
 
 export const CertificationType = {
-  adult_cpr: 'adult_cpr',
-  pediatric_cpr: 'pediatric_cpr',
-  cpr_aed: 'cpr_aed',
-  bls: 'bls',
-  first_aid: 'first_aid',
+  cpr_aed_first_aid: 'cpr_aed_first_aid',
+  stop_the_bleed: 'stop_the_bleed',
 } as const;
 
 export type ClassStatus = typeof ClassStatus[keyof typeof ClassStatus];

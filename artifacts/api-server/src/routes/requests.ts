@@ -86,7 +86,7 @@ router.post("/training-requests", async (req, res) => {
       organizationName: body.locationName,
       contactEmail: email,
       contactPhone: body.requestorPhone ?? null,
-      certificationType: body.certificationType ?? "cpr_aed",
+      certificationType: body.certificationType ?? "cpr_aed_first_aid",
       preferredDate: firstSession.date,
       preferredLocation: body.locationName,
       address: body.address ?? null,

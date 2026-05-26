@@ -25,11 +25,8 @@ import { toast } from "@/hooks/use-toast";
 import { formatCertificationType } from "@/lib/format";
 
 const CERT_TYPES: CertificationType[] = [
-  "adult_cpr",
-  "pediatric_cpr",
-  "cpr_aed",
-  "bls",
-  "first_aid",
+  "cpr_aed_first_aid",
+  "stop_the_bleed",
 ];
 
 type Session = { date: string; startTime: string };
@@ -43,7 +40,7 @@ export default function NewRequest() {
   const [requestorEmail, setRequestorEmail] = useState("");
   const [requestorPhone, setRequestorPhone] = useState("");
   const [certificationType, setCertificationType] =
-    useState<CertificationType>("cpr_aed");
+    useState<CertificationType>("cpr_aed_first_aid");
   const [numberOfClasses, setNumberOfClasses] = useState(1);
   const [attendeeCount, setAttendeeCount] = useState(10);
   const [notes, setNotes] = useState("");

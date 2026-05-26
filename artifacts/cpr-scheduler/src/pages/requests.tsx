@@ -38,11 +38,8 @@ import { toast } from "@/hooks/use-toast";
 import { formatCertificationType, formatDate, timeAgo } from "@/lib/format";
 
 const CERT_TYPES: CertificationType[] = [
-  "adult_cpr",
-  "pediatric_cpr",
-  "cpr_aed",
-  "bls",
-  "first_aid",
+  "cpr_aed_first_aid",
+  "stop_the_bleed",
 ];
 
 function NewRequestDialog({ requestorId }: { requestorId: number }) {
@@ -53,7 +50,7 @@ function NewRequestDialog({ requestorId }: { requestorId: number }) {
     organizationName: "",
     contactEmail: "",
     contactPhone: "",
-    certificationType: "cpr_aed" as CertificationType,
+    certificationType: "cpr_aed_first_aid" as CertificationType,
     preferredDate: "",
     preferredLocation: "",
     attendeeCount: 10,

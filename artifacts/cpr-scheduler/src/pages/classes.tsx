@@ -41,11 +41,8 @@ import { toast } from "@/hooks/use-toast";
 import { formatCertificationType } from "@/lib/format";
 
 const CERT_TYPES: CertificationType[] = [
-  "adult_cpr",
-  "pediatric_cpr",
-  "cpr_aed",
-  "bls",
-  "first_aid",
+  "cpr_aed_first_aid",
+  "stop_the_bleed",
 ];
 
 function CreateClassDialog() {
@@ -54,7 +51,7 @@ function CreateClassDialog() {
   const { data: instructors = [] } = useListUsers({ role: "instructor" });
   const [form, setForm] = useState({
     title: "",
-    certificationType: "cpr_aed" as CertificationType,
+    certificationType: "cpr_aed_first_aid" as CertificationType,
     date: "",
     startTime: "09:00",
     endTime: "12:00",
@@ -71,7 +68,7 @@ function CreateClassDialog() {
         setOpen(false);
         setForm({
           title: "",
-          certificationType: "cpr_aed",
+          certificationType: "cpr_aed_first_aid",
           date: "",
           startTime: "09:00",
           endTime: "12:00",

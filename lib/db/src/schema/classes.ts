@@ -10,11 +10,8 @@ import {
 import { usersTable } from "./users";
 
 export const certificationTypeEnum = pgEnum("certification_type", [
-  "adult_cpr",
-  "pediatric_cpr",
-  "cpr_aed",
-  "bls",
-  "first_aid",
+  "cpr_aed_first_aid",
+  "stop_the_bleed",
 ]);
 
 export const classStatusEnum = pgEnum("class_status", [

@@ -9,11 +9,8 @@ export function formatCurrency(cents: number): string {
 
 export function formatCertificationType(type: CertificationType | string): string {
   const map: Record<string, string> = {
-    adult_cpr: "Adult CPR",
-    pediatric_cpr: "Pediatric CPR",
-    cpr_aed: "CPR / AED",
-    bls: "BLS for Healthcare",
-    first_aid: "First Aid",
+    cpr_aed_first_aid: "CPR / AED / First Aid",
+    stop_the_bleed: "Stop the Bleed",
   };
   return map[type] || type;
 }

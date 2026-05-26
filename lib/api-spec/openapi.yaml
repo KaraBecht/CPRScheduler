@@ -446,7 +446,7 @@ components:
 
     CertificationType:
       type: string
-      enum: [adult_cpr, pediatric_cpr, cpr_aed, bls, first_aid]
+      enum: [cpr_aed_first_aid, stop_the_bleed]
 
     ClassStatus:
       type: string

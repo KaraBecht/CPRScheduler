@@ -60,16 +60,16 @@ async function main() {
     .returning();
 
   await db.insert(requestsTable).values([
-    { requestorId: bright.id, organizationName: "Bright Star Daycare", contactEmail: "ops@brightstar.example", contactPhone: "555-0301", certificationType: "pediatric_cpr", preferredDate: d(20), preferredLocation: "Bright Star Daycare", attendeeCount: 14, notes: "Need certification for new hires before spring intake.", status: "pending" },
-    { requestorId: riverside.id, organizationName: "Riverside Family Clinic", contactEmail: "training@riverside.example", contactPhone: "555-0302", certificationType: "bls", preferredDate: d(25), preferredLocation: "Riverside Clinic", attendeeCount: 8, notes: "Annual BLS renewal for clinical staff.", status: "approved", classId: classes[2].id },
-    { requestorId: bright.id, organizationName: "Bright Star Daycare", contactEmail: "ops@brightstar.example", contactPhone: "555-0301", certificationType: "first_aid", preferredDate: d(40), preferredLocation: "Onsite", attendeeCount: 10, notes: "Half-day first aid for the toddler-room team.", status: "pending" },
-    { requestorId: riverside.id, organizationName: "Riverside Family Clinic", contactEmail: "training@riverside.example", contactPhone: "555-0302", certificationType: "cpr_aed", preferredDate: d(-30), preferredLocation: "Riverside Clinic", attendeeCount: 6, notes: "Completed onsite refresher.", status: "scheduled" },
+    { requestorId: bright.id, organizationName: "Bright Star Daycare", contactEmail: "ops@brightstar.example", contactPhone: "555-0301", certificationType: "cpr_aed_first_aid", preferredDate: d(20), preferredLocation: "Bright Star Daycare", attendeeCount: 14, notes: "Need certification for new hires before spring intake.", status: "pending" },
+    { requestorId: riverside.id, organizationName: "Riverside Family Clinic", contactEmail: "training@riverside.example", contactPhone: "555-0302", certificationType: "stop_the_bleed", preferredDate: d(25), preferredLocation: "Riverside Clinic", attendeeCount: 8, notes: "Stop the Bleed training for clinical staff.", status: "approved", classId: classes[2].id },
+    { requestorId: bright.id, organizationName: "Bright Star Daycare", contactEmail: "ops@brightstar.example", contactPhone: "555-0301", certificationType: "cpr_aed_first_aid", preferredDate: d(40), preferredLocation: "Onsite", attendeeCount: 10, notes: "Half-day session for the toddler-room team.", status: "pending" },
+    { requestorId: riverside.id, organizationName: "Riverside Family Clinic", contactEmail: "training@riverside.example", contactPhone: "555-0302", certificationType: "cpr_aed_first_aid", preferredDate: d(-30), preferredLocation: "Riverside Clinic", attendeeCount: 6, notes: "Completed onsite refresher.", status: "scheduled" },
   ]);
 
   await db.insert(certificatesTable).values([
-    { studentId: alex.id, classId: classes[5].id, certificationType: "cpr_aed", certificateNumber: "PP-CPR-AED-A1B2C3", issuedDate: d(-14), expiryDate: d(716) },
-    { studentId: taylor.id, classId: classes[5].id, certificationType: "cpr_aed", certificateNumber: "PP-CPR-AED-D4E5F6", issuedDate: d(-14), expiryDate: d(716) },
-    { studentId: sam.id, classId: classes[6].id, certificationType: "pediatric_cpr", certificateNumber: "PP-PED-CPR-G7H8I9", issuedDate: d(-21), expiryDate: d(709) },
+    { studentId: alex.id, classId: classes[5].id, certificationType: "cpr_aed_first_aid", certificateNumber: "PP-CPR-AED-A1B2C3", issuedDate: d(-14), expiryDate: d(716) },
+    { studentId: taylor.id, classId: classes[5].id, certificationType: "cpr_aed_first_aid", certificateNumber: "PP-CPR-AED-D4E5F6", issuedDate: d(-14), expiryDate: d(716) },
+    { studentId: sam.id, classId: classes[6].id, certificationType: "stop_the_bleed", certificateNumber: "PP-STB-G7H8I9", issuedDate: d(-21), expiryDate: d(709) },
   ]);
 
   console.log(`Seeded ${users.length} users, ${classes.length} classes, ${enrolls.length} enrollments.`);
