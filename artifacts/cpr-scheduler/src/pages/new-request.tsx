@@ -107,7 +107,7 @@ export default function NewRequest() {
               <Label>Location name</Label>
               <Input
                 data-testid="input-location-name"
-                placeholder="e.g. Bright Star Daycare"
+                placeholder="e.g. Studio Lot"
                 value={locationName}
                 onChange={(e) => setLocationName(e.target.value)}
               />
@@ -160,7 +160,7 @@ export default function NewRequest() {
             <h3 className="text-sm font-semibold tracking-wide uppercase text-muted-foreground">
               Class details
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
                 <Label>Certification</Label>
                 <Select
@@ -193,10 +193,17 @@ export default function NewRequest() {
                   }
                 />
               </div>
+              <div>
+                <Label>Attendees per class</Label>
+                <Input
+                  type="number"
+                  data-testid="input-attendees"
+                  value={attendeeCount}
+                  readOnly
+                  disabled
+                />
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Each class accommodates up to 10 attendees.
-            </p>
           </section>
 
           <section className="space-y-3">
