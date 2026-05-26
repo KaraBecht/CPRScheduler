@@ -17,7 +17,6 @@ export interface AdminDashboard {
   pendingRequests: number;
   certificatesIssued: number;
   enrollmentsThisMonth: number;
-  revenueCents: number;
   classesByCertification: CertificationCount[];
   upcomingSchedule: ClassSession[];
   recentRequests: ClassRequest[];

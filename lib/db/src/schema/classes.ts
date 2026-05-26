@@ -32,7 +32,6 @@ export const classesTable = pgTable("classes", {
   endTime: text("end_time").notNull(),
   location: text("location").notNull(),
   capacity: integer("capacity").notNull(),
-  priceCents: integer("price_cents").notNull().default(0),
   status: classStatusEnum("status").notNull().default("scheduled"),
   instructorId: integer("instructor_id").references(() => usersTable.id),
   description: text("description"),

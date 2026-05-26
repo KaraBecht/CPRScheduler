@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import {
   formatCertificationType,
-  formatCurrency,
   formatDate,
   formatTime,
 } from "@/lib/format";
@@ -79,9 +78,6 @@ export function ClassCard({ session }: { session: ClassSession }) {
                 {full ? " · full" : ` · ${remaining} open`}
               </span>
             </div>
-            <span className="text-sm font-semibold">
-              {formatCurrency(session.priceCents)}
-            </span>
           </div>
         </CardContent>
       </Card>

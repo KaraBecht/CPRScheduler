@@ -36,7 +36,6 @@ import {
 } from "lucide-react";
 import {
   formatCertificationType,
-  formatCurrency,
   formatDate,
   formatTime,
 } from "@/lib/format";
@@ -159,9 +158,6 @@ export default function ClassDetail() {
                 {cls.enrolledCount} / {cls.capacity} enrolled
                 {remaining > 0 ? ` · ${remaining} seats open` : " · full"}
               </span>
-            </div>
-            <div className="pt-2 border-t border-border text-2xl font-bold">
-              {formatCurrency(cls.priceCents)}
             </div>
             {role === "student" && cls.status === "scheduled" && (
               <Button

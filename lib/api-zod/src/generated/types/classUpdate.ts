@@ -16,7 +16,6 @@ export interface ClassUpdate {
   endTime?: string;
   location?: string;
   capacity?: number;
-  priceCents?: number;
   instructorId?: number;
   description?: string;
   status?: ClassStatus;

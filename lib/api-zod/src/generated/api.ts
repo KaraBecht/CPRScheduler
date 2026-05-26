@@ -82,7 +82,6 @@ export const ListClassesResponseItem = zod.object({
   "capacity": zod.number(),
   "enrolledCount": zod.number(),
   "status": zod.enum(['scheduled', 'completed', 'cancelled']),
-  "priceCents": zod.number(),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
   "description": zod.string().nullish()
@@ -91,8 +90,6 @@ export const ListClassesResponse = zod.array(ListClassesResponseItem)
 
 
 
-
-export const createClassBodyPriceCentsMin = 0;
 
 
 
@@ -104,7 +101,6 @@ export const CreateClassBody = zod.object({
   "endTime": zod.string(),
   "location": zod.string(),
   "capacity": zod.number().min(1),
-  "priceCents": zod.number().min(createClassBodyPriceCentsMin),
   "instructorId": zod.number().optional(),
   "description": zod.string().optional()
 })
@@ -125,7 +121,6 @@ export const GetClassResponse = zod.object({
   "capacity": zod.number(),
   "enrolledCount": zod.number(),
   "status": zod.enum(['scheduled', 'completed', 'cancelled']),
-  "priceCents": zod.number(),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
   "description": zod.string().nullish()
@@ -155,7 +150,6 @@ export const UpdateClassBody = zod.object({
   "endTime": zod.string().optional(),
   "location": zod.string().optional(),
   "capacity": zod.number().optional(),
-  "priceCents": zod.number().optional(),
   "instructorId": zod.number().optional(),
   "description": zod.string().optional(),
   "status": zod.enum(['scheduled', 'completed', 'cancelled']).optional()
@@ -172,7 +166,6 @@ export const UpdateClassResponse = zod.object({
   "capacity": zod.number(),
   "enrolledCount": zod.number(),
   "status": zod.enum(['scheduled', 'completed', 'cancelled']),
-  "priceCents": zod.number(),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
   "description": zod.string().nullish()
@@ -258,7 +251,6 @@ export const ListEnrollmentsResponseItem = zod.object({
   "capacity": zod.number(),
   "enrolledCount": zod.number(),
   "status": zod.enum(['scheduled', 'completed', 'cancelled']),
-  "priceCents": zod.number(),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
   "description": zod.string().nullish()
@@ -390,7 +382,6 @@ export const GetAdminDashboardResponse = zod.object({
   "pendingRequests": zod.number(),
   "certificatesIssued": zod.number(),
   "enrollmentsThisMonth": zod.number(),
-  "revenueCents": zod.number(),
   "classesByCertification": zod.array(zod.object({
   "certificationType": zod.enum(['adult_cpr', 'pediatric_cpr', 'cpr_aed', 'bls', 'first_aid']),
   "count": zod.number()
@@ -406,7 +397,6 @@ export const GetAdminDashboardResponse = zod.object({
   "capacity": zod.number(),
   "enrolledCount": zod.number(),
   "status": zod.enum(['scheduled', 'completed', 'cancelled']),
-  "priceCents": zod.number(),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
   "description": zod.string().nullish()
@@ -457,7 +447,6 @@ export const GetInstructorDashboardResponse = zod.object({
   "capacity": zod.number(),
   "enrolledCount": zod.number(),
   "status": zod.enum(['scheduled', 'completed', 'cancelled']),
-  "priceCents": zod.number(),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
   "description": zod.string().nullish()
@@ -473,7 +462,6 @@ export const GetInstructorDashboardResponse = zod.object({
   "capacity": zod.number(),
   "enrolledCount": zod.number(),
   "status": zod.enum(['scheduled', 'completed', 'cancelled']),
-  "priceCents": zod.number(),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
   "description": zod.string().nullish()
@@ -491,7 +479,6 @@ export const GetInstructorDashboardResponse = zod.object({
   "capacity": zod.number(),
   "enrolledCount": zod.number(),
   "status": zod.enum(['scheduled', 'completed', 'cancelled']),
-  "priceCents": zod.number(),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
   "description": zod.string().nullish()
@@ -533,7 +520,6 @@ export const GetStudentDashboardResponse = zod.object({
   "capacity": zod.number(),
   "enrolledCount": zod.number(),
   "status": zod.enum(['scheduled', 'completed', 'cancelled']),
-  "priceCents": zod.number(),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
   "description": zod.string().nullish()
@@ -557,7 +543,6 @@ export const GetStudentDashboardResponse = zod.object({
   "capacity": zod.number(),
   "enrolledCount": zod.number(),
   "status": zod.enum(['scheduled', 'completed', 'cancelled']),
-  "priceCents": zod.number(),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
   "description": zod.string().nullish()
@@ -584,7 +569,6 @@ export const GetStudentDashboardResponse = zod.object({
   "capacity": zod.number(),
   "enrolledCount": zod.number(),
   "status": zod.enum(['scheduled', 'completed', 'cancelled']),
-  "priceCents": zod.number(),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
   "description": zod.string().nullish()
@@ -635,7 +619,6 @@ export const GetRequestorDashboardResponse = zod.object({
   "capacity": zod.number(),
   "enrolledCount": zod.number(),
   "status": zod.enum(['scheduled', 'completed', 'cancelled']),
-  "priceCents": zod.number(),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
   "description": zod.string().nullish()

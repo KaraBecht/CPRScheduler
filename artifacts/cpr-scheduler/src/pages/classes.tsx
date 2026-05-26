@@ -60,7 +60,6 @@ function CreateClassDialog() {
     endTime: "12:00",
     location: "",
     capacity: 12,
-    priceCents: 8500,
     instructorId: null as number | null,
     description: "",
   });
@@ -78,7 +77,6 @@ function CreateClassDialog() {
           endTime: "12:00",
           location: "",
           capacity: 12,
-          priceCents: 8500,
           instructorId: null,
           description: "",
         });
@@ -198,16 +196,6 @@ function CreateClassDialog() {
                 value={form.capacity}
                 onChange={(e) =>
                   setForm({ ...form, capacity: parseInt(e.target.value) || 0 })
-                }
-              />
-            </div>
-            <div>
-              <Label>Price (cents)</Label>
-              <Input
-                type="number"
-                value={form.priceCents}
-                onChange={(e) =>
-                  setForm({ ...form, priceCents: parseInt(e.target.value) || 0 })
                 }
               />
             </div>

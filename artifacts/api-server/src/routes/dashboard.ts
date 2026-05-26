@@ -37,7 +37,6 @@ router.get("/dashboard/admin", async (_req, res) => {
     [{ pendingRequests }],
     [{ certificatesIssued }],
     [{ enrollmentsThisMonth }],
-    [{ revenueCents }],
   ] = await Promise.all([
     db.select({ totalClasses: sql<number>`count(*)::int` }).from(classesTable),
     db
@@ -65,13 +64,6 @@ router.get("/dashboard/admin", async (_req, res) => {
       .select({ enrollmentsThisMonth: sql<number>`count(*)::int` })
       .from(enrollmentsTable)
       .where(gte(enrollmentsTable.enrolledAt, startMonth)),
-    db
-      .select({
-        revenueCents: sql<number>`COALESCE(SUM(${classesTable.priceCents}), 0)::int`,
-      })
-      .from(enrollmentsTable)
-      .innerJoin(classesTable, eq(enrollmentsTable.classId, classesTable.id))
-      .where(ne(enrollmentsTable.status, "cancelled")),
   ]);
 
   const classesByCertification = await Promise.all(
@@ -107,7 +99,6 @@ router.get("/dashboard/admin", async (_req, res) => {
     pendingRequests,
     certificatesIssued,
     enrollmentsThisMonth,
-    revenueCents,
     classesByCertification,
     upcomingSchedule,
     recentRequests,

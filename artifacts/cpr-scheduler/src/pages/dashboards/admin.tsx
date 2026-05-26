@@ -9,14 +9,12 @@ import {
   Users,
   Inbox,
   Award,
-  TrendingUp,
   GraduationCap,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ClassCard } from "@/components/ClassCard";
 import {
   formatCertificationType,
-  formatCurrency,
   formatDate,
   timeAgo,
 } from "@/lib/format";
@@ -98,13 +96,7 @@ export function AdminDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="flex items-center justify-between text-base">
-              <span>Classes by certification</span>
-              <span className="flex items-center gap-1 text-xs font-normal text-muted-foreground">
-                <TrendingUp className="h-3 w-3" />
-                Revenue {formatCurrency(dash.revenueCents)}
-              </span>
-            </CardTitle>
+            <CardTitle className="text-base">Classes by certification</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-56">

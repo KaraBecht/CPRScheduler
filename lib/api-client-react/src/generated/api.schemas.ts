@@ -97,7 +97,6 @@ export interface ClassSession {
   capacity: number;
   enrolledCount: number;
   status: ClassStatus;
-  priceCents: number;
   /** @nullable */
   instructorId?: number | null;
   /** @nullable */
@@ -131,8 +130,6 @@ export interface ClassInput {
   location: string;
   /** @minimum 1 */
   capacity: number;
-  /** @minimum 0 */
-  priceCents: number;
   instructorId?: number;
   description?: string;
 }
@@ -145,7 +142,6 @@ export interface ClassUpdate {
   endTime?: string;
   location?: string;
   capacity?: number;
-  priceCents?: number;
   instructorId?: number;
   description?: string;
   status?: ClassStatus;
@@ -242,7 +238,6 @@ export interface AdminDashboard {
   pendingRequests: number;
   certificatesIssued: number;
   enrollmentsThisMonth: number;
-  revenueCents: number;
   classesByCertification: CertificationCount[];
   upcomingSchedule: ClassSession[];
   recentRequests: ClassRequest[];

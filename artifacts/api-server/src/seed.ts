@@ -39,13 +39,6 @@ async function main() {
   const classes = await db
     .insert(classesTable)
     .values([
-      { title: "Adult CPR & AED — Saturday Morning", certificationType: "cpr_aed", date: d(3), startTime: "09:00", endTime: "12:00", location: "PulsePoint HQ — Studio A", capacity: 16, status: "scheduled", priceCents: 8500, instructorId: marcus.id, description: "Hands-on adult CPR with AED practice. Includes 2-year certification card." },
-      { title: "Pediatric CPR for Childcare Staff", certificationType: "pediatric_cpr", date: d(5), startTime: "13:00", endTime: "16:30", location: "Bright Star Daycare", capacity: 12, status: "scheduled", priceCents: 9500, instructorId: priya.id, description: "Designed for daycare and after-school staff. Choking, CPR, and emergency response for infants and children." },
-      { title: "BLS for Healthcare Providers", certificationType: "bls", date: d(8), startTime: "08:00", endTime: "12:00", location: "Riverside Clinic — Training Room", capacity: 10, status: "scheduled", priceCents: 12500, instructorId: marcus.id, description: "AHA-aligned BLS for clinical staff. Includes team dynamics and high-quality CPR." },
-      { title: "First Aid Essentials", certificationType: "first_aid", date: d(12), startTime: "10:00", endTime: "14:00", location: "PulsePoint HQ — Studio B", capacity: 18, status: "scheduled", priceCents: 6500, instructorId: priya.id, description: "Bleeding control, burns, sprains, and how to be useful before EMS arrives." },
-      { title: "Adult CPR Refresher", certificationType: "adult_cpr", date: d(15), startTime: "18:00", endTime: "20:30", location: "PulsePoint HQ — Studio A", capacity: 14, status: "scheduled", priceCents: 5500, instructorId: marcus.id, description: "Evening refresher for already-certified providers nearing expiration." },
-      { title: "CPR & AED — Community Class", certificationType: "cpr_aed", date: d(-14), startTime: "09:00", endTime: "12:00", location: "PulsePoint HQ — Studio A", capacity: 16, status: "completed", priceCents: 8500, instructorId: marcus.id, description: "Past community class." },
-      { title: "Pediatric CPR — Bright Star Onsite", certificationType: "pediatric_cpr", date: d(-21), startTime: "13:00", endTime: "16:30", location: "Bright Star Daycare", capacity: 12, status: "completed", priceCents: 9500, instructorId: priya.id, description: "Onsite training for childcare team." },
     ])
     .returning();
 

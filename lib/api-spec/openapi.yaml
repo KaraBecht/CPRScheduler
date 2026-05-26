@@ -484,7 +484,6 @@ components:
           capacity,
           enrolledCount,
           status,
-          priceCents,
         ]
       properties:
         id: { type: integer }
@@ -497,7 +496,6 @@ components:
         capacity: { type: integer }
         enrolledCount: { type: integer }
         status: { $ref: "#/components/schemas/ClassStatus" }
-        priceCents: { type: integer }
         instructorId: { type: ["integer", "null"] }
         instructorName: { type: ["string", "null"] }
         description: { type: ["string", "null"] }
@@ -514,7 +512,7 @@ components:
     ClassInput:
       type: object
       required:
-        [title, certificationType, date, startTime, endTime, location, capacity, priceCents]
+        [title, certificationType, date, startTime, endTime, location, capacity]
       properties:
         title: { type: string, minLength: 1 }
         certificationType: { $ref: "#/components/schemas/CertificationType" }
@@ -523,7 +521,6 @@ components:
         endTime: { type: string }
         location: { type: string }
         capacity: { type: integer, minimum: 1 }
-        priceCents: { type: integer, minimum: 0 }
         instructorId: { type: integer }
         description: { type: string }
 
@@ -537,7 +534,6 @@ components:
         endTime: { type: string }
         location: { type: string }
         capacity: { type: integer }
-        priceCents: { type: integer }
         instructorId: { type: integer }
         description: { type: string }
         status: { $ref: "#/components/schemas/ClassStatus" }
@@ -679,7 +675,6 @@ components:
           pendingRequests,
           certificatesIssued,
           enrollmentsThisMonth,
-          revenueCents,
           classesByCertification,
           upcomingSchedule,
           recentRequests,
@@ -692,7 +687,6 @@ components:
         pendingRequests: { type: integer }
         certificatesIssued: { type: integer }
         enrollmentsThisMonth: { type: integer }
-        revenueCents: { type: integer }
         classesByCertification:
           type: array
           items: { $ref: "#/components/schemas/CertificationCount" }

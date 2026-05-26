@@ -45,7 +45,6 @@ async function serializeClass(row: typeof classesTable.$inferSelect) {
     capacity: row.capacity,
     enrolledCount: counts?.count ?? 0,
     status: row.status,
-    priceCents: row.priceCents,
     instructorId: row.instructorId,
     instructorName,
     description: row.description,

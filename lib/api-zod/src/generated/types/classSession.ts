@@ -19,7 +19,6 @@ export interface ClassSession {
   capacity: number;
   enrolledCount: number;
   status: ClassStatus;
-  priceCents: number;
   /** @nullable */
   instructorId?: number | null;
   /** @nullable */
