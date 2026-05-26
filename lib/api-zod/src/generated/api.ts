@@ -274,6 +274,12 @@ export const ListRequestsResponseItem = zod.object({
   "certificationType": zod.enum(['adult_cpr', 'pediatric_cpr', 'cpr_aed', 'bls', 'first_aid']),
   "preferredDate": zod.string(),
   "preferredLocation": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "numberOfClasses": zod.number().optional(),
+  "sessions": zod.array(zod.object({
+  "date": zod.string(),
+  "startTime": zod.string()
+})).optional(),
   "attendeeCount": zod.number(),
   "notes": zod.string().nullish(),
   "status": zod.enum(['pending', 'approved', 'rejected', 'scheduled']),
@@ -281,6 +287,7 @@ export const ListRequestsResponseItem = zod.object({
   "createdAt": zod.string()
 })
 export const ListRequestsResponse = zod.array(ListRequestsResponseItem)
+
 
 
 
@@ -295,7 +302,42 @@ export const CreateRequestBody = zod.object({
   "certificationType": zod.enum(['adult_cpr', 'pediatric_cpr', 'cpr_aed', 'bls', 'first_aid']),
   "preferredDate": zod.string(),
   "preferredLocation": zod.string().optional(),
+  "address": zod.string().optional(),
+  "numberOfClasses": zod.number().min(1).optional(),
+  "sessions": zod.array(zod.object({
+  "date": zod.string(),
+  "startTime": zod.string()
+})).optional(),
   "attendeeCount": zod.number().min(1),
+  "notes": zod.string().optional()
+})
+
+
+/**
+ * Public-style intake form. Creates (or reuses by email) a requestor and submits a training request.
+ */
+
+
+export const submitTrainingRequestBodyRequestorEmailMin = 3;
+
+
+
+
+
+
+export const SubmitTrainingRequestBody = zod.object({
+  "locationName": zod.string().min(1),
+  "address": zod.string().optional(),
+  "requestorName": zod.string().min(1),
+  "requestorEmail": zod.string().min(submitTrainingRequestBodyRequestorEmailMin),
+  "requestorPhone": zod.string().optional(),
+  "certificationType": zod.enum(['adult_cpr', 'pediatric_cpr', 'cpr_aed', 'bls', 'first_aid']).optional(),
+  "numberOfClasses": zod.number().min(1),
+  "attendeeCount": zod.number().min(1),
+  "sessions": zod.array(zod.object({
+  "date": zod.string(),
+  "startTime": zod.string()
+})).min(1),
   "notes": zod.string().optional()
 })
 
@@ -314,6 +356,12 @@ export const GetRequestResponse = zod.object({
   "certificationType": zod.enum(['adult_cpr', 'pediatric_cpr', 'cpr_aed', 'bls', 'first_aid']),
   "preferredDate": zod.string(),
   "preferredLocation": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "numberOfClasses": zod.number().optional(),
+  "sessions": zod.array(zod.object({
+  "date": zod.string(),
+  "startTime": zod.string()
+})).optional(),
   "attendeeCount": zod.number(),
   "notes": zod.string().nullish(),
   "status": zod.enum(['pending', 'approved', 'rejected', 'scheduled']),
@@ -342,6 +390,12 @@ export const UpdateRequestResponse = zod.object({
   "certificationType": zod.enum(['adult_cpr', 'pediatric_cpr', 'cpr_aed', 'bls', 'first_aid']),
   "preferredDate": zod.string(),
   "preferredLocation": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "numberOfClasses": zod.number().optional(),
+  "sessions": zod.array(zod.object({
+  "date": zod.string(),
+  "startTime": zod.string()
+})).optional(),
   "attendeeCount": zod.number(),
   "notes": zod.string().nullish(),
   "status": zod.enum(['pending', 'approved', 'rejected', 'scheduled']),
@@ -411,6 +465,12 @@ export const GetAdminDashboardResponse = zod.object({
   "certificationType": zod.enum(['adult_cpr', 'pediatric_cpr', 'cpr_aed', 'bls', 'first_aid']),
   "preferredDate": zod.string(),
   "preferredLocation": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "numberOfClasses": zod.number().optional(),
+  "sessions": zod.array(zod.object({
+  "date": zod.string(),
+  "startTime": zod.string()
+})).optional(),
   "attendeeCount": zod.number(),
   "notes": zod.string().nullish(),
   "status": zod.enum(['pending', 'approved', 'rejected', 'scheduled']),
@@ -602,6 +662,12 @@ export const GetRequestorDashboardResponse = zod.object({
   "certificationType": zod.enum(['adult_cpr', 'pediatric_cpr', 'cpr_aed', 'bls', 'first_aid']),
   "preferredDate": zod.string(),
   "preferredLocation": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "numberOfClasses": zod.number().optional(),
+  "sessions": zod.array(zod.object({
+  "date": zod.string(),
+  "startTime": zod.string()
+})).optional(),
   "attendeeCount": zod.number(),
   "notes": zod.string().nullish(),
   "status": zod.enum(['pending', 'approved', 'rejected', 'scheduled']),

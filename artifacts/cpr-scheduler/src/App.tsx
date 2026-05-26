@@ -8,6 +8,7 @@ import Dashboard from "@/pages/dashboard";
 import Classes from "@/pages/classes";
 import ClassDetail from "@/pages/class-detail";
 import Requests from "@/pages/requests";
+import NewRequest from "@/pages/new-request";
 import Certificates from "@/pages/certificates";
 import People from "@/pages/people";
 import { RoleGate } from "@/components/RoleGate";
@@ -23,6 +24,7 @@ function Router() {
         <Route path="/" component={Dashboard} />
         <Route path="/classes" component={Classes} />
         <Route path="/classes/:id" component={ClassDetail} />
+        <Route path="/requests/new" component={NewRequest} />
         <Route path="/requests">
           <RoleGate allow={["administrator", "requestor"]}>
             <Requests />

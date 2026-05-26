@@ -281,6 +281,22 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ClassRequest" }
+  /training-requests:
+    post:
+      operationId: submitTrainingRequest
+      tags: [requests]
+      description: Public-style intake form. Creates (or reuses by email) a requestor and submits a training request.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TrainingRequestInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ClassRequest" }
   /requests/{requestId}:
     get:
       operationId: getRequest
@@ -600,11 +616,52 @@ components:
         certificationType: { $ref: "#/components/schemas/CertificationType" }
         preferredDate: { type: string }
         preferredLocation: { type: ["string", "null"] }
+        address: { type: ["string", "null"] }
+        numberOfClasses: { type: integer }
+        sessions:
+          type: array
+          items:
+            type: object
+            required: [date, startTime]
+            properties:
+              date: { type: string }
+              startTime: { type: string }
         attendeeCount: { type: integer }
         notes: { type: ["string", "null"] }
         status: { $ref: "#/components/schemas/RequestStatus" }
         classId: { type: ["integer", "null"] }
         createdAt: { type: string }
+
+    TrainingRequestInput:
+      type: object
+      required:
+        [
+          locationName,
+          requestorName,
+          requestorEmail,
+          numberOfClasses,
+          sessions,
+          attendeeCount,
+        ]
+      properties:
+        locationName: { type: string, minLength: 1 }
+        address: { type: string }
+        requestorName: { type: string, minLength: 1 }
+        requestorEmail: { type: string, minLength: 3 }
+        requestorPhone: { type: string }
+        certificationType: { $ref: "#/components/schemas/CertificationType" }
+        numberOfClasses: { type: integer, minimum: 1 }
+        attendeeCount: { type: integer, minimum: 1 }
+        sessions:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [date, startTime]
+            properties:
+              date: { type: string }
+              startTime: { type: string }
+        notes: { type: string }
 
     ClassRequestInput:
       type: object
@@ -625,6 +682,16 @@ components:
         certificationType: { $ref: "#/components/schemas/CertificationType" }
         preferredDate: { type: string }
         preferredLocation: { type: string }
+        address: { type: string }
+        numberOfClasses: { type: integer, minimum: 1 }
+        sessions:
+          type: array
+          items:
+            type: object
+            required: [date, startTime]
+            properties:
+              date: { type: string }
+              startTime: { type: string }
         attendeeCount: { type: integer, minimum: 1 }
         notes: { type: string }
 

@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CertificationType } from './certificationType';
+import type { ClassRequestSessionsItem } from './classRequestSessionsItem';
 import type { RequestStatus } from './requestStatus';
 
 export interface ClassRequest {
@@ -20,6 +21,10 @@ export interface ClassRequest {
   preferredDate: string;
   /** @nullable */
   preferredLocation?: string | null;
+  /** @nullable */
+  address?: string | null;
+  numberOfClasses?: number;
+  sessions?: ClassRequestSessionsItem[];
   attendeeCount: number;
   /** @nullable */
   notes?: string | null;

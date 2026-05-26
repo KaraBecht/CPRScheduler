@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CertificationType } from './certificationType';
+import type { ClassRequestInputSessionsItem } from './classRequestInputSessionsItem';
 
 export interface ClassRequestInput {
   requestorId: number;
@@ -16,6 +17,10 @@ export interface ClassRequestInput {
   certificationType: CertificationType;
   preferredDate: string;
   preferredLocation?: string;
+  address?: string;
+  /** @minimum 1 */
+  numberOfClasses?: number;
+  sessions?: ClassRequestInputSessionsItem[];
   /** @minimum 1 */
   attendeeCount: number;
   notes?: string;

@@ -44,6 +44,7 @@ import type {
   ListUsersParams,
   RequestorDashboard,
   StudentDashboard,
+  TrainingRequestInput,
   User,
   UserInput
 } from './api.schemas';
@@ -1181,6 +1182,74 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getCreateRequestMutationOptions(options));
+    }
+
+export const getSubmitTrainingRequestUrl = () => {
+
+
+
+
+  return `/api/training-requests`
+}
+
+/**
+ * Public-style intake form. Creates (or reuses by email) a requestor and submits a training request.
+ */
+export const submitTrainingRequest = async (trainingRequestInput: TrainingRequestInput, options?: RequestInit): Promise<ClassRequest> => {
+
+  return customFetch<ClassRequest>(getSubmitTrainingRequestUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      trainingRequestInput,)
+  }
+);}
+
+
+
+
+export const getSubmitTrainingRequestMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitTrainingRequest>>, TError,{data: BodyType<TrainingRequestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitTrainingRequest>>, TError,{data: BodyType<TrainingRequestInput>}, TContext> => {
+
+const mutationKey = ['submitTrainingRequest'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitTrainingRequest>>, {data: BodyType<TrainingRequestInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  submitTrainingRequest(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitTrainingRequestMutationResult = NonNullable<Awaited<ReturnType<typeof submitTrainingRequest>>>
+    export type SubmitTrainingRequestMutationBody = BodyType<TrainingRequestInput>
+    export type SubmitTrainingRequestMutationError = ErrorType<unknown>
+
+    export const useSubmitTrainingRequest = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitTrainingRequest>>, TError,{data: BodyType<TrainingRequestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitTrainingRequest>>,
+        TError,
+        {data: BodyType<TrainingRequestInput>},
+        TContext
+      > => {
+      return useMutation(getSubmitTrainingRequestMutationOptions(options));
     }
 
 export const getGetRequestUrl = (requestId: number,) => {

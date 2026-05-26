@@ -32,7 +32,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth-context";
-import { Plus, Check, X } from "lucide-react";
+import { Link } from "wouter";
+import { Plus, Check, X, Send } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { formatCertificationType, formatDate, timeAgo } from "@/lib/format";
 
@@ -230,7 +231,16 @@ export default function Requests() {
             ? "Track the status of training you've requested for your organization."
             : "Incoming training requests from organizations."
         }
-        action={canCreate ? <NewRequestDialog requestorId={userId!} /> : null}
+        action={
+          <div className="flex gap-2">
+            <Link href="/requests/new">
+              <Button variant="outline" data-testid="button-send-training-request">
+                <Send className="h-4 w-4 mr-1.5" /> Send training request
+              </Button>
+            </Link>
+            {canCreate ? <NewRequestDialog requestorId={userId!} /> : null}
+          </div>
+        }
       />
       {requests.length === 0 ? (
         <Card>
@@ -265,12 +275,31 @@ export default function Requests() {
                       </span>
                     </div>
                     <h3 className="font-semibold">{r.organizationName}</h3>
+                    {r.address && (
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        {r.address}
+                      </p>
+                    )}
                     <p className="text-sm text-muted-foreground mt-0.5">
-                      {r.attendeeCount} attendees · preferred{" "}
-                      {formatDate(r.preferredDate)} at {r.preferredLocation}
+                      {r.numberOfClasses}{" "}
+                      {r.numberOfClasses === 1 ? "class" : "classes"} ·{" "}
+                      {r.attendeeCount} attendees per class
                     </p>
+                    {r.sessions && r.sessions.length > 0 ? (
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        Suggested:{" "}
+                        {r.sessions
+                          .map((s) => `${formatDate(s.date)} @ ${s.startTime}`)
+                          .join(" · ")}
+                      </p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        Preferred {formatDate(r.preferredDate)} at{" "}
+                        {r.preferredLocation}
+                      </p>
+                    )}
                     <p className="text-sm text-muted-foreground mt-0.5">
-                      {r.contactEmail}
+                      {r.requestorName} · {r.contactEmail}
                       {r.contactPhone ? ` · ${r.contactPhone}` : ""}
                     </p>
                     {r.notes && (

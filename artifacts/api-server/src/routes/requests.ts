@@ -6,6 +6,7 @@ import {
   CreateRequestBody,
   UpdateRequestBody,
   ListRequestsQueryParams,
+  SubmitTrainingRequestBody,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -25,6 +26,9 @@ async function serializeRequest(row: typeof requestsTable.$inferSelect) {
     certificationType: row.certificationType,
     preferredDate: row.preferredDate,
     preferredLocation: row.preferredLocation,
+    address: row.address,
+    numberOfClasses: row.numberOfClasses,
+    sessions: row.sessions ?? [],
     attendeeCount: row.attendeeCount,
     notes: row.notes,
     status: row.status,
@@ -50,6 +54,48 @@ router.get("/requests", async (req, res) => {
 router.post("/requests", async (req, res) => {
   const body = CreateRequestBody.parse(req.body);
   const [row] = await db.insert(requestsTable).values(body).returning();
+  res.status(201).json(await serializeRequest(row));
+});
+
+router.post("/training-requests", async (req, res) => {
+  const body = SubmitTrainingRequestBody.parse(req.body);
+  const email = body.requestorEmail.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    res.status(400).json({ error: "Invalid email address" });
+    return;
+  }
+  const [user] = await db
+    .insert(usersTable)
+    .values({
+      name: body.requestorName,
+      email,
+      role: "requestor",
+      phone: body.requestorPhone ?? null,
+      organization: body.locationName,
+    })
+    .onConflictDoUpdate({
+      target: usersTable.email,
+      set: { email },
+    })
+    .returning();
+  const firstSession = body.sessions[0]!;
+  const [row] = await db
+    .insert(requestsTable)
+    .values({
+      requestorId: user.id,
+      organizationName: body.locationName,
+      contactEmail: email,
+      contactPhone: body.requestorPhone ?? null,
+      certificationType: body.certificationType ?? "cpr_aed",
+      preferredDate: firstSession.date,
+      preferredLocation: body.locationName,
+      address: body.address ?? null,
+      numberOfClasses: body.numberOfClasses,
+      sessions: body.sessions,
+      attendeeCount: body.attendeeCount,
+      notes: body.notes ?? null,
+    })
+    .returning();
   res.status(201).json(await serializeRequest(row));
 });
 

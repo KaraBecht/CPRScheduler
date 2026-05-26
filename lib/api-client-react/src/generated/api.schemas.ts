@@ -166,6 +166,11 @@ export interface EnrollmentUpdate {
   certificateIssued?: boolean;
 }
 
+export type ClassRequestSessionsItem = {
+  date: string;
+  startTime: string;
+};
+
 export interface ClassRequest {
   id: number;
   requestorId: number;
@@ -178,6 +183,10 @@ export interface ClassRequest {
   preferredDate: string;
   /** @nullable */
   preferredLocation?: string | null;
+  /** @nullable */
+  address?: string | null;
+  numberOfClasses?: number;
+  sessions?: ClassRequestSessionsItem[];
   attendeeCount: number;
   /** @nullable */
   notes?: string | null;
@@ -186,6 +195,35 @@ export interface ClassRequest {
   classId?: number | null;
   createdAt: string;
 }
+
+export type TrainingRequestInputSessionsItem = {
+  date: string;
+  startTime: string;
+};
+
+export interface TrainingRequestInput {
+  /** @minLength 1 */
+  locationName: string;
+  address?: string;
+  /** @minLength 1 */
+  requestorName: string;
+  /** @minLength 3 */
+  requestorEmail: string;
+  requestorPhone?: string;
+  certificationType?: CertificationType;
+  /** @minimum 1 */
+  numberOfClasses: number;
+  /** @minimum 1 */
+  attendeeCount: number;
+  /** @minItems 1 */
+  sessions: TrainingRequestInputSessionsItem[];
+  notes?: string;
+}
+
+export type ClassRequestInputSessionsItem = {
+  date: string;
+  startTime: string;
+};
 
 export interface ClassRequestInput {
   requestorId: number;
@@ -196,6 +234,10 @@ export interface ClassRequestInput {
   certificationType: CertificationType;
   preferredDate: string;
   preferredLocation?: string;
+  address?: string;
+  /** @minimum 1 */
+  numberOfClasses?: number;
+  sessions?: ClassRequestInputSessionsItem[];
   /** @minimum 1 */
   attendeeCount: number;
   notes?: string;

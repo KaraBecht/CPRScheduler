@@ -6,6 +6,7 @@ import {
   timestamp,
   pgEnum,
   date,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { usersTable } from "./users";
 import { classesTable } from "./classes";
@@ -29,6 +30,12 @@ export const requestsTable = pgTable("class_requests", {
   certificationType: certificationTypeEnum("certification_type").notNull(),
   preferredDate: date("preferred_date").notNull(),
   preferredLocation: text("preferred_location"),
+  address: text("address"),
+  numberOfClasses: integer("number_of_classes").notNull().default(1),
+  sessions: jsonb("sessions")
+    .$type<{ date: string; startTime: string }[]>()
+    .notNull()
+    .default([]),
   attendeeCount: integer("attendee_count").notNull(),
   notes: text("notes"),
   status: requestStatusEnum("status").notNull().default("pending"),
