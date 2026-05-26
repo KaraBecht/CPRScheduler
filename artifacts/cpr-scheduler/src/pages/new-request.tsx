@@ -42,8 +42,8 @@ export default function NewRequest() {
   const [certificationType, setCertificationType] =
     useState<CertificationType>("cpr_aed_first_aid");
   const [numberOfClasses, setNumberOfClasses] = useState(1);
-  const [attendeeCount, setAttendeeCount] = useState(10);
   const [notes, setNotes] = useState("");
+  const attendeeCount = 10;
   const [sessions, setSessions] = useState<Session[]>([
     { date: "", startTime: "09:00" },
   ]);
@@ -160,7 +160,7 @@ export default function NewRequest() {
             <h3 className="text-sm font-semibold tracking-wide uppercase text-muted-foreground">
               Class details
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <Label>Certification</Label>
                 <Select
@@ -193,19 +193,10 @@ export default function NewRequest() {
                   }
                 />
               </div>
-              <div>
-                <Label>Attendees per class</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  data-testid="input-attendees"
-                  value={attendeeCount}
-                  onChange={(e) =>
-                    setAttendeeCount(parseInt(e.target.value) || 1)
-                  }
-                />
-              </div>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Each class accommodates up to 10 attendees.
+            </p>
           </section>
 
           <section className="space-y-3">
