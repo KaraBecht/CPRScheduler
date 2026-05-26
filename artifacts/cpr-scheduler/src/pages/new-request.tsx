@@ -157,9 +157,22 @@ export default function NewRequest() {
           </section>
 
           <section className="space-y-3">
-            <h3 className="text-sm font-semibold tracking-wide uppercase text-muted-foreground">
-              Class details
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold tracking-wide uppercase text-muted-foreground">
+                Class details
+              </h3>
+              <Button
+                variant="outline"
+                size="sm"
+                data-testid="button-add-class"
+                onClick={() => {
+                  setNumberOfClasses((n) => n + 1);
+                  addSession();
+                }}
+              >
+                <Plus className="h-4 w-4 mr-1" /> Add class
+              </Button>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
                 <Label>Certification</Label>
