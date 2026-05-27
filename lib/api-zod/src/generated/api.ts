@@ -259,8 +259,32 @@ export const ListEnrollmentsResponseItem = zod.object({
 export const ListEnrollmentsResponse = zod.array(ListEnrollmentsResponseItem)
 
 
+export const UpdateRosterEntryParams = zod.object({
+  "classId": zod.coerce.number(),
+  "position": zod.coerce.number()
+})
+
+export const UpdateRosterEntryBody = zod.object({
+  "name": zod.string().optional(),
+  "email": zod.string().optional(),
+  "phone": zod.string().optional(),
+  "result": zod.union([zod.enum(['pass', 'fail']),zod.null()]).optional(),
+  "cardSent": zod.boolean().optional()
+})
+
+export const UpdateRosterEntryResponse = zod.object({
+  "position": zod.number(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "phone": zod.string(),
+  "result": zod.union([zod.enum(['pass', 'fail']),zod.null()]).optional(),
+  "cardSent": zod.boolean()
+})
+
+
 export const ListRosterAttendeesResponseItem = zod.object({
   "classId": zod.number(),
+  "position": zod.number(),
   "classTitle": zod.string(),
   "classDate": zod.string(),
   "classLocation": zod.string(),

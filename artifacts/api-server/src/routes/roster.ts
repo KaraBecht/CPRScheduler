@@ -1,8 +1,11 @@
 import { Router, type IRouter } from "express";
 import { parseId } from "../lib/errors";
 import { db, classesTable, classRosterTable } from "@workspace/db";
-import { eq, asc, desc, ne, sql } from "drizzle-orm";
-import { SaveClassRosterBody } from "@workspace/api-zod";
+import { eq, and, asc, desc, ne, sql } from "drizzle-orm";
+import {
+  SaveClassRosterBody,
+  UpdateRosterEntryBody,
+} from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
@@ -50,10 +53,67 @@ router.get("/roster-attendees", async (_req, res) => {
       classDate: r.classDate,
       classLocation: r.classLocation,
       name: r.name,
+      position: r.position,
       result: r.result,
       cardSent: r.cardSent,
     })),
   );
+});
+
+router.patch("/classes/:classId/roster/:position", async (req, res) => {
+  const classId = parseId(req.params.classId, "classId");
+  const position = parseId(req.params.position, "position");
+  const body = UpdateRosterEntryBody.parse(req.body);
+  const [cls] = await db
+    .select()
+    .from(classesTable)
+    .where(eq(classesTable.id, classId));
+  if (!cls) {
+    res.status(404).json({ error: "Class not found" });
+    return;
+  }
+  const [existing] = await db
+    .select()
+    .from(classRosterTable)
+    .where(
+      and(
+        eq(classRosterTable.classId, classId),
+        eq(classRosterTable.position, position),
+      ),
+    );
+  const merged = {
+    classId,
+    position,
+    name: body.name ?? existing?.name ?? "",
+    email: body.email ?? existing?.email ?? "",
+    phone: body.phone ?? existing?.phone ?? "",
+    result: body.result !== undefined ? body.result : (existing?.result ?? null),
+    cardSent:
+      body.cardSent !== undefined ? body.cardSent : (existing?.cardSent ?? false),
+  };
+  let row;
+  if (existing) {
+    [row] = await db
+      .update(classRosterTable)
+      .set(merged)
+      .where(
+        and(
+          eq(classRosterTable.classId, classId),
+          eq(classRosterTable.position, position),
+        ),
+      )
+      .returning();
+  } else {
+    [row] = await db.insert(classRosterTable).values(merged).returning();
+  }
+  res.json({
+    position: row!.position,
+    name: row!.name,
+    email: row!.email,
+    phone: row!.phone,
+    result: row!.result,
+    cardSent: row!.cardSent,
+  });
 });
 
 router.get("/classes/:classId/roster", async (req, res) => {

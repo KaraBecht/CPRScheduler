@@ -3,7 +3,10 @@ import {
   useListUsers,
   useCreateUser,
   useListRosterAttendees,
+  useUpdateRosterEntry,
   getListUsersQueryKey,
+  getListRosterAttendeesQueryKey,
+  getGetClassRosterQueryKey,
   type UserRole,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -44,13 +47,11 @@ import {
   CalendarDays,
   MapPin,
   Search,
-  CheckCircle2,
-  XCircle,
-  MailCheck,
 } from "lucide-react";
 import { Link } from "wouter";
 import { formatDate } from "@/lib/format";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/auth-context";
 
 const ROLES: { value: UserRole; label: string }[] = [
   { value: "administrator", label: "Administrators" },
@@ -182,10 +183,26 @@ function NewUserDialog() {
 }
 
 export default function People() {
+  const qc = useQueryClient();
+  const { role } = useAuth();
+  const canEdit = role === "administrator" || role === "instructor";
   const [tab, setTab] = useState<UserRole>("instructor");
   const [query, setQuery] = useState("");
   const { data: users = [] } = useListUsers({ role: tab });
   const { data: rosterAttendees = [] } = useListRosterAttendees();
+
+  const updateRoster = useUpdateRosterEntry({
+    mutation: {
+      onSuccess: (_d, vars) => {
+        qc.invalidateQueries({ queryKey: getListRosterAttendeesQueryKey() });
+        qc.invalidateQueries({
+          queryKey: getGetClassRosterQueryKey(vars.classId),
+        });
+      },
+      onError: () =>
+        toast({ title: "Failed to update roster", variant: "destructive" }),
+    },
+  });
 
   const q = query.trim().toLowerCase();
   const filteredUsers = users.filter((u) => {
@@ -285,28 +302,54 @@ export default function People() {
                           <MapPin className="h-3.5 w-3.5" />
                           <span className="truncate">{a.classLocation}</span>
                         </span>
-                        <span className="flex justify-center">
-                          {a.result === "pass" ? (
-                            <Badge className="bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/10 border-emerald-500/20">
-                              <CheckCircle2 className="h-3 w-3 mr-1" /> Pass
-                            </Badge>
-                          ) : a.result === "fail" ? (
-                            <Badge variant="destructive">
-                              <XCircle className="h-3 w-3 mr-1" /> Fail
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-muted-foreground">—</Badge>
-                          )}
-                        </span>
-                        <span className="flex justify-center">
-                          {a.cardSent ? (
-                            <Badge className="bg-sky-500/10 text-sky-700 hover:bg-sky-500/10 border-sky-500/20">
-                              <MailCheck className="h-3 w-3 mr-1" /> Sent
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-muted-foreground">No</Badge>
-                          )}
-                        </span>
+                        <Select
+                          value={a.result ?? "none"}
+                          disabled={!canEdit}
+                          onValueChange={(v) =>
+                            updateRoster.mutate({
+                              classId: a.classId,
+                              position: a.position,
+                              data: {
+                                result:
+                                  v === "none" ? null : (v as "pass" | "fail"),
+                              },
+                            })
+                          }
+                        >
+                          <SelectTrigger
+                            className="h-8 w-full"
+                            data-testid={`attendee-result-${i}`}
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">—</SelectItem>
+                            <SelectItem value="pass">Pass</SelectItem>
+                            <SelectItem value="fail">Fail</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Select
+                          value={a.cardSent ? "yes" : "no"}
+                          disabled={!canEdit}
+                          onValueChange={(v) =>
+                            updateRoster.mutate({
+                              classId: a.classId,
+                              position: a.position,
+                              data: { cardSent: v === "yes" },
+                            })
+                          }
+                        >
+                          <SelectTrigger
+                            className="h-8 w-full"
+                            data-testid={`attendee-card-${i}`}
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="yes">Yes</SelectItem>
+                            <SelectItem value="no">No</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     ))}
                   </div>

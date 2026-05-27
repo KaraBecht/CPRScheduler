@@ -9,6 +9,7 @@ import type { RosterResult } from './rosterResult';
 
 export interface RosterAttendee {
   classId: number;
+  position: number;
   classTitle: string;
   classDate: string;
   classLocation: string;

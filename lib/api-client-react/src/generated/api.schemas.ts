@@ -142,12 +142,21 @@ export const RosterResult = {
 
 export interface RosterAttendee {
   classId: number;
+  position: number;
   classTitle: string;
   classDate: string;
   classLocation: string;
   name: string;
   result?: RosterResult | null;
   cardSent: boolean;
+}
+
+export interface ClassRosterEntryUpdate {
+  name?: string;
+  email?: string;
+  phone?: string;
+  result?: RosterResult | null;
+  cardSent?: boolean;
 }
 
 export interface ClassRosterEntry {

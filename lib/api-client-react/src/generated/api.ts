@@ -30,6 +30,8 @@ import type {
   ClassRequestInput,
   ClassRequestUpdate,
   ClassRoster,
+  ClassRosterEntry,
+  ClassRosterEntryUpdate,
   ClassRosterInput,
   ClassSession,
   ClassUpdate,
@@ -1043,6 +1045,74 @@ export function useListEnrollments<TData = Awaited<ReturnType<typeof listEnrollm
 
 
 
+
+export const getUpdateRosterEntryUrl = (classId: number,
+    position: number,) => {
+
+
+
+
+  return `/api/classes/${classId}/roster/${position}`
+}
+
+export const updateRosterEntry = async (classId: number,
+    position: number,
+    classRosterEntryUpdate: ClassRosterEntryUpdate, options?: RequestInit): Promise<ClassRosterEntry> => {
+
+  return customFetch<ClassRosterEntry>(getUpdateRosterEntryUrl(classId,position),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      classRosterEntryUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateRosterEntryMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRosterEntry>>, TError,{classId: number;position: number;data: BodyType<ClassRosterEntryUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateRosterEntry>>, TError,{classId: number;position: number;data: BodyType<ClassRosterEntryUpdate>}, TContext> => {
+
+const mutationKey = ['updateRosterEntry'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateRosterEntry>>, {classId: number;position: number;data: BodyType<ClassRosterEntryUpdate>}> = (props) => {
+          const {classId,position,data} = props ?? {};
+
+          return  updateRosterEntry(classId,position,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateRosterEntryMutationResult = NonNullable<Awaited<ReturnType<typeof updateRosterEntry>>>
+    export type UpdateRosterEntryMutationBody = BodyType<ClassRosterEntryUpdate>
+    export type UpdateRosterEntryMutationError = ErrorType<unknown>
+
+    export const useUpdateRosterEntry = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRosterEntry>>, TError,{classId: number;position: number;data: BodyType<ClassRosterEntryUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateRosterEntry>>,
+        TError,
+        {classId: number;position: number;data: BodyType<ClassRosterEntryUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateRosterEntryMutationOptions(options));
+    }
 
 export const getListRosterAttendeesUrl = () => {
 

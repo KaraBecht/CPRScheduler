@@ -246,6 +246,31 @@ paths:
                 type: array
                 items: { $ref: "#/components/schemas/EnrollmentWithClass" }
 
+  /classes/{classId}/roster/{position}:
+    patch:
+      operationId: updateRosterEntry
+      tags: [classes]
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: position
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ClassRosterEntryUpdate" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ClassRosterEntry" }
+
   /roster-attendees:
     get:
       operationId: listRosterAttendees
@@ -594,13 +619,26 @@ components:
     RosterAttendee:
       type: object
       required:
-        [classId, classTitle, classDate, classLocation, name, cardSent]
+        [classId, position, classTitle, classDate, classLocation, name, cardSent]
       properties:
         classId: { type: integer }
+        position: { type: integer }
         classTitle: { type: string }
         classDate: { type: string }
         classLocation: { type: string }
         name: { type: string }
+        result:
+          oneOf:
+            - { $ref: "#/components/schemas/RosterResult" }
+            - { type: "null" }
+        cardSent: { type: boolean }
+
+    ClassRosterEntryUpdate:
+      type: object
+      properties:
+        name: { type: string }
+        email: { type: string }
+        phone: { type: string }
         result:
           oneOf:
             - { $ref: "#/components/schemas/RosterResult" }

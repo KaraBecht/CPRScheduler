@@ -22,6 +22,7 @@ export * from './classRequestSessionsItem';
 export * from './classRequestUpdate';
 export * from './classRoster';
 export * from './classRosterEntry';
+export * from './classRosterEntryUpdate';
 export * from './classRosterInput';
 export * from './classSession';
 export * from './classStatus';
