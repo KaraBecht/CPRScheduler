@@ -184,8 +184,6 @@ function NewUserDialog() {
 export default function People() {
   const [tab, setTab] = useState<UserRole>("instructor");
   const [query, setQuery] = useState("");
-  const [resultFilter, setResultFilter] = useState<"all" | "pass" | "fail">("all");
-  const [cardFilter, setCardFilter] = useState<"all" | "sent" | "not_sent">("all");
   const { data: users = [] } = useListUsers({ role: tab });
   const { data: rosterAttendees = [] } = useListRosterAttendees();
 
@@ -205,9 +203,6 @@ export default function People() {
       a.classLocation.toLowerCase().includes(q) ||
       a.classTitle.toLowerCase().includes(q)
     )) return false;
-    if (resultFilter !== "all" && a.result !== resultFilter) return false;
-    if (cardFilter === "sent" && !a.cardSent) return false;
-    if (cardFilter === "not_sent" && a.cardSent) return false;
     return true;
   });
 
@@ -229,34 +224,6 @@ export default function People() {
             data-testid="input-people-filter"
           />
         </div>
-        {tab === "student" && (
-          <>
-            <Select
-              value={resultFilter}
-              onValueChange={(v) => setResultFilter(v as typeof resultFilter)}
-            >
-              <SelectTrigger className="w-[140px]" data-testid="select-filter-result">
-                <SelectValue placeholder="Result" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pass">Pass</SelectItem>
-                <SelectItem value="fail">Fail</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
-              value={cardFilter}
-              onValueChange={(v) => setCardFilter(v as typeof cardFilter)}
-            >
-              <SelectTrigger className="w-[140px]" data-testid="select-filter-card">
-                <SelectValue placeholder="Card status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="sent">Card sent</SelectItem>
-                <SelectItem value="not_sent">Card not sent</SelectItem>
-              </SelectContent>
-            </Select>
-          </>
-        )}
       </div>
       <Tabs value={tab} onValueChange={(v) => setTab(v as UserRole)}>
         <TabsList>
