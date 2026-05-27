@@ -299,6 +299,10 @@ export interface Certificate {
   studentName: string;
   /** @nullable */
   classId?: number | null;
+  /** @nullable */
+  classTitle?: string | null;
+  /** @nullable */
+  classLocation?: string | null;
   certificationType: CertificationType;
   certificateNumber: string;
   issuedDate: string;

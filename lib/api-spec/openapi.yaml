@@ -848,6 +848,8 @@ components:
         studentId: { type: integer }
         studentName: { type: string }
         classId: { type: ["integer", "null"] }
+        classTitle: { type: ["string", "null"] }
+        classLocation: { type: ["string", "null"] }
         certificationType: { $ref: "#/components/schemas/CertificationType" }
         certificateNumber: { type: string }
         issuedDate: { type: string }

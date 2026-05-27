@@ -2,7 +2,7 @@ import { useListCertificates } from "@workspace/api-client-react";
 import { useAuth } from "@/lib/auth-context";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
-import { Award } from "lucide-react";
+import { Award, MapPin, BookOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatCertificationType, formatDate } from "@/lib/format";
 
@@ -37,6 +37,18 @@ export default function Certificates() {
                       {formatCertificationType(c.certificationType)}
                     </Badge>
                     <p className="font-semibold">{c.studentName}</p>
+                    {c.classTitle && (
+                      <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
+                        <BookOpen className="h-3 w-3" />
+                        <span className="truncate">{c.classTitle}</span>
+                      </p>
+                    )}
+                    {c.classLocation && (
+                      <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
+                        <MapPin className="h-3 w-3" />
+                        <span className="truncate">{c.classLocation}</span>
+                      </p>
+                    )}
                     <p className="text-xs text-muted-foreground mt-1">
                       Issued {formatDate(c.issuedDate)} · expires{" "}
                       {formatDate(c.expiryDate)}

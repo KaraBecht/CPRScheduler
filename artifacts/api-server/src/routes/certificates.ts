@@ -20,11 +20,23 @@ async function serialize(row: typeof certificatesTable.$inferSelect) {
     .select()
     .from(usersTable)
     .where(eq(usersTable.id, row.studentId));
+  let classTitle: string | null = null;
+  let classLocation: string | null = null;
+  if (row.classId) {
+    const [c] = await db
+      .select()
+      .from(classesTable)
+      .where(eq(classesTable.id, row.classId));
+    classTitle = c?.title ?? null;
+    classLocation = c?.location ?? null;
+  }
   return {
     id: row.id,
     studentId: row.studentId,
     studentName: u?.name ?? "",
     classId: row.classId,
+    classTitle,
+    classLocation,
     certificationType: row.certificationType,
     certificateNumber: row.certificateNumber,
     issuedDate: row.issuedDate,
@@ -63,6 +75,8 @@ router.get("/certificates", async (req, res) => {
           studentId: 0,
           studentName: r.name,
           classId: c.id,
+          classTitle: c.title,
+          classLocation: c.location,
           certificationType: c.certificationType,
           certificateNumber: `ROSTER-${c.id}-${r.position}`,
           issuedDate: issued,
