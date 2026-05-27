@@ -7,8 +7,51 @@ import {
   usersTable,
   requestsTable,
   certificatesTable,
+  classRosterTable,
 } from "@workspace/db";
-import { and, eq, gte, sql, desc, asc, ne } from "drizzle-orm";
+import { and, eq, gte, sql, desc, asc, ne, inArray } from "drizzle-orm";
+
+const DEFAULT_CLASS_DURATION_MIN = 180;
+
+function nowParts() {
+  const d = new Date();
+  const today = d.toISOString().split("T")[0]!;
+  const nowMin = d.getHours() * 60 + d.getMinutes();
+  return { today, nowMin };
+}
+
+function parseHHMM(t: string): number {
+  const [h, m] = t.split(":").map((s) => parseInt(s, 10));
+  return (h || 0) * 60 + (m || 0);
+}
+
+async function countActiveRosterStudents(): Promise<number> {
+  const { today, nowMin } = nowParts();
+  const todayClasses = await db
+    .select()
+    .from(classesTable)
+    .where(and(eq(classesTable.date, today), eq(classesTable.status, "scheduled")));
+  const activeIds = todayClasses
+    .filter((c) => {
+      const start = parseHHMM(c.startTime);
+      const end = c.endTime
+        ? parseHHMM(c.endTime)
+        : start + DEFAULT_CLASS_DURATION_MIN;
+      return start <= nowMin && nowMin < end;
+    })
+    .map((c) => c.id);
+  if (activeIds.length === 0) return 0;
+  const [row] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(classRosterTable)
+    .where(
+      and(
+        inArray(classRosterTable.classId, activeIds),
+        ne(sql`trim(${classRosterTable.name})`, ""),
+      ),
+    );
+  return row?.n ?? 0;
+}
 import { serializeClass } from "./classes";
 import { serializeRequest } from "./requests";
 import { serializeUser } from "./users";
@@ -29,7 +72,7 @@ router.get("/dashboard/admin", async (_req, res) => {
   const [
     [{ totalClasses }],
     [{ upcomingClasses }],
-    [{ totalStudents }],
+    activeStudents,
     [{ totalInstructors }],
     [{ pendingRequests }],
     [{ certificatesIssued }],
@@ -42,10 +85,7 @@ router.get("/dashboard/admin", async (_req, res) => {
       .where(
         and(gte(classesTable.date, today), eq(classesTable.status, "scheduled")),
       ),
-    db
-      .select({ totalStudents: sql<number>`count(*)::int` })
-      .from(usersTable)
-      .where(eq(usersTable.role, "student")),
+    countActiveRosterStudents(),
     db
       .select({ totalInstructors: sql<number>`count(*)::int` })
       .from(usersTable)
@@ -62,6 +102,7 @@ router.get("/dashboard/admin", async (_req, res) => {
       .from(enrollmentsTable)
       .where(gte(enrollmentsTable.enrolledAt, startMonth)),
   ]);
+  const totalStudents = activeStudents;
 
   const classesByCertification = await Promise.all(
     certTypes.map(async (t) => {

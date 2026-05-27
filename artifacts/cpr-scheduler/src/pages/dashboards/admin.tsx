@@ -70,7 +70,11 @@ export function AdminDashboardPage() {
         <StatCard
           label="Active students"
           value={dash.totalStudents}
-          hint={`${dash.totalInstructors} instructors`}
+          hint={
+            dash.totalStudents > 0
+              ? "in class right now"
+              : "no class in session"
+          }
           icon={Users}
           tone="accent"
           testId="stat-students"
