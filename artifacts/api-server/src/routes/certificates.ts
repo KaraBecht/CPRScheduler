@@ -4,6 +4,8 @@ import {
   certificatesTable,
   usersTable,
   enrollmentsTable,
+  classesTable,
+  classRosterTable,
 } from "@workspace/db";
 import { eq, desc, and } from "drizzle-orm";
 import {
@@ -41,7 +43,38 @@ router.get("/certificates", async (req, res) => {
         : undefined,
     )
     .orderBy(desc(certificatesTable.issuedDate));
-  res.json(await Promise.all(rows.map(serialize)));
+  const real = await Promise.all(rows.map(serialize));
+
+  let virtuals: Awaited<ReturnType<typeof serialize>>[] = [];
+  if (!params.studentId) {
+    const rosterRows = await db
+      .select({ r: classRosterTable, c: classesTable })
+      .from(classRosterTable)
+      .innerJoin(classesTable, eq(classRosterTable.classId, classesTable.id))
+      .where(eq(classRosterTable.cardSent, true));
+    virtuals = rosterRows
+      .filter(({ r }) => r.name.trim() !== "")
+      .map(({ r, c }) => {
+        const issued = c.date;
+        const expiry = new Date(c.date);
+        expiry.setFullYear(expiry.getFullYear() + 2);
+        return {
+          id: -(c.id * 1000 + r.position + 1),
+          studentId: 0,
+          studentName: r.name,
+          classId: c.id,
+          certificationType: c.certificationType,
+          certificateNumber: `ROSTER-${c.id}-${r.position}`,
+          issuedDate: issued,
+          expiryDate: expiry.toISOString().split("T")[0]!,
+        };
+      });
+  }
+
+  const combined = [...real, ...virtuals].sort((a, b) =>
+    a.issuedDate < b.issuedDate ? 1 : a.issuedDate > b.issuedDate ? -1 : 0,
+  );
+  res.json(combined);
 });
 
 router.post("/certificates", async (req, res) => {
