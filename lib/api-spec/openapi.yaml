@@ -246,6 +246,41 @@ paths:
                 type: array
                 items: { $ref: "#/components/schemas/EnrollmentWithClass" }
 
+  /classes/{classId}/roster:
+    get:
+      operationId: getClassRoster
+      tags: [classes]
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ClassRoster" }
+    put:
+      operationId: saveClassRoster
+      tags: [classes]
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ClassRosterInput" }
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ClassRoster" }
+
   /requests:
     get:
       operationId: listRequests
@@ -538,6 +573,33 @@ components:
         capacity: { type: integer, minimum: 1 }
         instructorId: { type: integer }
         description: { type: string }
+
+    ClassRosterEntry:
+      type: object
+      required: [position, name, email, phone]
+      properties:
+        position: { type: integer }
+        name: { type: string }
+        email: { type: string }
+        phone: { type: string }
+
+    ClassRoster:
+      type: object
+      required: [classId, capacity, entries]
+      properties:
+        classId: { type: integer }
+        capacity: { type: integer }
+        entries:
+          type: array
+          items: { $ref: "#/components/schemas/ClassRosterEntry" }
+
+    ClassRosterInput:
+      type: object
+      required: [entries]
+      properties:
+        entries:
+          type: array
+          items: { $ref: "#/components/schemas/ClassRosterEntry" }
 
     ClassUpdate:
       type: object

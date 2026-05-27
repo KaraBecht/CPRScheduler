@@ -29,6 +29,8 @@ import type {
   ClassRequest,
   ClassRequestInput,
   ClassRequestUpdate,
+  ClassRoster,
+  ClassRosterInput,
   ClassSession,
   ClassUpdate,
   Enrollment,
@@ -1040,6 +1042,143 @@ export function useListEnrollments<TData = Awaited<ReturnType<typeof listEnrollm
 
 
 
+
+export const getGetClassRosterUrl = (classId: number,) => {
+
+
+
+
+  return `/api/classes/${classId}/roster`
+}
+
+export const getClassRoster = async (classId: number, options?: RequestInit): Promise<ClassRoster> => {
+
+  return customFetch<ClassRoster>(getGetClassRosterUrl(classId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetClassRosterQueryKey = (classId: number,) => {
+    return [
+    `/api/classes/${classId}/roster`
+    ] as const;
+    }
+
+
+export const getGetClassRosterQueryOptions = <TData = Awaited<ReturnType<typeof getClassRoster>>, TError = ErrorType<unknown>>(classId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClassRoster>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetClassRosterQueryKey(classId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getClassRoster>>> = ({ signal }) => getClassRoster(classId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(classId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getClassRoster>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetClassRosterQueryResult = NonNullable<Awaited<ReturnType<typeof getClassRoster>>>
+export type GetClassRosterQueryError = ErrorType<unknown>
+
+
+
+export function useGetClassRoster<TData = Awaited<ReturnType<typeof getClassRoster>>, TError = ErrorType<unknown>>(
+ classId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getClassRoster>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetClassRosterQueryOptions(classId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSaveClassRosterUrl = (classId: number,) => {
+
+
+
+
+  return `/api/classes/${classId}/roster`
+}
+
+export const saveClassRoster = async (classId: number,
+    classRosterInput: ClassRosterInput, options?: RequestInit): Promise<ClassRoster> => {
+
+  return customFetch<ClassRoster>(getSaveClassRosterUrl(classId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      classRosterInput,)
+  }
+);}
+
+
+
+
+export const getSaveClassRosterMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveClassRoster>>, TError,{classId: number;data: BodyType<ClassRosterInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveClassRoster>>, TError,{classId: number;data: BodyType<ClassRosterInput>}, TContext> => {
+
+const mutationKey = ['saveClassRoster'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveClassRoster>>, {classId: number;data: BodyType<ClassRosterInput>}> = (props) => {
+          const {classId,data} = props ?? {};
+
+          return  saveClassRoster(classId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveClassRosterMutationResult = NonNullable<Awaited<ReturnType<typeof saveClassRoster>>>
+    export type SaveClassRosterMutationBody = BodyType<ClassRosterInput>
+    export type SaveClassRosterMutationError = ErrorType<unknown>
+
+    export const useSaveClassRoster = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveClassRoster>>, TError,{classId: number;data: BodyType<ClassRosterInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveClassRoster>>,
+        TError,
+        {classId: number;data: BodyType<ClassRosterInput>},
+        TContext
+      > => {
+      return useMutation(getSaveClassRosterMutationOptions(options));
+    }
 
 export const getListRequestsUrl = (params?: ListRequestsParams,) => {
   const normalizedParams = new URLSearchParams();

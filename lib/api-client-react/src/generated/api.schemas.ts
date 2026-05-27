@@ -132,6 +132,23 @@ export interface ClassInput {
   description?: string;
 }
 
+export interface ClassRosterEntry {
+  position: number;
+  name: string;
+  email: string;
+  phone: string;
+}
+
+export interface ClassRoster {
+  classId: number;
+  capacity: number;
+  entries: ClassRosterEntry[];
+}
+
+export interface ClassRosterInput {
+  entries: ClassRosterEntry[];
+}
+
 export interface ClassUpdate {
   title?: string;
   certificationType?: CertificationType;

@@ -259,6 +259,47 @@ export const ListEnrollmentsResponseItem = zod.object({
 export const ListEnrollmentsResponse = zod.array(ListEnrollmentsResponseItem)
 
 
+export const GetClassRosterParams = zod.object({
+  "classId": zod.coerce.number()
+})
+
+export const GetClassRosterResponse = zod.object({
+  "classId": zod.number(),
+  "capacity": zod.number(),
+  "entries": zod.array(zod.object({
+  "position": zod.number(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "phone": zod.string()
+}))
+})
+
+
+export const SaveClassRosterParams = zod.object({
+  "classId": zod.coerce.number()
+})
+
+export const SaveClassRosterBody = zod.object({
+  "entries": zod.array(zod.object({
+  "position": zod.number(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "phone": zod.string()
+}))
+})
+
+export const SaveClassRosterResponse = zod.object({
+  "classId": zod.number(),
+  "capacity": zod.number(),
+  "entries": zod.array(zod.object({
+  "position": zod.number(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "phone": zod.string()
+}))
+})
+
+
 export const ListRequestsQueryParams = zod.object({
   "status": zod.enum(['pending', 'approved', 'rejected', 'scheduled']).optional(),
   "requestorId": zod.coerce.number().optional()
