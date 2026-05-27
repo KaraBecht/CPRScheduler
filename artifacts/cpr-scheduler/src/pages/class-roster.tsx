@@ -5,6 +5,7 @@ import {
   useGetClassRoster,
   useSaveClassRoster,
   getGetClassRosterQueryKey,
+  getListRosterAttendeesQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
@@ -38,6 +39,7 @@ export default function ClassRoster() {
       onSuccess: () => {
         toast({ title: "Roster saved" });
         qc.invalidateQueries({ queryKey: getGetClassRosterQueryKey(classId) });
+        qc.invalidateQueries({ queryKey: getListRosterAttendeesQueryKey() });
       },
       onError: () =>
         toast({ title: "Failed to save roster", variant: "destructive" }),

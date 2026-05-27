@@ -259,6 +259,16 @@ export const ListEnrollmentsResponseItem = zod.object({
 export const ListEnrollmentsResponse = zod.array(ListEnrollmentsResponseItem)
 
 
+export const ListRosterAttendeesResponseItem = zod.object({
+  "classId": zod.number(),
+  "classTitle": zod.string(),
+  "classDate": zod.string(),
+  "classLocation": zod.string(),
+  "name": zod.string()
+})
+export const ListRosterAttendeesResponse = zod.array(ListRosterAttendeesResponseItem)
+
+
 export const GetClassRosterParams = zod.object({
   "classId": zod.coerce.number()
 })

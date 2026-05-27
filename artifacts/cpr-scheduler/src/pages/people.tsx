@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   useListUsers,
   useCreateUser,
+  useListRosterAttendees,
   getListUsersQueryKey,
   type UserRole,
 } from "@workspace/api-client-react";
@@ -35,7 +36,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Mail, Phone, Building2 } from "lucide-react";
+import { Plus, Mail, Phone, Building2, CalendarDays, MapPin } from "lucide-react";
+import { Link } from "wouter";
+import { formatDate } from "@/lib/format";
 import { toast } from "@/hooks/use-toast";
 
 const ROLES: { value: UserRole; label: string }[] = [
@@ -170,6 +173,7 @@ function NewUserDialog() {
 export default function People() {
   const [tab, setTab] = useState<UserRole>("instructor");
   const { data: users = [] } = useListUsers({ role: tab });
+  const { data: rosterAttendees = [] } = useListRosterAttendees();
   return (
     <>
       <PageHeader
@@ -189,7 +193,50 @@ export default function People() {
             </TabsTrigger>
           ))}
         </TabsList>
-        <TabsContent value={tab} className="mt-4">
+        <TabsContent value={tab} className="mt-4 space-y-6">
+          {tab === "student" && (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold">
+                    Class roster attendees
+                  </h3>
+                  <Badge variant="outline" data-testid="badge-roster-count">
+                    {rosterAttendees.length}
+                  </Badge>
+                </div>
+                {rosterAttendees.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No roster names yet. Save a class roster to see attendees
+                    here.
+                  </p>
+                ) : (
+                  <div className="divide-y divide-border">
+                    {rosterAttendees.map((a, i) => (
+                      <div
+                        key={`${a.classId}-${i}`}
+                        className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr_1fr] gap-2 py-2.5 text-sm items-center"
+                        data-testid={`roster-attendee-${i}`}
+                      >
+                        <span className="font-medium">{a.name}</span>
+                        <Link
+                          href={`/classes/${a.classId}`}
+                          className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground"
+                        >
+                          <CalendarDays className="h-3.5 w-3.5" />
+                          <span>{formatDate(a.classDate)}</span>
+                        </Link>
+                        <span className="flex items-center gap-1.5 text-muted-foreground">
+                          <MapPin className="h-3.5 w-3.5" />
+                          <span className="truncate">{a.classLocation}</span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
           {users.length === 0 ? (
             <Card>
               <CardContent className="pt-6 text-sm text-muted-foreground text-center">

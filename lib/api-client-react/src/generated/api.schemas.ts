@@ -132,6 +132,14 @@ export interface ClassInput {
   description?: string;
 }
 
+export interface RosterAttendee {
+  classId: number;
+  classTitle: string;
+  classDate: string;
+  classLocation: string;
+  name: string;
+}
+
 export interface ClassRosterEntry {
   position: number;
   name: string;

@@ -40,6 +40,7 @@ export * from './listRequestsParams';
 export * from './listUsersParams';
 export * from './requestorDashboard';
 export * from './requestStatus';
+export * from './rosterAttendee';
 export * from './studentDashboard';
 export * from './trainingRequestInput';
 export * from './trainingRequestInputSessionsItem';

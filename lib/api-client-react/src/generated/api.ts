@@ -45,6 +45,7 @@ import type {
   ListRequestsParams,
   ListUsersParams,
   RequestorDashboard,
+  RosterAttendee,
   StudentDashboard,
   TrainingRequestInput,
   User,
@@ -1031,6 +1032,77 @@ export function useListEnrollments<TData = Awaited<ReturnType<typeof listEnrollm
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListEnrollmentsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListRosterAttendeesUrl = () => {
+
+
+
+
+  return `/api/roster-attendees`
+}
+
+export const listRosterAttendees = async ( options?: RequestInit): Promise<RosterAttendee[]> => {
+
+  return customFetch<RosterAttendee[]>(getListRosterAttendeesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListRosterAttendeesQueryKey = () => {
+    return [
+    `/api/roster-attendees`
+    ] as const;
+    }
+
+
+export const getListRosterAttendeesQueryOptions = <TData = Awaited<ReturnType<typeof listRosterAttendees>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRosterAttendees>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListRosterAttendeesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRosterAttendees>>> = ({ signal }) => listRosterAttendees({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listRosterAttendees>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListRosterAttendeesQueryResult = NonNullable<Awaited<ReturnType<typeof listRosterAttendees>>>
+export type ListRosterAttendeesQueryError = ErrorType<unknown>
+
+
+
+export function useListRosterAttendees<TData = Awaited<ReturnType<typeof listRosterAttendees>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRosterAttendees>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListRosterAttendeesQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

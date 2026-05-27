@@ -246,6 +246,19 @@ paths:
                 type: array
                 items: { $ref: "#/components/schemas/EnrollmentWithClass" }
 
+  /roster-attendees:
+    get:
+      operationId: listRosterAttendees
+      tags: [classes]
+      responses:
+        "200":
+          description: Roster names across all classes (one row per non-blank attendee).
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/RosterAttendee" }
+
   /classes/{classId}/roster:
     get:
       operationId: getClassRoster
@@ -573,6 +586,16 @@ components:
         capacity: { type: integer, minimum: 1 }
         instructorId: { type: integer }
         description: { type: string }
+
+    RosterAttendee:
+      type: object
+      required: [classId, classTitle, classDate, classLocation, name]
+      properties:
+        classId: { type: integer }
+        classTitle: { type: string }
+        classDate: { type: string }
+        classLocation: { type: string }
+        name: { type: string }
 
     ClassRosterEntry:
       type: object

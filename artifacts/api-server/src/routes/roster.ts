@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { parseId } from "../lib/errors";
 import { db, classesTable, classRosterTable } from "@workspace/db";
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, desc, ne, sql } from "drizzle-orm";
 import { SaveClassRosterBody } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -24,6 +24,31 @@ async function loadRoster(classId: number, capacity: number) {
   });
   return { classId, capacity, entries };
 }
+
+router.get("/roster-attendees", async (_req, res) => {
+  const rows = await db
+    .select({
+      classId: classesTable.id,
+      classTitle: classesTable.title,
+      classDate: classesTable.date,
+      classLocation: classesTable.location,
+      name: classRosterTable.name,
+      position: classRosterTable.position,
+    })
+    .from(classRosterTable)
+    .innerJoin(classesTable, eq(classRosterTable.classId, classesTable.id))
+    .where(ne(sql`trim(${classRosterTable.name})`, ""))
+    .orderBy(desc(classesTable.date), asc(classesTable.startTime), asc(classRosterTable.position));
+  res.json(
+    rows.map((r) => ({
+      classId: r.classId,
+      classTitle: r.classTitle,
+      classDate: r.classDate,
+      classLocation: r.classLocation,
+      name: r.name,
+    })),
+  );
+});
 
 router.get("/classes/:classId/roster", async (req, res) => {
   const classId = parseId(req.params.classId, "classId");
