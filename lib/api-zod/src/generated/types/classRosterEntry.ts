@@ -5,10 +5,13 @@
  * CPR class scheduling platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { RosterResult } from './rosterResult';
 
 export interface ClassRosterEntry {
   position: number;
   name: string;
   email: string;
   phone: string;
+  result?: RosterResult | null;
+  cardSent: boolean;
 }

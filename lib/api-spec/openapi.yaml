@@ -587,24 +587,39 @@ components:
         instructorId: { type: integer }
         description: { type: string }
 
+    RosterResult:
+      type: string
+      enum: [pass, fail]
+
     RosterAttendee:
       type: object
-      required: [classId, classTitle, classDate, classLocation, name]
+      required:
+        [classId, classTitle, classDate, classLocation, name, cardSent]
       properties:
         classId: { type: integer }
         classTitle: { type: string }
         classDate: { type: string }
         classLocation: { type: string }
         name: { type: string }
+        result:
+          oneOf:
+            - { $ref: "#/components/schemas/RosterResult" }
+            - { type: "null" }
+        cardSent: { type: boolean }
 
     ClassRosterEntry:
       type: object
-      required: [position, name, email, phone]
+      required: [position, name, email, phone, cardSent]
       properties:
         position: { type: integer }
         name: { type: string }
         email: { type: string }
         phone: { type: string }
+        result:
+          oneOf:
+            - { $ref: "#/components/schemas/RosterResult" }
+            - { type: "null" }
+        cardSent: { type: boolean }
 
     ClassRoster:
       type: object

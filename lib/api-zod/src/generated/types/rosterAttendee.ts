@@ -5,6 +5,7 @@
  * CPR class scheduling platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { RosterResult } from './rosterResult';
 
 export interface RosterAttendee {
   classId: number;
@@ -12,4 +13,6 @@ export interface RosterAttendee {
   classDate: string;
   classLocation: string;
   name: string;
+  result?: RosterResult | null;
+  cardSent: boolean;
 }

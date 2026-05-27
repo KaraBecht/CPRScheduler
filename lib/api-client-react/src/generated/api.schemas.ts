@@ -132,12 +132,22 @@ export interface ClassInput {
   description?: string;
 }
 
+export type RosterResult = typeof RosterResult[keyof typeof RosterResult];
+
+
+export const RosterResult = {
+  pass: 'pass',
+  fail: 'fail',
+} as const;
+
 export interface RosterAttendee {
   classId: number;
   classTitle: string;
   classDate: string;
   classLocation: string;
   name: string;
+  result?: RosterResult | null;
+  cardSent: boolean;
 }
 
 export interface ClassRosterEntry {
@@ -145,6 +155,8 @@ export interface ClassRosterEntry {
   name: string;
   email: string;
   phone: string;
+  result?: RosterResult | null;
+  cardSent: boolean;
 }
 
 export interface ClassRoster {

@@ -13,11 +13,27 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ArrowLeft, Save } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth-context";
 
-type Entry = { position: number; name: string; email: string; phone: string };
+type RosterResult = "pass" | "fail" | null;
+type Entry = {
+  position: number;
+  name: string;
+  email: string;
+  phone: string;
+  result: RosterResult;
+  cardSent: boolean;
+};
 
 export default function ClassRoster() {
   const [, params] = useRoute("/classes/:id/roster");
@@ -31,7 +47,17 @@ export default function ClassRoster() {
   const [entries, setEntries] = useState<Entry[]>([]);
 
   useEffect(() => {
-    if (roster) setEntries(roster.entries.map((e) => ({ ...e })));
+    if (roster)
+      setEntries(
+        roster.entries.map((e) => ({
+          position: e.position,
+          name: e.name,
+          email: e.email,
+          phone: e.phone,
+          result: (e.result ?? null) as RosterResult,
+          cardSent: e.cardSent,
+        })),
+      );
   }, [roster]);
 
   const save = useSaveClassRoster({
@@ -81,16 +107,18 @@ export default function ClassRoster() {
       />
       <Card>
         <CardContent className="pt-6 space-y-3">
-          <div className="hidden md:grid grid-cols-[2rem_1fr_1fr_1fr] gap-3 text-xs font-medium text-muted-foreground px-1">
+          <div className="hidden md:grid grid-cols-[2rem_1.4fr_1.4fr_1fr_7rem_5rem] gap-3 text-xs font-medium text-muted-foreground px-1">
             <span>#</span>
             <span>Name</span>
             <span>Email</span>
             <span>Phone</span>
+            <span>Result</span>
+            <span className="text-center">Card sent</span>
           </div>
           {entries.map((e, i) => (
             <div
               key={i}
-              className="grid grid-cols-1 md:grid-cols-[2rem_1fr_1fr_1fr] gap-3 items-center"
+              className="grid grid-cols-1 md:grid-cols-[2rem_1.4fr_1.4fr_1fr_7rem_5rem] gap-3 items-center"
               data-testid={`roster-row-${i}`}
             >
               <span className="text-sm text-muted-foreground font-mono">
@@ -126,6 +154,42 @@ export default function ClassRoster() {
                   placeholder="(555) 123-4567"
                   data-testid={`input-roster-phone-${i}`}
                   onChange={(ev) => update(i, { phone: ev.target.value })}
+                />
+              </div>
+              <div>
+                <Label className="md:hidden text-xs">Result</Label>
+                <Select
+                  value={e.result ?? "none"}
+                  disabled={!canEdit}
+                  onValueChange={(v) =>
+                    update(i, {
+                      result: v === "none" ? null : (v as RosterResult),
+                    })
+                  }
+                >
+                  <SelectTrigger data-testid={`select-roster-result-${i}`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">—</SelectItem>
+                    <SelectItem value="pass">Pass</SelectItem>
+                    <SelectItem value="fail">Fail</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center justify-center gap-2">
+                <Label
+                  className="md:hidden text-xs"
+                  htmlFor={`roster-card-${i}`}
+                >
+                  Card sent
+                </Label>
+                <Checkbox
+                  id={`roster-card-${i}`}
+                  checked={e.cardSent}
+                  disabled={!canEdit}
+                  data-testid={`checkbox-roster-card-${i}`}
+                  onCheckedChange={(v) => update(i, { cardSent: v === true })}
                 />
               </div>
             </div>

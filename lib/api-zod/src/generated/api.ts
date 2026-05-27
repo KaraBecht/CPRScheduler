@@ -264,7 +264,9 @@ export const ListRosterAttendeesResponseItem = zod.object({
   "classTitle": zod.string(),
   "classDate": zod.string(),
   "classLocation": zod.string(),
-  "name": zod.string()
+  "name": zod.string(),
+  "result": zod.union([zod.enum(['pass', 'fail']),zod.null()]).optional(),
+  "cardSent": zod.boolean()
 })
 export const ListRosterAttendeesResponse = zod.array(ListRosterAttendeesResponseItem)
 
@@ -280,7 +282,9 @@ export const GetClassRosterResponse = zod.object({
   "position": zod.number(),
   "name": zod.string(),
   "email": zod.string(),
-  "phone": zod.string()
+  "phone": zod.string(),
+  "result": zod.union([zod.enum(['pass', 'fail']),zod.null()]).optional(),
+  "cardSent": zod.boolean()
 }))
 })
 
@@ -294,7 +298,9 @@ export const SaveClassRosterBody = zod.object({
   "position": zod.number(),
   "name": zod.string(),
   "email": zod.string(),
-  "phone": zod.string()
+  "phone": zod.string(),
+  "result": zod.union([zod.enum(['pass', 'fail']),zod.null()]).optional(),
+  "cardSent": zod.boolean()
 }))
 })
 
@@ -305,7 +311,9 @@ export const SaveClassRosterResponse = zod.object({
   "position": zod.number(),
   "name": zod.string(),
   "email": zod.string(),
-  "phone": zod.string()
+  "phone": zod.string(),
+  "result": zod.union([zod.enum(['pass', 'fail']),zod.null()]).optional(),
+  "cardSent": zod.boolean()
 }))
 })
 

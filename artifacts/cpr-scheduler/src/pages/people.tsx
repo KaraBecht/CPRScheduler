@@ -36,7 +36,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Mail, Phone, Building2, CalendarDays, MapPin } from "lucide-react";
+import {
+  Plus,
+  Mail,
+  Phone,
+  Building2,
+  CalendarDays,
+  MapPin,
+  Search,
+  CheckCircle2,
+  XCircle,
+  MailCheck,
+} from "lucide-react";
 import { Link } from "wouter";
 import { formatDate } from "@/lib/format";
 import { toast } from "@/hooks/use-toast";
@@ -172,8 +183,37 @@ function NewUserDialog() {
 
 export default function People() {
   const [tab, setTab] = useState<UserRole>("instructor");
+  const [query, setQuery] = useState("");
+  const [resultFilter, setResultFilter] = useState<"all" | "pass" | "fail" | "none">("all");
+  const [cardFilter, setCardFilter] = useState<"all" | "sent" | "not_sent">("all");
   const { data: users = [] } = useListUsers({ role: tab });
   const { data: rosterAttendees = [] } = useListRosterAttendees();
+
+  const q = query.trim().toLowerCase();
+  const filteredUsers = users.filter((u) => {
+    if (!q) return true;
+    return (
+      u.name.toLowerCase().includes(q) ||
+      u.email.toLowerCase().includes(q) ||
+      (u.organization ?? "").toLowerCase().includes(q) ||
+      (u.phone ?? "").toLowerCase().includes(q)
+    );
+  });
+  const filteredAttendees = rosterAttendees.filter((a) => {
+    if (q && !(
+      a.name.toLowerCase().includes(q) ||
+      a.classLocation.toLowerCase().includes(q) ||
+      a.classTitle.toLowerCase().includes(q)
+    )) return false;
+    if (resultFilter !== "all") {
+      if (resultFilter === "none" && a.result != null) return false;
+      if (resultFilter !== "none" && a.result !== resultFilter) return false;
+    }
+    if (cardFilter === "sent" && !a.cardSent) return false;
+    if (cardFilter === "not_sent" && a.cardSent) return false;
+    return true;
+  });
+
   return (
     <>
       <PageHeader
@@ -181,6 +221,49 @@ export default function People() {
         subtitle="Administrators, instructors, students, and partner organizations."
         action={<NewUserDialog />}
       />
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <div className="relative flex-1 min-w-[200px] max-w-md">
+          <Search className="h-4 w-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            className="pl-8"
+            placeholder="Filter by name, email, organization, or location..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            data-testid="input-people-filter"
+          />
+        </div>
+        {tab === "student" && (
+          <>
+            <Select
+              value={resultFilter}
+              onValueChange={(v) => setResultFilter(v as typeof resultFilter)}
+            >
+              <SelectTrigger className="w-[140px]" data-testid="select-filter-result">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All results</SelectItem>
+                <SelectItem value="pass">Pass</SelectItem>
+                <SelectItem value="fail">Fail</SelectItem>
+                <SelectItem value="none">Not graded</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={cardFilter}
+              onValueChange={(v) => setCardFilter(v as typeof cardFilter)}
+            >
+              <SelectTrigger className="w-[140px]" data-testid="select-filter-card">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Any card status</SelectItem>
+                <SelectItem value="sent">Card sent</SelectItem>
+                <SelectItem value="not_sent">Card not sent</SelectItem>
+              </SelectContent>
+            </Select>
+          </>
+        )}
+      </div>
       <Tabs value={tab} onValueChange={(v) => setTab(v as UserRole)}>
         <TabsList>
           {ROLES.map((r) => (
@@ -202,7 +285,7 @@ export default function People() {
                     Class roster attendees
                   </h3>
                   <Badge variant="outline" data-testid="badge-roster-count">
-                    {rosterAttendees.length}
+                    {filteredAttendees.length} / {rosterAttendees.length}
                   </Badge>
                 </div>
                 {rosterAttendees.length === 0 ? (
@@ -210,12 +293,23 @@ export default function People() {
                     No roster names yet. Save a class roster to see attendees
                     here.
                   </p>
+                ) : filteredAttendees.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No attendees match the current filters.
+                  </p>
                 ) : (
                   <div className="divide-y divide-border">
-                    {rosterAttendees.map((a, i) => (
+                    <div className="hidden md:grid grid-cols-[1.4fr_1fr_1.2fr_5rem_5rem] gap-3 py-2 text-xs font-medium text-muted-foreground">
+                      <span>Name</span>
+                      <span>Class date</span>
+                      <span>Location</span>
+                      <span className="text-center">Result</span>
+                      <span className="text-center">Card</span>
+                    </div>
+                    {filteredAttendees.map((a, i) => (
                       <div
                         key={`${a.classId}-${i}`}
-                        className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr_1fr] gap-2 py-2.5 text-sm items-center"
+                        className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr_1.2fr_5rem_5rem] gap-2 md:gap-3 py-2.5 text-sm items-center"
                         data-testid={`roster-attendee-${i}`}
                       >
                         <span className="font-medium">{a.name}</span>
@@ -230,6 +324,28 @@ export default function People() {
                           <MapPin className="h-3.5 w-3.5" />
                           <span className="truncate">{a.classLocation}</span>
                         </span>
+                        <span className="flex justify-center">
+                          {a.result === "pass" ? (
+                            <Badge className="bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/10 border-emerald-500/20">
+                              <CheckCircle2 className="h-3 w-3 mr-1" /> Pass
+                            </Badge>
+                          ) : a.result === "fail" ? (
+                            <Badge variant="destructive">
+                              <XCircle className="h-3 w-3 mr-1" /> Fail
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-muted-foreground">—</Badge>
+                          )}
+                        </span>
+                        <span className="flex justify-center">
+                          {a.cardSent ? (
+                            <Badge className="bg-sky-500/10 text-sky-700 hover:bg-sky-500/10 border-sky-500/20">
+                              <MailCheck className="h-3 w-3 mr-1" /> Sent
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-muted-foreground">No</Badge>
+                          )}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -237,15 +353,17 @@ export default function People() {
               </CardContent>
             </Card>
           )}
-          {users.length === 0 ? (
+          {filteredUsers.length === 0 ? (
             <Card>
               <CardContent className="pt-6 text-sm text-muted-foreground text-center">
-                No {tab}s yet.
+                {users.length === 0
+                  ? `No ${tab}s yet.`
+                  : `No ${tab}s match the current filter.`}
               </CardContent>
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {users.map((u) => (
+              {filteredUsers.map((u) => (
                 <Card key={u.id} data-testid={`user-${u.id}`}>
                   <CardContent className="pt-5">
                     <div className="flex items-start gap-3">

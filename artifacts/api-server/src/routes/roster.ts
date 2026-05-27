@@ -20,6 +20,8 @@ async function loadRoster(classId: number, capacity: number) {
       name: r?.name ?? "",
       email: r?.email ?? "",
       phone: r?.phone ?? "",
+      result: r?.result ?? null,
+      cardSent: r?.cardSent ?? false,
     };
   });
   return { classId, capacity, entries };
@@ -34,6 +36,8 @@ router.get("/roster-attendees", async (_req, res) => {
       classLocation: classesTable.location,
       name: classRosterTable.name,
       position: classRosterTable.position,
+      result: classRosterTable.result,
+      cardSent: classRosterTable.cardSent,
     })
     .from(classRosterTable)
     .innerJoin(classesTable, eq(classRosterTable.classId, classesTable.id))
@@ -46,6 +50,8 @@ router.get("/roster-attendees", async (_req, res) => {
       classDate: r.classDate,
       classLocation: r.classLocation,
       name: r.name,
+      result: r.result,
+      cardSent: r.cardSent,
     })),
   );
 });
@@ -77,7 +83,12 @@ router.put("/classes/:classId/roster", async (req, res) => {
   await db.transaction(async (tx) => {
     await tx.delete(classRosterTable).where(eq(classRosterTable.classId, classId));
     const filled = body.entries.filter(
-      (e) => e.name.trim() || e.email.trim() || e.phone.trim(),
+      (e) =>
+        e.name.trim() ||
+        e.email.trim() ||
+        e.phone.trim() ||
+        e.result ||
+        e.cardSent,
     );
     if (filled.length > 0) {
       await tx.insert(classRosterTable).values(
@@ -87,6 +98,8 @@ router.put("/classes/:classId/roster", async (req, res) => {
           name: e.name,
           email: e.email,
           phone: e.phone,
+          result: e.result ?? null,
+          cardSent: e.cardSent,
         })),
       );
     }
