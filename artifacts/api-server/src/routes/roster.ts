@@ -62,7 +62,11 @@ router.get("/roster-attendees", async (_req, res) => {
 
 router.patch("/classes/:classId/roster/:position", async (req, res) => {
   const classId = parseId(req.params.classId, "classId");
-  const position = parseId(req.params.position, "position");
+  const position = Number(req.params.position);
+  if (!Number.isInteger(position) || position < 0) {
+    res.status(400).json({ error: `Invalid position: ${req.params.position}` });
+    return;
+  }
   const body = UpdateRosterEntryBody.parse(req.body);
   const [cls] = await db
     .select()
