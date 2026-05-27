@@ -47,6 +47,7 @@ import {
   CalendarDays,
   MapPin,
   Search,
+  Save,
 } from "lucide-react";
 import { Link } from "wouter";
 import { formatDate } from "@/lib/format";
@@ -191,6 +192,10 @@ export default function People() {
   const { data: users = [] } = useListUsers({ role: tab });
   const { data: rosterAttendees = [] } = useListRosterAttendees();
 
+  const [pending, setPending] = useState<
+    Record<string, { result?: "pass" | "fail" | null; cardSent?: boolean }>
+  >({});
+
   const updateRoster = useUpdateRosterEntry({
     mutation: {
       onSuccess: (_d, vars) => {
@@ -198,6 +203,12 @@ export default function People() {
         qc.invalidateQueries({
           queryKey: getGetClassRosterQueryKey(vars.classId),
         });
+        const key = `${vars.classId}-${vars.position}`;
+        setPending((p) => {
+          const { [key]: _, ...rest } = p;
+          return rest;
+        });
+        toast({ title: "Saved" });
       },
       onError: () =>
         toast({ title: "Failed to update roster", variant: "destructive" }),
@@ -277,81 +288,116 @@ export default function People() {
                   </p>
                 ) : (
                   <div className="divide-y divide-border">
-                    <div className="hidden md:grid grid-cols-[1.4fr_1fr_1.2fr_5rem_5rem] gap-3 py-2 text-xs font-medium text-muted-foreground">
+                    <div className="hidden md:grid grid-cols-[1.4fr_1fr_1.2fr_5rem_5rem_4rem] gap-3 py-2 text-xs font-medium text-muted-foreground">
                       <span>Name</span>
                       <span>Class date</span>
                       <span>Location</span>
                       <span className="text-center">Result</span>
                       <span className="text-center">Card</span>
+                      <span className="text-center">Save</span>
                     </div>
-                    {filteredAttendees.map((a, i) => (
-                      <div
-                        key={`${a.classId}-${i}`}
-                        className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr_1.2fr_5rem_5rem] gap-2 md:gap-3 py-2.5 text-sm items-center"
-                        data-testid={`roster-attendee-${i}`}
-                      >
-                        <span className="font-medium">{a.name}</span>
-                        <Link
-                          href={`/classes/${a.classId}`}
-                          className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground"
+                    {filteredAttendees.map((a, i) => {
+                      const key = `${a.classId}-${a.position}`;
+                      const draft = pending[key] ?? {};
+                      const currentResult =
+                        "result" in draft ? draft.result : a.result;
+                      const currentCard =
+                        "cardSent" in draft ? draft.cardSent : a.cardSent;
+                      const dirty = Object.keys(draft).length > 0;
+                      const saving =
+                        updateRoster.isPending &&
+                        updateRoster.variables?.classId === a.classId &&
+                        updateRoster.variables?.position === a.position;
+                      return (
+                        <div
+                          key={key}
+                          className="grid grid-cols-1 md:grid-cols-[1.4fr_1fr_1.2fr_5rem_5rem_4rem] gap-2 md:gap-3 py-2.5 text-sm items-center"
+                          data-testid={`roster-attendee-${i}`}
                         >
-                          <CalendarDays className="h-3.5 w-3.5" />
-                          <span>{formatDate(a.classDate)}</span>
-                        </Link>
-                        <span className="flex items-center gap-1.5 text-muted-foreground">
-                          <MapPin className="h-3.5 w-3.5" />
-                          <span className="truncate">{a.classLocation}</span>
-                        </span>
-                        <Select
-                          value={a.result ?? "none"}
-                          disabled={!canEdit}
-                          onValueChange={(v) =>
-                            updateRoster.mutate({
-                              classId: a.classId,
-                              position: a.position,
-                              data: {
-                                result:
-                                  v === "none" ? null : (v as "pass" | "fail"),
-                              },
-                            })
-                          }
-                        >
-                          <SelectTrigger
-                            className="h-8 w-full"
-                            data-testid={`attendee-result-${i}`}
+                          <span className="font-medium">{a.name}</span>
+                          <Link
+                            href={`/classes/${a.classId}`}
+                            className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground"
                           >
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">—</SelectItem>
-                            <SelectItem value="pass">Pass</SelectItem>
-                            <SelectItem value="fail">Fail</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Select
-                          value={a.cardSent ? "yes" : "no"}
-                          disabled={!canEdit}
-                          onValueChange={(v) =>
-                            updateRoster.mutate({
-                              classId: a.classId,
-                              position: a.position,
-                              data: { cardSent: v === "yes" },
-                            })
-                          }
-                        >
-                          <SelectTrigger
-                            className="h-8 w-full"
-                            data-testid={`attendee-card-${i}`}
+                            <CalendarDays className="h-3.5 w-3.5" />
+                            <span>{formatDate(a.classDate)}</span>
+                          </Link>
+                          <span className="flex items-center gap-1.5 text-muted-foreground">
+                            <MapPin className="h-3.5 w-3.5" />
+                            <span className="truncate">{a.classLocation}</span>
+                          </span>
+                          <Select
+                            value={currentResult ?? "none"}
+                            disabled={!canEdit}
+                            onValueChange={(v) =>
+                              setPending((p) => ({
+                                ...p,
+                                [key]: {
+                                  ...p[key],
+                                  result:
+                                    v === "none"
+                                      ? null
+                                      : (v as "pass" | "fail"),
+                                },
+                              }))
+                            }
                           >
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="yes">Yes</SelectItem>
-                            <SelectItem value="no">No</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    ))}
+                            <SelectTrigger
+                              className="h-8 w-full"
+                              data-testid={`attendee-result-${i}`}
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">—</SelectItem>
+                              <SelectItem value="pass">Pass</SelectItem>
+                              <SelectItem value="fail">Fail</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Select
+                            value={currentCard ? "yes" : "no"}
+                            disabled={!canEdit}
+                            onValueChange={(v) =>
+                              setPending((p) => ({
+                                ...p,
+                                [key]: {
+                                  ...p[key],
+                                  cardSent: v === "yes",
+                                },
+                              }))
+                            }
+                          >
+                            <SelectTrigger
+                              className="h-8 w-full"
+                              data-testid={`attendee-card-${i}`}
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="yes">Yes</SelectItem>
+                              <SelectItem value="no">No</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={dirty ? "default" : "outline"}
+                            disabled={!canEdit || !dirty || saving}
+                            onClick={() =>
+                              updateRoster.mutate({
+                                classId: a.classId,
+                                position: a.position,
+                                data: draft,
+                              })
+                            }
+                            data-testid={`attendee-save-${i}`}
+                            className="h-8 px-2"
+                          >
+                            <Save className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
