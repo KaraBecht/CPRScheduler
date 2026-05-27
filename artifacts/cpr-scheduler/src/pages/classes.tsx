@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth-context";
 import { useListUsers } from "@workspace/api-client-react";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { formatCertificationType } from "@/lib/format";
 
@@ -45,43 +45,78 @@ const CERT_TYPES: CertificationType[] = [
   "stop_the_bleed",
 ];
 
+type ClassSlot = { date: string; startTime: string };
+
 function CreateClassDialog() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const { data: instructors = [] } = useListUsers({ role: "instructor" });
-  const [form, setForm] = useState({
-    title: "",
-    certificationType: "cpr_aed_first_aid" as CertificationType,
-    date: "",
-    startTime: "09:00",
-    endTime: "12:00",
-    location: "",
-    capacity: 12,
-    instructorId: null as number | null,
-    description: "",
-  });
+  const CAPACITY = 10;
+  const [title, setTitle] = useState("");
+  const [certificationType, setCertificationType] =
+    useState<CertificationType>("cpr_aed_first_aid");
+  const [location, setLocation] = useState("");
+  const [instructorId, setInstructorId] = useState<number | null>(null);
+  const [description, setDescription] = useState("");
+  const [slots, setSlots] = useState<ClassSlot[]>([
+    { date: "", startTime: "09:00" },
+  ]);
+
+  const reset = () => {
+    setTitle("");
+    setCertificationType("cpr_aed_first_aid");
+    setLocation("");
+    setInstructorId(null);
+    setDescription("");
+    setSlots([{ date: "", startTime: "09:00" }]);
+  };
+
   const create = useCreateClass({
     mutation: {
-      onSuccess: () => {
-        qc.invalidateQueries({ queryKey: getListClassesQueryKey() });
-        toast({ title: "Class created" });
-        setOpen(false);
-        setForm({
-          title: "",
-          certificationType: "cpr_aed_first_aid",
-          date: "",
-          startTime: "09:00",
-          endTime: "12:00",
-          location: "",
-          capacity: 12,
-          instructorId: null,
-          description: "",
-        });
-      },
       onError: () =>
         toast({ title: "Failed to create class", variant: "destructive" }),
     },
   });
+
+  const updateSlot = (i: number, patch: Partial<ClassSlot>) =>
+    setSlots((prev) =>
+      prev.map((s, idx) => (idx === i ? { ...s, ...patch } : s)),
+    );
+  const addSlot = () =>
+    setSlots((prev) => [...prev, { date: "", startTime: "09:00" }]);
+  const removeSlot = (i: number) =>
+    setSlots((prev) => prev.filter((_, idx) => idx !== i));
+
+  const allValid =
+    title && location && slots.length > 0 && slots.every((s) => s.date && s.startTime);
+
+  const handleSubmit = async () => {
+    try {
+      for (const slot of slots) {
+        await create.mutateAsync({
+          data: {
+            title,
+            certificationType,
+            date: slot.date,
+            startTime: slot.startTime,
+            location,
+            capacity: CAPACITY,
+            instructorId: instructorId ?? undefined,
+            description,
+          },
+        });
+      }
+      qc.invalidateQueries({ queryKey: getListClassesQueryKey() });
+      toast({
+        title: slots.length === 1 ? "Class created" : `${slots.length} classes created`,
+      });
+      setOpen(false);
+      reset();
+    } catch {
+      // error toast handled in mutation onError
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -98,19 +133,17 @@ function CreateClassDialog() {
             <Label>Title</Label>
             <Input
               data-testid="input-class-title"
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder="Adult CPR & AED — Saturday Morning"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="CPR/AED/First Aid"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Certification</Label>
               <Select
-                value={form.certificationType}
-                onValueChange={(v) =>
-                  setForm({ ...form, certificationType: v as CertificationType })
-                }
+                value={certificationType}
+                onValueChange={(v) => setCertificationType(v as CertificationType)}
               >
                 <SelectTrigger data-testid="select-cert-type">
                   <SelectValue />
@@ -127,12 +160,9 @@ function CreateClassDialog() {
             <div>
               <Label>Instructor</Label>
               <Select
-                value={form.instructorId?.toString() ?? "none"}
+                value={instructorId?.toString() ?? "none"}
                 onValueChange={(v) =>
-                  setForm({
-                    ...form,
-                    instructorId: v === "none" ? null : parseInt(v, 10),
-                  })
+                  setInstructorId(v === "none" ? null : parseInt(v, 10))
                 }
               >
                 <SelectTrigger data-testid="select-instructor">
@@ -149,60 +179,67 @@ function CreateClassDialog() {
               </Select>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <Label>Date</Label>
-              <Input
-                type="date"
-                data-testid="input-date"
-                value={form.date}
-                onChange={(e) => setForm({ ...form, date: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label>Start</Label>
-              <Input
-                type="time"
-                value={form.startTime}
-                onChange={(e) => setForm({ ...form, startTime: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label>End</Label>
-              <Input
-                type="time"
-                value={form.endTime}
-                onChange={(e) => setForm({ ...form, endTime: e.target.value })}
-              />
-            </div>
-          </div>
-          <div>
-            <Label>Location</Label>
-            <Input
-              data-testid="input-location"
-              value={form.location}
-              onChange={(e) => setForm({ ...form, location: e.target.value })}
-              placeholder="PulsePoint HQ — Studio A"
-            />
-          </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Capacity</Label>
+              <Label>Location</Label>
               <Input
-                type="number"
-                value={form.capacity}
-                onChange={(e) =>
-                  setForm({ ...form, capacity: parseInt(e.target.value) || 0 })
-                }
+                data-testid="input-location"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="1211"
               />
             </div>
+            <div>
+              <Label>Capacity</Label>
+              <Input type="number" value={CAPACITY} readOnly disabled />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Dates & start times</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addSlot}
+                data-testid="button-add-class-slot"
+              >
+                <Plus className="h-4 w-4 mr-1" /> Add date
+              </Button>
+            </div>
+            {slots.map((s, i) => (
+              <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2">
+                <Input
+                  type="date"
+                  data-testid={`input-class-date-${i}`}
+                  value={s.date}
+                  onChange={(e) => updateSlot(i, { date: e.target.value })}
+                />
+                <Input
+                  type="time"
+                  data-testid={`input-class-time-${i}`}
+                  value={s.startTime}
+                  onChange={(e) => updateSlot(i, { startTime: e.target.value })}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  disabled={slots.length === 1}
+                  onClick={() => removeSlot(i)}
+                  data-testid={`button-remove-class-slot-${i}`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
           </div>
           <div>
             <Label>Description</Label>
             <Textarea
               rows={3}
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
             />
           </div>
         </div>
@@ -212,17 +249,10 @@ function CreateClassDialog() {
           </Button>
           <Button
             data-testid="button-submit-class"
-            disabled={!form.title || !form.date || !form.location || create.isPending}
-            onClick={() =>
-              create.mutate({
-                data: {
-                  ...form,
-                  instructorId: form.instructorId ?? undefined,
-                },
-              })
-            }
+            disabled={!allValid || create.isPending}
+            onClick={handleSubmit}
           >
-            Create class
+            {slots.length === 1 ? "Create class" : `Create ${slots.length} classes`}
           </Button>
         </DialogFooter>
       </DialogContent>

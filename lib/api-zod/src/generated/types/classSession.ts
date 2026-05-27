@@ -14,7 +14,8 @@ export interface ClassSession {
   certificationType: CertificationType;
   date: string;
   startTime: string;
-  endTime: string;
+  /** @nullable */
+  endTime?: string | null;
   location: string;
   capacity: number;
   enrolledCount: number;

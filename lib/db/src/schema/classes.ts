@@ -26,7 +26,7 @@ export const classesTable = pgTable("classes", {
   certificationType: certificationTypeEnum("certification_type").notNull(),
   date: date("date").notNull(),
   startTime: text("start_time").notNull(),
-  endTime: text("end_time").notNull(),
+  endTime: text("end_time"),
   location: text("location").notNull(),
   capacity: integer("capacity").notNull(),
   status: classStatusEnum("status").notNull().default("scheduled"),

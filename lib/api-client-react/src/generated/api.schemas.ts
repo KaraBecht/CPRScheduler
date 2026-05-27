@@ -89,7 +89,8 @@ export interface ClassSession {
   certificationType: CertificationType;
   date: string;
   startTime: string;
-  endTime: string;
+  /** @nullable */
+  endTime?: string | null;
   location: string;
   capacity: number;
   enrolledCount: number;
@@ -123,7 +124,7 @@ export interface ClassInput {
   certificationType: CertificationType;
   date: string;
   startTime: string;
-  endTime: string;
+  endTime?: string;
   location: string;
   /** @minimum 1 */
   capacity: number;

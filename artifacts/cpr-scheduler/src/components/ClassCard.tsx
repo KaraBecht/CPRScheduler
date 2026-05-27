@@ -52,7 +52,8 @@ export function ClassCard({ session }: { session: ClassSession }) {
             <div className="flex items-center gap-1.5">
               <Clock className="h-3.5 w-3.5" />
               <span>
-                {formatTime(session.startTime)} – {formatTime(session.endTime)}
+                {formatTime(session.startTime)}
+                {session.endTime ? ` – ${formatTime(session.endTime)}` : ""}
               </span>
             </div>
             <div className="flex items-center gap-1.5">

@@ -13,7 +13,7 @@ export interface ClassInput {
   certificationType: CertificationType;
   date: string;
   startTime: string;
-  endTime: string;
+  endTime?: string;
   location: string;
   /** @minimum 1 */
   capacity: number;

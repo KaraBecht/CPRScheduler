@@ -141,7 +141,8 @@ export default function ClassDetail() {
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
               <span>
-                {formatTime(cls.startTime)} – {formatTime(cls.endTime)}
+                {formatTime(cls.startTime)}
+                {cls.endTime ? ` – ${formatTime(cls.endTime)}` : ""}
               </span>
             </div>
             <div className="flex items-center gap-2">

@@ -495,7 +495,6 @@ components:
           certificationType,
           date,
           startTime,
-          endTime,
           location,
           capacity,
           enrolledCount,
@@ -507,7 +506,7 @@ components:
         certificationType: { $ref: "#/components/schemas/CertificationType" }
         date: { type: string }
         startTime: { type: string }
-        endTime: { type: string }
+        endTime: { type: ["string", "null"] }
         location: { type: string }
         capacity: { type: integer }
         enrolledCount: { type: integer }
@@ -528,7 +527,7 @@ components:
     ClassInput:
       type: object
       required:
-        [title, certificationType, date, startTime, endTime, location, capacity]
+        [title, certificationType, date, startTime, location, capacity]
       properties:
         title: { type: string, minLength: 1 }
         certificationType: { $ref: "#/components/schemas/CertificationType" }
