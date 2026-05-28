@@ -9,7 +9,7 @@ import Classes from "@/pages/classes";
 import ClassDetail from "@/pages/class-detail";
 import ClassRoster from "@/pages/class-roster";
 import Requests from "@/pages/requests";
-import NewRequest from "@/pages/new-request";
+import PublicIntake from "@/pages/public-intake";
 import Certificates from "@/pages/certificates";
 import People from "@/pages/people";
 import { RoleGate } from "@/components/RoleGate";
@@ -20,27 +20,31 @@ const queryClient = new QueryClient({
 
 function Router() {
   return (
-    <AppShell>
-      <Switch>
-        <Route path="/" component={Dashboard} />
-        <Route path="/classes" component={Classes} />
-        <Route path="/classes/:id/roster" component={ClassRoster} />
-        <Route path="/classes/:id" component={ClassDetail} />
-        <Route path="/requests/new" component={NewRequest} />
-        <Route path="/requests">
-          <RoleGate allow={["administrator", "requestor"]}>
-            <Requests />
-          </RoleGate>
-        </Route>
-        <Route path="/certificates" component={Certificates} />
-        <Route path="/people">
-          <RoleGate allow={["administrator"]}>
-            <People />
-          </RoleGate>
-        </Route>
-        <Route component={NotFound} />
-      </Switch>
-    </AppShell>
+    <Switch>
+      <Route path="/intake" component={PublicIntake} />
+      <Route>
+        <AppShell>
+          <Switch>
+            <Route path="/" component={Dashboard} />
+            <Route path="/classes" component={Classes} />
+            <Route path="/classes/:id/roster" component={ClassRoster} />
+            <Route path="/classes/:id" component={ClassDetail} />
+            <Route path="/requests">
+              <RoleGate allow={["administrator", "requestor"]}>
+                <Requests />
+              </RoleGate>
+            </Route>
+            <Route path="/certificates" component={Certificates} />
+            <Route path="/people">
+              <RoleGate allow={["administrator"]}>
+                <People />
+              </RoleGate>
+            </Route>
+            <Route component={NotFound} />
+          </Switch>
+        </AppShell>
+      </Route>
+    </Switch>
   );
 }
 

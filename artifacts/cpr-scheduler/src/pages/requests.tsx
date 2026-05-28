@@ -32,10 +32,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth-context";
-import { Link } from "wouter";
 import { Plus, Check, X, Send } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { formatCertificationType, formatDate, timeAgo } from "@/lib/format";
+import { TrainingRequestForm } from "@/components/TrainingRequestForm";
 
 const CERT_TYPES: CertificationType[] = [
   "cpr_aed_first_aid",
@@ -203,6 +203,38 @@ function NewRequestDialog({ requestorId }: { requestorId: number }) {
   );
 }
 
+function SendTrainingRequestDialog() {
+  const [open, setOpen] = useState(false);
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" data-testid="button-send-training-request">
+          <Send className="h-4 w-4 mr-1.5" /> Send training request
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Send a training request</DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-muted-foreground -mt-2">
+          Tell us where you'd like CPR training and when works best. We'll route
+          this to our team.
+        </p>
+        <TrainingRequestForm
+          onSuccess={() => {
+            setOpen(false);
+            toast({
+              title: "Training request submitted",
+              description: "An administrator will follow up shortly.",
+            });
+          }}
+          onCancel={() => setOpen(false)}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function Requests() {
   const qc = useQueryClient();
   const { role, userId } = useAuth();
@@ -230,11 +262,7 @@ export default function Requests() {
         }
         action={
           <div className="flex gap-2">
-            <Link href="/requests/new">
-              <Button variant="outline" data-testid="button-send-training-request">
-                <Send className="h-4 w-4 mr-1.5" /> Send training request
-              </Button>
-            </Link>
+            <SendTrainingRequestDialog />
             {canCreate ? <NewRequestDialog requestorId={userId!} /> : null}
           </div>
         }

@@ -8,6 +8,7 @@ import {
   ListRequestsQueryParams,
   SubmitTrainingRequestBody,
 } from "@workspace/api-zod";
+import { sendEmail, buildRequestEmail } from "../lib/sendgrid";
 
 const router: IRouter = Router();
 
@@ -96,7 +97,23 @@ router.post("/training-requests", async (req, res) => {
       notes: body.notes ?? null,
     })
     .returning();
-  res.status(201).json(await serializeRequest(row));
+  const saved = await serializeRequest(row);
+
+  const emailContent = buildRequestEmail({
+    requestorName: body.requestorName,
+    requestorEmail: email,
+    requestorPhone: body.requestorPhone,
+    locationName: body.locationName,
+    address: body.address,
+    certificationType: body.certificationType ?? "cpr_aed_first_aid",
+    numberOfClasses: body.numberOfClasses,
+    attendeeCount: body.attendeeCount,
+    sessions: body.sessions,
+    notes: body.notes,
+  });
+  sendEmail({ to: process.env.NOTIFY_EMAIL ?? "", ...emailContent }, req.log).catch(() => {});
+
+  res.status(201).json(saved);
 });
 
 router.get("/requests/:requestId", async (req, res) => {
