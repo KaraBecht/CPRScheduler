@@ -32,15 +32,88 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth-context";
-import { Plus, Check, X, Send } from "lucide-react";
+import { Plus, Check, X, Send, Share2, Copy, CheckCheck } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { formatCertificationType, formatDate, timeAgo } from "@/lib/format";
 import { TrainingRequestForm } from "@/components/TrainingRequestForm";
+import { QRCodeSVG } from "qrcode.react";
 
 const CERT_TYPES: CertificationType[] = [
   "cpr_aed_first_aid",
   "stop_the_bleed",
 ];
+
+function ShareIntakeDialog() {
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const intakeUrl = `${window.location.origin}${import.meta.env.BASE_URL}intake`;
+
+  function handleCopy() {
+    navigator.clipboard.writeText(intakeUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" data-testid="button-share-intake">
+          <Share2 className="h-4 w-4 mr-1.5" /> Share intake form
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Share intake form</DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-muted-foreground -mt-2">
+          Send this link to clients so they can submit a training request
+          directly.
+        </p>
+        <div className="flex items-center gap-2">
+          <Input
+            readOnly
+            value={intakeUrl}
+            className="text-xs font-mono"
+            data-testid="input-intake-url"
+            onFocus={(e) => e.target.select()}
+          />
+          <Button
+            size="icon"
+            variant="outline"
+            onClick={handleCopy}
+            data-testid="button-copy-intake-url"
+            aria-label="Copy link"
+          >
+            {copied ? (
+              <CheckCheck className="h-4 w-4 text-emerald-600" />
+            ) : (
+              <Copy className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+        <div className="flex justify-center pt-2 pb-1">
+          <div className="p-3 border border-border rounded-lg bg-white">
+            <QRCodeSVG
+              value={intakeUrl}
+              size={180}
+              data-testid="qr-code-intake"
+            />
+          </div>
+        </div>
+        <p className="text-xs text-center text-muted-foreground">
+          Screenshot the QR code to share at events or in print materials.
+        </p>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 function NewRequestDialog({ requestorId }: { requestorId: number }) {
   const qc = useQueryClient();
@@ -262,6 +335,7 @@ export default function Requests() {
         }
         action={
           <div className="flex gap-2">
+            {role === "administrator" && <ShareIntakeDialog />}
             <SendTrainingRequestDialog />
             {canCreate ? <NewRequestDialog requestorId={userId!} /> : null}
           </div>
