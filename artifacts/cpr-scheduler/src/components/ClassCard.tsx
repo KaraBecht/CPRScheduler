@@ -33,7 +33,7 @@ export function ClassCard({ session }: { session: ClassSession }) {
         <CardContent className="pt-5 pb-5 flex flex-col gap-3 h-full">
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
-              <Badge variant="outline" className="mb-2 text-[10px]">
+              <Badge variant="outline" className="mb-2 text-[10px] border-primary/30 text-primary bg-primary/5">
                 {formatCertificationType(session.certificationType)}
               </Badge>
               <h3 className="font-semibold text-base leading-tight">

@@ -98,56 +98,66 @@ export function AdminDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-base">Classes by certification</CardTitle>
+            <CardTitle className="text-sm font-semibold text-muted-foreground">Classes by certification</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <BarChart data={chartData} margin={{ left: -20, right: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                   <XAxis
                     dataKey="name"
-                    tick={{ fontSize: 11 }}
-                    className="text-muted-foreground"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+                    dy={8}
                   />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                  <YAxis
+                    allowDecimals={false}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
+                  />
                   <Tooltip
+                    cursor={{ fill: "hsl(var(--muted))" }}
                     contentStyle={{
                       background: "hsl(var(--card))",
                       border: "1px solid hsl(var(--border))",
-                      borderRadius: 6,
+                      borderRadius: 8,
                       fontSize: 12,
+                      boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                     }}
                   />
                   <Bar
                     dataKey="classes"
                     fill="hsl(var(--primary))"
                     radius={[4, 4, 0, 0]}
+                    maxBarSize={52}
                   />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Live activity</CardTitle>
+        <Card className="shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Live activity</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 max-h-72 overflow-y-auto pr-1">
+          <CardContent className="space-y-4 max-h-72 overflow-y-auto pr-1">
             {activity.length === 0 ? (
               <p className="text-sm text-muted-foreground">No recent activity.</p>
             ) : (
               activity.slice(0, 10).map((e) => (
                 <div
                   key={e.id}
-                  className="flex gap-3 text-sm"
+                  className="flex gap-3"
                   data-testid={`activity-${e.id}`}
                 >
-                  <div className="h-2 w-2 mt-1.5 rounded-full bg-primary flex-shrink-0" />
+                  <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="leading-tight">{e.message}</p>
+                    <p className="text-sm text-foreground/80 leading-snug">{e.message}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {timeAgo(e.timestamp)}
                     </p>
@@ -160,11 +170,11 @@ export function AdminDashboardPage() {
       </div>
 
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold">Upcoming schedule</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-foreground">Upcoming schedule</h2>
           <Link
             href="/classes"
-            className="text-xs text-primary hover:underline"
+            className="text-sm text-primary hover:text-primary/80 font-medium flex items-center gap-1 transition-colors"
             data-testid="link-view-all-classes"
           >
             View all classes →
@@ -185,9 +195,9 @@ export function AdminDashboardPage() {
         )}
       </div>
 
-      <Card>
+      <Card className="shadow-sm">
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
+          <CardTitle className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
             <GraduationCap className="h-4 w-4" />
             Recent training requests
           </CardTitle>

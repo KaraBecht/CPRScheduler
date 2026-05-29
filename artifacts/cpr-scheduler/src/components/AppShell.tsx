@@ -50,14 +50,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
-      <header className="h-14 border-b border-border bg-card flex items-center px-4 sticky top-0 z-30">
+      <header className="h-14 border-b border-primary/10 bg-card flex items-center px-4 sticky top-0 z-30">
         <Link href="/" className="flex items-center gap-2" data-testid="link-home">
           <div className="h-8 w-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">
             <HeartPulse className="h-5 w-5" />
           </div>
           <div className="leading-tight">
             <div className="font-bold text-base tracking-tight">PulsePoint</div>
-            <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
+            <div className="text-[9px] text-primary/60 uppercase tracking-widest font-semibold">
               CPR Training Hub
             </div>
           </div>
@@ -67,7 +67,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       <div className="flex-1 flex">
-        <aside className="w-56 border-r border-border bg-card hidden md:flex flex-col py-4 px-3 gap-1">
+        <aside className="w-56 border-r border-sidebar-border bg-sidebar hidden md:flex flex-col py-4 px-3 gap-1">
           {items.map((item) => {
             const active =
               item.href === "/"
