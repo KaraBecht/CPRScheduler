@@ -56,7 +56,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <HeartPulse className="h-5 w-5" />
           </div>
           <div className="leading-tight">
-            <div className="font-bold text-base tracking-tight">PulsePoint</div>
+            <div className="font-bold text-base tracking-tight">FOX Medical</div>
             <div className="text-[9px] text-primary/60 uppercase tracking-widest font-semibold">
               CPR Training Hub
             </div>
