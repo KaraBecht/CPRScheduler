@@ -75,58 +75,71 @@
   --elevate-1: rgba(0,0,0, .03);
   --elevate-2: rgba(0,0,0, .08);
 
-  --background: 210 20% 98%;
+  /* Medical palette
+     Surgical Blue : #007BA7 → hsl(196 100% 33%)
+     Health Green  : #4CAF50 → hsl(123  39% 49%)
+     Trust Teal    : #008080 → hsl(180 100% 25%)
+     Aid Red       : #D62828 → hsl(  0  68% 50%)
+     Cool Gray     : #A9B0B3 → hsl(204   6% 69%)
+  */
+
+  --background: 200 22% 97%;
   --foreground: 215 28% 17%;
-  
-  --border: 213 27% 92%;
-  
+
+  --border: 200 18% 90%;
+
   --card: 0 0% 100%;
   --card-foreground: 215 28% 17%;
-  --card-border: 213 27% 92%;
-  
-  --sidebar: 0 0% 100%;
-  --sidebar-foreground: 215 28% 17%;
-  --sidebar-border: 213 27% 94%;
-  --sidebar-primary: 174 84% 32%;
+  --card-border: 200 18% 90%;
+
+  /* Sidebar — dark navy, handled with inline styles in AppShell */
+  --sidebar: 210 35% 13%;
+  --sidebar-foreground: 0 0% 100%;
+  --sidebar-border: 210 30% 18%;
+  --sidebar-primary: 180 100% 25%;          /* Trust Teal */
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 174 64% 95%;
-  --sidebar-accent-foreground: 174 84% 26%;
-  --sidebar-ring: 174 84% 32%;
+  --sidebar-accent: 180 100% 25%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-accent-border: 180 100% 20%;
+  --sidebar-ring: 180 100% 25%;
 
   --popover: 0 0% 100%;
   --popover-foreground: 215 28% 17%;
-  --popover-border: 213 27% 92%;
+  --popover-border: 200 18% 90%;
 
-  --primary: 174 84% 32%;
+  /* Primary = Surgical Blue */
+  --primary: 196 100% 33%;
   --primary-foreground: 0 0% 100%;
-  
-  --secondary: 213 27% 96%;
+
+  --secondary: 200 18% 94%;
   --secondary-foreground: 215 28% 17%;
-  
-  --muted: 213 27% 96%;
-  --muted-foreground: 215 16% 47%;
-  
-  --accent: 174 64% 95%;
-  --accent-foreground: 174 84% 24%;
-  
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 210 40% 98%;
 
-  --input: 213 27% 92%;
-  --ring: 174 84% 32%;
+  --muted: 200 18% 94%;
+  --muted-foreground: 204 10% 50%;
 
-  --chart-1: 174 84% 32%;
-  --chart-2: 173 58% 39%;
-  --chart-3: 197 37% 24%;
-  --chart-4: 43 74% 66%;
-  --chart-5: 27 87% 67%;
+  --accent: 196 60% 92%;
+  --accent-foreground: 196 100% 25%;
+
+  /* Destructive = Aid Red */
+  --destructive: 0 68% 50%;
+  --destructive-foreground: 0 0% 100%;
+
+  --input: 200 18% 90%;
+  --ring: 196 100% 33%;
+
+  /* Chart colors */
+  --chart-1: 196 100% 33%;   /* Surgical Blue */
+  --chart-2: 123  39% 49%;   /* Health Green  */
+  --chart-3: 180 100% 25%;   /* Trust Teal    */
+  --chart-4:  43  74% 66%;   /* warm amber    */
+  --chart-5:   0  68% 50%;   /* Aid Red       */
 
   --app-font-sans: 'Inter', sans-serif;
   --app-font-serif: Georgia, serif;
   --app-font-mono: Menlo, monospace;
-  
+
   --radius: 0.625rem;
-  
+
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);

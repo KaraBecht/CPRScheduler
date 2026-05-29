@@ -1,13 +1,37 @@
 import { Link } from "wouter";
-import { Card, CardContent } from "@/components/ui/card";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// Medical palette soft-fill tones
 const TONE_CONFIG = {
-  primary:  { icon: "bg-primary/10 text-primary",           border: "#0d9488" },
-  success:  { icon: "bg-emerald-500/10 text-emerald-600",   border: "#059669" },
-  warning:  { icon: "bg-amber-500/10 text-amber-500",       border: "#f59e0b" },
-  accent:   { icon: "bg-fuchsia-500/10 text-fuchsia-500",   border: "#d946ef" },
+  primary: {
+    bg:        "#e6f4fa",
+    iconBg:    "#b3dced",
+    iconColor: "#007BA7",
+    numColor:  "#005678",
+    lblColor:  "#00698a",
+  },
+  success: {
+    bg:        "#eaf7ea",
+    iconBg:    "#b9e5bb",
+    iconColor: "#4CAF50",
+    numColor:  "#2d7a2f",
+    lblColor:  "#388e3c",
+  },
+  warning: {
+    bg:        "#fce8e8",
+    iconBg:    "#f5b8b8",
+    iconColor: "#D62828",
+    numColor:  "#8b1a1a",
+    lblColor:  "#c02020",
+  },
+  accent: {
+    bg:        "#e0f2f2",
+    iconBg:    "#a3d9d9",
+    iconColor: "#008080",
+    numColor:  "#005555",
+    lblColor:  "#006666",
+  },
 } as const;
 
 export function StatCard({
@@ -27,35 +51,35 @@ export function StatCard({
   href?: string;
   testId?: string;
 }) {
-  const { icon: iconClass, border } = TONE_CONFIG[tone];
+  const { bg, iconBg, iconColor, numColor, lblColor } = TONE_CONFIG[tone];
+
   const card = (
-    <Card
+    <div
       data-testid={testId}
-      className={cn("shadow-sm overflow-hidden", href && "transition-shadow hover:shadow-md cursor-pointer")}
-      style={{ borderTop: `4px solid ${border}` }}
+      className={cn(
+        "rounded-2xl p-5 transition-all",
+        href && "cursor-pointer hover:shadow-md hover:-translate-y-0.5",
+      )}
+      style={{ background: bg, boxShadow: "0 1px 3px 0 rgb(0 0 0 / 0.06)" }}
     >
-      <CardContent className="pt-5 pb-5">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <div className="text-[11px] text-muted-foreground uppercase tracking-widest font-medium">
-              {label}
-            </div>
-            <div className="text-3xl font-bold mt-1.5 tabular-nums">{value}</div>
-            {hint && (
-              <div className="text-xs text-muted-foreground mt-1">{hint}</div>
-            )}
-          </div>
-          <div
-            className={cn(
-              "h-9 w-9 rounded-lg flex items-center justify-center shrink-0",
-              iconClass,
-            )}
-          >
-            <Icon className="h-4.5 w-4.5" />
-          </div>
+      <div
+        className="h-10 w-10 rounded-xl flex items-center justify-center mb-3"
+        style={{ background: iconBg }}
+      >
+        <Icon className="h-5 w-5" style={{ color: iconColor }} />
+      </div>
+      <div className="text-4xl font-black tabular-nums" style={{ color: numColor }}>
+        {value}
+      </div>
+      <div className="text-xs font-semibold mt-1" style={{ color: lblColor }}>
+        {label}
+      </div>
+      {hint && (
+        <div className="text-[11px] mt-0.5" style={{ color: lblColor, opacity: 0.65 }}>
+          {hint}
         </div>
-      </CardContent>
-    </Card>
+      )}
+    </div>
   );
 
   if (href) {
