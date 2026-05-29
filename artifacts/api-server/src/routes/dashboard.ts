@@ -10,6 +10,7 @@ import {
   classRosterTable,
 } from "@workspace/db";
 import { and, eq, gte, sql, desc, asc, ne, inArray } from "drizzle-orm";
+import { autoCompletePastClasses } from "../lib/autoComplete";
 
 const DEFAULT_CLASS_DURATION_MIN = 180;
 
@@ -64,6 +65,7 @@ const certTypes = [
 ] as const;
 
 router.get("/dashboard/admin", async (_req, res) => {
+  await autoCompletePastClasses();
   const today = new Date().toISOString().split("T")[0]!;
   const startMonth = new Date();
   startMonth.setDate(1);
