@@ -9,16 +9,16 @@ const NAV = [
 ];
 
 const STATS = [
-  { icon: CalendarCheck, label: "Upcoming",    value: 2,  sub: "classes", color: "#f97316", bg: "rgba(249,115,22,0.12)" },
-  { icon: UserCheck,     label: "Students",    value: 18, sub: "active",  color: "#22d3ee", bg: "rgba(34,211,238,0.12)" },
-  { icon: ClipboardList, label: "Requests",    value: 4,  sub: "pending", color: "#a78bfa", bg: "rgba(167,139,250,0.12)" },
-  { icon: BadgeCheck,    label: "Certificates",value: 31, sub: "issued",  color: "#f472b6", bg: "rgba(244,114,182,0.12)" },
+  { icon: CalendarCheck, label: "Upcoming Classes", value: 2,  sub: "Next: Jun 3",     bg: "#fce7f3", iconBg: "#fbcfe8", iconColor: "#be185d", numColor: "#831843", labelColor: "#9d174d" },
+  { icon: UserCheck,     label: "Active Students",  value: 18, sub: "+3 this month",   bg: "#e0f2fe", iconBg: "#bae6fd", iconColor: "#0369a1", numColor: "#0c4a6e", labelColor: "#075985" },
+  { icon: ClipboardList, label: "Pending Requests", value: 4,  sub: "Needs review",    bg: "#fef3c7", iconBg: "#fde68a", iconColor: "#b45309", numColor: "#78350f", labelColor: "#92400e" },
+  { icon: BadgeCheck,    label: "Certificates",     value: 31, sub: "Issued to date",  bg: "#f0fdf4", iconBg: "#bbf7d0", iconColor: "#15803d", numColor: "#14532d", labelColor: "#166534" },
 ];
 
 const CLASSES = [
-  { title: "CPR / AED Basics",   cert: "CPR",       date: "Jun 3",  time: "9:00 AM", loc: "Seattle",  spots: 8,  cap: 10, accent: "#f97316" },
-  { title: "Stop the Bleed",     cert: "First Aid", date: "Jun 10", time: "9:00 AM", loc: "Chicago",  spots: 5,  cap: 10, accent: "#22d3ee" },
-  { title: "CPR Re-certification", cert: "CPR",     date: "Jun 22", time: "1:00 PM", loc: "Portland", spots: 3,  cap: 10, accent: "#f97316" },
+  { title: "CPR / AED Basics",     cert: "CPR",       date: "Jun 3",  time: "9:00 AM", loc: "Seattle",  spots: 8,  cap: 10, accent: "#f97316" },
+  { title: "Stop the Bleed",       cert: "First Aid", date: "Jun 10", time: "9:00 AM", loc: "Chicago",  spots: 5,  cap: 10, accent: "#22d3ee" },
+  { title: "CPR Re-certification", cert: "CPR",       date: "Jun 22", time: "1:00 PM", loc: "Portland", spots: 3,  cap: 10, accent: "#f97316" },
 ];
 
 export function VariantC() {
@@ -37,7 +37,6 @@ export function VariantC() {
           </div>
         </div>
 
-        {/* Nav */}
         {NAV.map(({ icon: Icon, label, active, badge }) => (
           <div key={label} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium cursor-pointer transition-all ${ active ? "text-indigo-900 shadow-lg" : "text-white/60 hover:text-white/90 hover:bg-white/5" }`} style={active ? { background: "linear-gradient(135deg,#f97316,#f59e0b)" } : {}}>
             <Icon className="h-4 w-4" />
@@ -46,7 +45,6 @@ export function VariantC() {
           </div>
         ))}
 
-        {/* Bottom */}
         <div className="mt-auto pt-4 border-t border-white/10">
           <div className="flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-white/5 cursor-pointer">
             <div className="h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold text-white" style={{ background: "linear-gradient(135deg,#f97316,#f59e0b)" }}>SA</div>
@@ -67,24 +65,29 @@ export function VariantC() {
             <span className="text-xs text-slate-400 uppercase tracking-widest font-semibold">Overview</span>
             <h1 className="text-lg font-bold text-slate-800 leading-tight">Dashboard</h1>
           </div>
-          <div className="flex items-center gap-3">
-            <button className="flex items-center gap-1.5 text-sm font-semibold px-4 py-1.5 rounded-lg text-white shadow hover:opacity-90 transition" style={{ background: "linear-gradient(135deg,#f97316,#f59e0b)" }}>
-              <Flame className="h-3.5 w-3.5" /> Schedule class
-            </button>
-          </div>
+          <button className="flex items-center gap-1.5 text-sm font-semibold px-4 py-1.5 rounded-lg text-white shadow hover:opacity-90 transition" style={{ background: "linear-gradient(135deg,#f97316,#f59e0b)" }}>
+            <Flame className="h-3.5 w-3.5" /> Schedule class
+          </button>
         </header>
 
         <main className="flex-1 px-6 py-6 max-w-5xl">
-          {/* Stat cards */}
+          {/* Stat cards — soft solid fills */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            {STATS.map(({ icon: Icon, label, value, sub, color, bg }) => (
-              <div key={label} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 cursor-pointer hover:shadow-md transition-shadow relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-20 -translate-y-6 translate-x-6" style={{ background: color }} />
-                <div className="h-10 w-10 rounded-xl flex items-center justify-center mb-3" style={{ background: bg }}>
-                  <Icon className="h-5 w-5" style={{ color }} />
+            {STATS.map(({ icon: Icon, label, value, sub, bg, iconBg, iconColor, numColor, labelColor }) => (
+              <div
+                key={label}
+                className="rounded-2xl p-5 shadow-sm cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all"
+                style={{ background: bg }}
+              >
+                <div
+                  className="h-10 w-10 rounded-xl flex items-center justify-center mb-3"
+                  style={{ background: iconBg }}
+                >
+                  <Icon className="h-5 w-5" style={{ color: iconColor }} />
                 </div>
-                <div className="text-4xl font-black tabular-nums" style={{ color }}>{value}</div>
-                <div className="text-xs text-slate-500 font-medium mt-0.5 capitalize">{sub} {label}</div>
+                <div className="text-4xl font-black tabular-nums" style={{ color: numColor }}>{value}</div>
+                <div className="text-xs font-semibold mt-1" style={{ color: labelColor }}>{label}</div>
+                <div className="text-[11px] mt-0.5" style={{ color: labelColor, opacity: 0.65 }}>{sub}</div>
               </div>
             ))}
           </div>
