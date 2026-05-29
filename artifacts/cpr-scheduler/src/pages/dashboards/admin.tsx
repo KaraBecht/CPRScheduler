@@ -78,7 +78,7 @@ export function AdminDashboardPage() {
           }
           icon={Users}
           tone="accent"
-          href="/people"
+          href="/people?tab=student"
           testId="stat-students"
         />
         <StatCard

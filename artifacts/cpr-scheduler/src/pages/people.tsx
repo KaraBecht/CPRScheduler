@@ -187,7 +187,10 @@ export default function People() {
   const qc = useQueryClient();
   const { role } = useAuth();
   const canEdit = role === "administrator" || role === "instructor";
-  const [tab, setTab] = useState<UserRole>("instructor");
+  const [tab, setTab] = useState<UserRole>(() => {
+    const p = new URLSearchParams(window.location.search).get("tab") as UserRole | null;
+    return p && ["administrator", "instructor", "student", "requestor"].includes(p) ? p : "instructor";
+  });
   const [query, setQuery] = useState("");
   const { data: users = [] } = useListUsers({ role: tab });
   const { data: rosterAttendees = [] } = useListRosterAttendees();
