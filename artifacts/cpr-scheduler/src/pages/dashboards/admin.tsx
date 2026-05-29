@@ -56,7 +56,7 @@ export function AdminDashboardPage() {
   return (
     <>
       <PageHeader
-        title="Operations dashboard"
+        title="Dashboard"
         subtitle="Real-time view of classes, students, and incoming training requests."
       />
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
