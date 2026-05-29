@@ -65,6 +65,7 @@ export function AdminDashboardPage() {
           value={dash.upcomingClasses}
           hint={`${dash.totalClasses} total scheduled`}
           icon={CalendarDays}
+          href="/classes"
           testId="stat-upcoming-classes"
         />
         <StatCard
@@ -77,6 +78,7 @@ export function AdminDashboardPage() {
           }
           icon={Users}
           tone="accent"
+          href="/people"
           testId="stat-students"
         />
         <StatCard
@@ -85,6 +87,7 @@ export function AdminDashboardPage() {
           hint="Awaiting scheduling"
           icon={Inbox}
           tone="warning"
+          href="/requests"
           testId="stat-pending-requests"
         />
         <StatCard
@@ -93,6 +96,7 @@ export function AdminDashboardPage() {
           hint={`${dash.enrollmentsThisMonth} enrollments this month`}
           icon={Award}
           tone="success"
+          href="/certificates"
           testId="stat-certificates"
         />
       </div>

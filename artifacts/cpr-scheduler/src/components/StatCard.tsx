@@ -1,3 +1,4 @@
+import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -15,6 +16,7 @@ export function StatCard({
   hint,
   icon: Icon,
   tone = "primary",
+  href,
   testId,
 }: {
   label: string;
@@ -22,13 +24,14 @@ export function StatCard({
   hint?: string;
   icon: LucideIcon;
   tone?: "primary" | "success" | "warning" | "accent";
+  href?: string;
   testId?: string;
 }) {
   const { icon: iconClass, border } = TONE_CONFIG[tone];
-  return (
+  const card = (
     <Card
       data-testid={testId}
-      className="shadow-sm overflow-hidden"
+      className={cn("shadow-sm overflow-hidden", href && "transition-shadow hover:shadow-md cursor-pointer")}
       style={{ borderTop: `4px solid ${border}` }}
     >
       <CardContent className="pt-5 pb-5">
@@ -54,4 +57,9 @@ export function StatCard({
       </CardContent>
     </Card>
   );
+
+  if (href) {
+    return <Link href={href}>{card}</Link>;
+  }
+  return card;
 }
