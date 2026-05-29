@@ -6,5 +6,8 @@ export const modules: ModuleMap = {
   "./components/mockups/dashboard-variants/DenseOps.tsx": () => import("../components/mockups/dashboard-variants/DenseOps.tsx"),
   "./components/mockups/dashboard-variants/MidnightFocus.tsx": () => import("../components/mockups/dashboard-variants/MidnightFocus.tsx"),
   "./components/mockups/dashboard-variants/Scorecard.tsx": () => import("../components/mockups/dashboard-variants/Scorecard.tsx"),
-  "./components/mockups/dashboard-variants/WarmPro.tsx": () => import("../components/mockups/dashboard-variants/WarmPro.tsx")
+  "./components/mockups/dashboard-variants/WarmPro.tsx": () => import("../components/mockups/dashboard-variants/WarmPro.tsx"),
+  "./components/mockups/pulsepoint-vibes/ObsidianPro.tsx": () => import("../components/mockups/pulsepoint-vibes/ObsidianPro.tsx"),
+  "./components/mockups/pulsepoint-vibes/SlateSage.tsx": () => import("../components/mockups/pulsepoint-vibes/SlateSage.tsx"),
+  "./components/mockups/pulsepoint-vibes/SoftMedical.tsx": () => import("../components/mockups/pulsepoint-vibes/SoftMedical.tsx")
 };
