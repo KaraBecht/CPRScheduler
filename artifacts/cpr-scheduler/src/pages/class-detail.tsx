@@ -115,7 +115,7 @@ export default function ClassDetail() {
         subtitle={cls.description ?? undefined}
         action={
           <div className="flex items-center gap-2">
-            <FilloutRosterSignIn />
+            <FilloutRosterSignIn classId={classId} />
             <Badge variant="outline">
               {formatCertificationType(cls.certificationType)}
             </Badge>
