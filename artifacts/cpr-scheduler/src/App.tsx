@@ -8,7 +8,6 @@ import Dashboard from "@/pages/dashboard";
 import Classes from "@/pages/classes";
 import ClassDetail from "@/pages/class-detail";
 import ClassRoster from "@/pages/class-roster";
-import RosterSignIn from "@/pages/roster-signin";
 import Requests from "@/pages/requests";
 import PublicIntake from "@/pages/public-intake";
 import Certificates from "@/pages/certificates";
@@ -29,7 +28,6 @@ function Router() {
             <Route path="/" component={Dashboard} />
             <Route path="/classes" component={Classes} />
             <Route path="/classes/:id/roster" component={ClassRoster} />
-            <Route path="/classes/:id/roster-signin" component={RosterSignIn} />
             <Route path="/classes/:id" component={ClassDetail} />
             <Route path="/requests">
               <RoleGate allow={["administrator", "requestor"]}>

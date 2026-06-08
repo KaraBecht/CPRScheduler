@@ -33,8 +33,8 @@ import {
   Users,
   UserPlus,
   X,
+  ClipboardList,
 } from "lucide-react";
-import { FilloutRosterSignIn } from "@/components/FilloutRosterSignIn";
 import {
   formatCertificationType,
   formatDate,
@@ -115,7 +115,11 @@ export default function ClassDetail() {
         subtitle={cls.description ?? undefined}
         action={
           <div className="flex items-center gap-2">
-            <FilloutRosterSignIn classId={classId} />
+            <Link href={`/classes/${classId}/roster`}>
+              <Button variant="outline" size="sm" data-testid="button-open-roster">
+                <ClipboardList className="h-4 w-4 mr-1.5" /> Roster
+              </Button>
+            </Link>
             <Badge variant="outline">
               {formatCertificationType(cls.certificationType)}
             </Badge>
