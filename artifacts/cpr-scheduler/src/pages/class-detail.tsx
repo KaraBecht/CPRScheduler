@@ -17,10 +17,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -61,6 +62,7 @@ export default function ClassDetail() {
   const { data: students = [] } = useListUsers({ role: "student" });
   const [enrollStudentId, setEnrollStudentId] = useState<string>("");
   const [linkCopied, setLinkCopied] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const signInUrl = useMemo(() => {
     const base = import.meta.env.BASE_URL.replace(/\/$/, "");
     return `${window.location.origin}${base}/roster-signin/${classId}`;
@@ -129,28 +131,32 @@ export default function ClassDetail() {
         subtitle={cls.description ?? undefined}
         action={
           <div className="flex items-center gap-2">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" data-testid="button-share-signin">
-                  <Link2 className="h-4 w-4 mr-1.5" /> Share sign-in link
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-96 p-4" align="end">
-                <p className="text-sm font-medium mb-1">Student sign-in link</p>
-                <p className="text-xs text-muted-foreground mb-3">
+            <Button
+              variant="outline"
+              size="sm"
+              data-testid="button-share-signin"
+              onClick={() => setShareOpen(true)}
+            >
+              <Link2 className="h-4 w-4 mr-1.5" /> Share sign-in link
+            </Button>
+            <Dialog open={shareOpen} onOpenChange={setShareOpen}>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Student sign-in link</DialogTitle>
+                </DialogHeader>
+                <p className="text-sm text-muted-foreground">
                   Share this link with attendees — no login required.
                 </p>
-                <div className="flex gap-2">
+                <div className="flex gap-2 mt-1">
                   <Input
                     readOnly
                     value={signInUrl}
-                    className="text-xs h-8"
+                    className="text-sm"
                     onFocus={(e) => e.target.select()}
                   />
                   <Button
-                    size="sm"
                     variant="outline"
-                    className="h-8 shrink-0"
+                    className="shrink-0"
                     onClick={() => {
                       navigator.clipboard.writeText(signInUrl);
                       setLinkCopied(true);
@@ -158,19 +164,19 @@ export default function ClassDetail() {
                     }}
                   >
                     {linkCopied ? (
-                      <Check className="h-3.5 w-3.5 text-emerald-600" />
+                      <Check className="h-4 w-4 text-emerald-600" />
                     ) : (
-                      <Link2 className="h-3.5 w-3.5" />
+                      <Link2 className="h-4 w-4" />
                     )}
                   </Button>
                   <a href={signInUrl} target="_blank" rel="noopener noreferrer">
-                    <Button size="sm" variant="outline" className="h-8 shrink-0">
-                      <ExternalLink className="h-3.5 w-3.5" />
+                    <Button variant="outline" className="shrink-0">
+                      <ExternalLink className="h-4 w-4" />
                     </Button>
                   </a>
                 </div>
-              </PopoverContent>
-            </Popover>
+              </DialogContent>
+            </Dialog>
             <Link href={`/classes/${classId}/roster`}>
               <Button variant="outline" size="sm" data-testid="button-open-roster">
                 <ClipboardList className="h-4 w-4 mr-1.5" /> Roster
