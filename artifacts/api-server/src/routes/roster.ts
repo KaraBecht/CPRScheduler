@@ -171,4 +171,51 @@ router.put("/classes/:classId/roster", async (req, res) => {
   res.json(await loadRoster(classId, cls.capacity));
 });
 
+router.post("/public/classes/:classId/roster-signin", async (req, res) => {
+  const classId = parseId(req.params.classId, "classId");
+  const { name, email, phone } = req.body as {
+    name?: string;
+    email?: string;
+    phone?: string;
+  };
+  if (!name?.trim()) {
+    res.status(400).json({ error: "Name is required" });
+    return;
+  }
+  const [cls] = await db
+    .select()
+    .from(classesTable)
+    .where(eq(classesTable.id, classId));
+  if (!cls) {
+    res.status(404).json({ error: "Class not found" });
+    return;
+  }
+  const existing = await db
+    .select({ position: classRosterTable.position })
+    .from(classRosterTable)
+    .where(eq(classRosterTable.classId, classId));
+  const filled = new Set(existing.map((r) => r.position));
+  let slot = -1;
+  for (let i = 0; i < cls.capacity; i++) {
+    if (!filled.has(i)) {
+      slot = i;
+      break;
+    }
+  }
+  if (slot === -1) {
+    res.status(409).json({ error: "Class is full" });
+    return;
+  }
+  await db.insert(classRosterTable).values({
+    classId,
+    position: slot,
+    name: name.trim(),
+    email: email?.trim() ?? "",
+    phone: phone?.trim() ?? "",
+    result: null,
+    cardSent: false,
+  });
+  res.json({ ok: true });
+});
+
 export default router;

@@ -34,6 +34,7 @@ import {
   UserPlus,
   X,
   ClipboardList,
+  Link2,
 } from "lucide-react";
 import {
   formatCertificationType,
@@ -115,6 +116,19 @@ export default function ClassDetail() {
         subtitle={cls.description ?? undefined}
         action={
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              data-testid="button-copy-signin-link"
+              onClick={() => {
+                const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+                const url = `${window.location.origin}${base}/roster-signin/${classId}`;
+                navigator.clipboard.writeText(url);
+                toast({ title: "Sign-in link copied to clipboard" });
+              }}
+            >
+              <Link2 className="h-4 w-4 mr-1.5" /> Copy sign-in link
+            </Button>
             <Link href={`/classes/${classId}/roster`}>
               <Button variant="outline" size="sm" data-testid="button-open-roster">
                 <ClipboardList className="h-4 w-4 mr-1.5" /> Roster

@@ -8,6 +8,7 @@ import Dashboard from "@/pages/dashboard";
 import Classes from "@/pages/classes";
 import ClassDetail from "@/pages/class-detail";
 import ClassRoster from "@/pages/class-roster";
+import PublicRosterSignIn from "@/pages/public-roster-signin";
 import Requests from "@/pages/requests";
 import PublicIntake from "@/pages/public-intake";
 import Certificates from "@/pages/certificates";
@@ -22,6 +23,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/intake" component={PublicIntake} />
+      <Route path="/roster-signin/:id" component={PublicRosterSignIn} />
       <Route>
         <AppShell>
           <Switch>
