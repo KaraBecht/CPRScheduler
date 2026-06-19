@@ -11,13 +11,18 @@ export async function sendEmail(payload: EmailPayload, log: Logger): Promise<voi
   const apiKey = process.env.SENDGRID_API_KEY;
   const from = process.env.NOTIFY_FROM_EMAIL ?? "noreply@pulsepoint.app";
 
-  if (!apiKey || !process.env.NOTIFY_EMAIL) {
-    log.warn("SENDGRID_API_KEY or NOTIFY_EMAIL not set — skipping email notification");
+  if (!apiKey) {
+    log.warn("SENDGRID_API_KEY not set — skipping email notification");
+    return;
+  }
+
+  if (!payload.to) {
+    log.warn("No recipient address provided — skipping email notification");
     return;
   }
 
   const body = {
-    personalizations: [{ to: [{ email: process.env.NOTIFY_EMAIL }] }],
+    personalizations: [{ to: [{ email: payload.to }] }],
     from: { email: from, name: "PulsePoint CPR Hub" },
     subject: payload.subject,
     content: [
@@ -39,7 +44,7 @@ export async function sendEmail(payload: EmailPayload, log: Logger): Promise<voi
       const detail = await res.text().catch(() => "");
       log.error({ status: res.status, detail }, "SendGrid error");
     } else {
-      log.info("Training request notification email sent");
+      log.info({ to: payload.to }, "Email sent");
     }
   } catch (err) {
     log.error({ err }, "Failed to send email via SendGrid");
@@ -137,6 +142,74 @@ export function buildRequestEmail(data: {
 
   return {
     subject: `New training request — ${data.locationName} (${cert})`,
+    text,
+    html,
+  };
+}
+
+export function buildScheduledEmail(data: {
+  requestorName: string;
+  organizationName: string;
+  certificationType: string;
+  sessions: { date: string; startTime: string }[];
+}): Pick<EmailPayload, "subject" | "text" | "html"> {
+  const certLabel: Record<string, string> = {
+    cpr_aed_first_aid: "CPR / AED / First Aid",
+    stop_the_bleed: "Stop the Bleed",
+  };
+  const cert = certLabel[data.certificationType] ?? data.certificationType;
+  const sessionLines = data.sessions
+    .map((s) => `  • ${s.date} @ ${s.startTime}`)
+    .join("\n");
+
+  const text = [
+    `Hi ${data.requestorName},`,
+    "",
+    "Great news — your CPR training request has been approved and your class(es) have been scheduled!",
+    "",
+    "SCHEDULED CLASS DETAILS",
+    `  Organization:  ${data.organizationName}`,
+    `  Certification: ${cert}`,
+    "",
+    "SCHEDULED DATE(S) & TIME(S)",
+    sessionLines,
+    "",
+    "Our team will follow up shortly with the instructor and location details.",
+    "",
+    "Thank you for choosing PulsePoint CPR Hub.",
+  ].join("\n");
+
+  const row = (label: string, value: string) =>
+    `<tr><td style="padding:4px 12px 4px 0;color:#6b7280;white-space:nowrap">${label}</td><td style="padding:4px 0"><strong>${value}</strong></td></tr>`;
+
+  const html = `
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#111827">
+  <div style="background:#1d4ed8;padding:20px 24px;border-radius:8px 8px 0 0">
+    <h1 style="margin:0;color:#fff;font-size:18px">Your CPR Class Is Scheduled!</h1>
+    <p style="margin:4px 0 0;color:#bfdbfe;font-size:13px">PulsePoint CPR Hub</p>
+  </div>
+  <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px">
+    <p style="margin:0 0 20px">Hi <strong>${data.requestorName}</strong>,</p>
+    <p style="margin:0 0 20px">Great news — your CPR training request has been approved and your class(es) have been scheduled!</p>
+
+    <h2 style="font-size:14px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin:0 0 8px">Scheduled Class Details</h2>
+    <table style="border-collapse:collapse;margin-bottom:20px">
+      ${row("Organization", data.organizationName)}
+      ${row("Certification", cert)}
+    </table>
+
+    <h2 style="font-size:14px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin:0 0 8px">Scheduled Date(s) &amp; Time(s)</h2>
+    <ul style="margin:0 0 20px;padding-left:18px">
+      ${data.sessions.map((s) => `<li style="margin-bottom:4px">${s.date} &nbsp;@&nbsp; ${s.startTime}</li>`).join("")}
+    </ul>
+
+    <p style="margin:0 0 8px;color:#374151">Our team will follow up shortly with the instructor and location details.</p>
+    <p style="margin:0;color:#374151">Thank you for choosing <strong>PulsePoint CPR Hub</strong>.</p>
+  </div>
+</div>`;
+
+  return {
+    subject: `Your CPR class is scheduled — ${data.organizationName} (${cert})`,
     text,
     html,
   };
