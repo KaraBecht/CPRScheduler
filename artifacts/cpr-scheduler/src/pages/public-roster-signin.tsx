@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRoute } from "wouter";
 import { useGetClass } from "@workspace/api-client-react";
 import { HeartPulse, CheckCircle2, CalendarDays, MapPin, User as UserIcon } from "lucide-react";
@@ -18,7 +18,32 @@ export default function PublicRosterSignIn() {
   const [phone, setPhone] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [countdown, setCountdown] = useState(5);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!submitted) return;
+    setCountdown(5);
+    const interval = setInterval(() => {
+      setCountdown((n) => {
+        if (n <= 1) {
+          clearInterval(interval);
+          resetForm();
+          return 0;
+        }
+        return n - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [submitted]);
+
+  function resetForm() {
+    setName("");
+    setEmail("");
+    setPhone("");
+    setSubmitted(false);
+    setError(null);
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,6 +100,12 @@ export default function PublicRosterSignIn() {
                     <strong>{cls?.title ?? "this class"}</strong>.
                   </p>
                 </div>
+                <Button onClick={resetForm} className="mt-2">
+                  Next person
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  New form opens automatically in {countdown}s
+                </p>
               </CardContent>
             </Card>
           ) : (
