@@ -5,10 +5,13 @@ import {
   useUpdateEnrollment,
   useDeleteEnrollment,
   useCreateCertificate,
+  useUpdateClass,
   useListUsers,
   getGetClassQueryKey,
+  getListClassesQueryKey,
   getGetAdminDashboardQueryKey,
   getGetStudentDashboardQueryKey,
+  type CertificationType,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
