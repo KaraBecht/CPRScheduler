@@ -61,7 +61,7 @@ import {
   formatTime,
 } from "@/lib/format";
 import { toast } from "@/hooks/use-toast";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 export default function ClassDetail() {
   const [, params] = useRoute("/classes/:id");
@@ -69,6 +69,14 @@ export default function ClassDetail() {
   const qc = useQueryClient();
   const { role, userId } = useAuth();
   const { data: cls, isLoading } = useGetClass(classId);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      qc.invalidateQueries({ queryKey: getGetClassQueryKey(classId) });
+    }, 5000);
+    return () => clearInterval(id);
+  }, [classId]);
+
   const { data: students = [] } = useListUsers({ role: "student" });
   const { data: instructors = [] } = useListUsers({ role: "instructor" });
   const [enrollStudentId, setEnrollStudentId] = useState<string>("");

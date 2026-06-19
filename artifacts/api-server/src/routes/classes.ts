@@ -4,9 +4,10 @@ import {
   db,
   classesTable,
   enrollmentsTable,
+  classRosterTable,
   usersTable,
 } from "@workspace/db";
-import { and, eq, gte, sql, desc, asc } from "drizzle-orm";
+import { and, eq, gte, ne, sql, desc, asc } from "drizzle-orm";
 import {
   CreateClassBody,
   UpdateClassBody,
@@ -17,15 +18,30 @@ import { serializeUser } from "./users";
 const router: IRouter = Router();
 
 async function serializeClass(row: typeof classesTable.$inferSelect) {
-  const [counts] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(enrollmentsTable)
-    .where(
-      and(
-        eq(enrollmentsTable.classId, row.id),
-        sql`${enrollmentsTable.status} <> 'cancelled'`,
+  const [[enrollCounts], [rosterCounts]] = await Promise.all([
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(enrollmentsTable)
+      .where(
+        and(
+          eq(enrollmentsTable.classId, row.id),
+          sql`${enrollmentsTable.status} <> 'cancelled'`,
+        ),
       ),
-    );
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(classRosterTable)
+      .where(
+        and(
+          eq(classRosterTable.classId, row.id),
+          ne(sql`trim(${classRosterTable.name})`, ""),
+        ),
+      ),
+  ]);
+  const enrolledCount = Math.max(
+    enrollCounts?.count ?? 0,
+    rosterCounts?.count ?? 0,
+  );
   let instructorName: string | null = null;
   if (row.instructorId) {
     const [u] = await db
@@ -43,7 +59,7 @@ async function serializeClass(row: typeof classesTable.$inferSelect) {
     endTime: row.endTime,
     location: row.location,
     capacity: row.capacity,
-    enrolledCount: counts?.count ?? 0,
+    enrolledCount,
     status: row.status,
     instructorId: row.instructorId,
     instructorName,
