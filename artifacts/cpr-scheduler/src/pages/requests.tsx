@@ -42,6 +42,7 @@ import { QRCodeSVG } from "qrcode.react";
 const CERT_TYPES: CertificationType[] = [
   "cpr_aed_first_aid",
   "stop_the_bleed",
+  "cpr_aed_first_aid_stop_the_bleed",
 ];
 
 function ShareIntakeDialog() {

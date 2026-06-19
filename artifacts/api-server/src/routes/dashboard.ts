@@ -62,6 +62,7 @@ const router: IRouter = Router();
 const certTypes = [
   "cpr_aed_first_aid",
   "stop_the_bleed",
+  "cpr_aed_first_aid_stop_the_bleed",
 ] as const;
 
 router.get("/dashboard/admin", async (_req, res) => {

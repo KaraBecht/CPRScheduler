@@ -74,7 +74,7 @@ export const ListClassesQueryParams = zod.object({
 export const ListClassesResponseItem = zod.object({
   "id": zod.number(),
   "title": zod.string(),
-  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed']),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
   "date": zod.string(),
   "startTime": zod.string(),
   "endTime": zod.string().nullish(),
@@ -95,7 +95,7 @@ export const ListClassesResponse = zod.array(ListClassesResponseItem)
 
 export const CreateClassBody = zod.object({
   "title": zod.string().min(1),
-  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed']),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
   "date": zod.string(),
   "startTime": zod.string(),
   "endTime": zod.string().optional(),
@@ -113,7 +113,7 @@ export const GetClassParams = zod.object({
 export const GetClassResponse = zod.object({
   "id": zod.number(),
   "title": zod.string(),
-  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed']),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
   "date": zod.string(),
   "startTime": zod.string(),
   "endTime": zod.string().nullish(),
@@ -144,7 +144,7 @@ export const UpdateClassParams = zod.object({
 
 export const UpdateClassBody = zod.object({
   "title": zod.string().optional(),
-  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed']).optional(),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']).optional(),
   "date": zod.string().optional(),
   "startTime": zod.string().optional(),
   "endTime": zod.string().optional(),
@@ -158,7 +158,7 @@ export const UpdateClassBody = zod.object({
 export const UpdateClassResponse = zod.object({
   "id": zod.number(),
   "title": zod.string(),
-  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed']),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
   "date": zod.string(),
   "startTime": zod.string(),
   "endTime": zod.string().nullish(),
@@ -243,7 +243,7 @@ export const ListEnrollmentsResponseItem = zod.object({
   "classSession": zod.object({
   "id": zod.number(),
   "title": zod.string(),
-  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed']),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
   "date": zod.string(),
   "startTime": zod.string(),
   "endTime": zod.string().nullish(),
@@ -354,7 +354,7 @@ export const ListRequestsResponseItem = zod.object({
   "organizationName": zod.string(),
   "contactEmail": zod.string(),
   "contactPhone": zod.string().nullish(),
-  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed']),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
   "preferredDate": zod.string(),
   "preferredLocation": zod.string().nullish(),
   "address": zod.string().nullish(),
@@ -371,7 +371,7 @@ export const ListRequestsResponseItem = zod.object({
   "createdClasses": zod.array(zod.object({
   "id": zod.number(),
   "title": zod.string(),
-  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed']),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
   "date": zod.string(),
   "startTime": zod.string(),
   "endTime": zod.string().nullish(),
@@ -397,7 +397,7 @@ export const CreateRequestBody = zod.object({
   "organizationName": zod.string().min(1),
   "contactEmail": zod.string(),
   "contactPhone": zod.string().optional(),
-  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed']),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
   "preferredDate": zod.string(),
   "preferredLocation": zod.string().optional(),
   "address": zod.string().optional(),
@@ -429,7 +429,7 @@ export const SubmitTrainingRequestBody = zod.object({
   "requestorName": zod.string().min(1),
   "requestorEmail": zod.string().min(submitTrainingRequestBodyRequestorEmailMin),
   "requestorPhone": zod.string().optional(),
-  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed']).optional(),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']).optional(),
   "numberOfClasses": zod.number().min(1),
   "attendeeCount": zod.number().min(1),
   "sessions": zod.array(zod.object({
@@ -451,7 +451,7 @@ export const GetRequestResponse = zod.object({
   "organizationName": zod.string(),
   "contactEmail": zod.string(),
   "contactPhone": zod.string().nullish(),
-  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed']),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
   "preferredDate": zod.string(),
   "preferredLocation": zod.string().nullish(),
   "address": zod.string().nullish(),
@@ -468,7 +468,7 @@ export const GetRequestResponse = zod.object({
   "createdClasses": zod.array(zod.object({
   "id": zod.number(),
   "title": zod.string(),
-  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed']),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
   "date": zod.string(),
   "startTime": zod.string(),
   "endTime": zod.string().nullish(),
@@ -500,7 +500,7 @@ export const UpdateRequestResponse = zod.object({
   "organizationName": zod.string(),
   "contactEmail": zod.string(),
   "contactPhone": zod.string().nullish(),
-  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed']),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
   "preferredDate": zod.string(),
   "preferredLocation": zod.string().nullish(),
   "address": zod.string().nullish(),
@@ -517,7 +517,7 @@ export const UpdateRequestResponse = zod.object({
   "createdClasses": zod.array(zod.object({
   "id": zod.number(),
   "title": zod.string(),
-  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed']),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
   "date": zod.string(),
   "startTime": zod.string(),
   "endTime": zod.string().nullish(),
@@ -543,7 +543,7 @@ export const ListCertificatesResponseItem = zod.object({
   "classId": zod.number().nullish(),
   "classTitle": zod.string().nullish(),
   "classLocation": zod.string().nullish(),
-  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed']),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
   "certificateNumber": zod.string(),
   "issuedDate": zod.string(),
   "expiryDate": zod.string()
@@ -554,7 +554,7 @@ export const ListCertificatesResponse = zod.array(ListCertificatesResponseItem)
 export const CreateCertificateBody = zod.object({
   "studentId": zod.number(),
   "classId": zod.number(),
-  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed'])
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed'])
 })
 
 
@@ -567,13 +567,13 @@ export const GetAdminDashboardResponse = zod.object({
   "certificatesIssued": zod.number(),
   "enrollmentsThisMonth": zod.number(),
   "classesByCertification": zod.array(zod.object({
-  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed']),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
   "count": zod.number()
 })),
   "upcomingSchedule": zod.array(zod.object({
   "id": zod.number(),
   "title": zod.string(),
-  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed']),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
   "date": zod.string(),
   "startTime": zod.string(),
   "endTime": zod.string().nullish(),
@@ -592,7 +592,7 @@ export const GetAdminDashboardResponse = zod.object({
   "organizationName": zod.string(),
   "contactEmail": zod.string(),
   "contactPhone": zod.string().nullish(),
-  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed']),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
   "preferredDate": zod.string(),
   "preferredLocation": zod.string().nullish(),
   "address": zod.string().nullish(),
@@ -609,7 +609,7 @@ export const GetAdminDashboardResponse = zod.object({
   "createdClasses": zod.array(zod.object({
   "id": zod.number(),
   "title": zod.string(),
-  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed']),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
   "date": zod.string(),
   "startTime": zod.string(),
   "endTime": zod.string().nullish(),
@@ -644,7 +644,7 @@ export const GetInstructorDashboardResponse = zod.object({
   "upcomingClasses": zod.array(zod.object({
   "id": zod.number(),
   "title": zod.string(),
-  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed']),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
   "date": zod.string(),
   "startTime": zod.string(),
   "endTime": zod.string().nullish(),
@@ -659,7 +659,7 @@ export const GetInstructorDashboardResponse = zod.object({
   "pastClasses": zod.array(zod.object({
   "id": zod.number(),
   "title": zod.string(),
-  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed']),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
   "date": zod.string(),
   "startTime": zod.string(),
   "endTime": zod.string().nullish(),
@@ -676,7 +676,7 @@ export const GetInstructorDashboardResponse = zod.object({
   "nextClass": zod.union([zod.object({
   "id": zod.number(),
   "title": zod.string(),
-  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed']),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
   "date": zod.string(),
   "startTime": zod.string(),
   "endTime": zod.string().nullish(),
@@ -717,7 +717,7 @@ export const GetStudentDashboardResponse = zod.object({
   "classSession": zod.object({
   "id": zod.number(),
   "title": zod.string(),
-  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed']),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
   "date": zod.string(),
   "startTime": zod.string(),
   "endTime": zod.string().nullish(),
@@ -740,7 +740,7 @@ export const GetStudentDashboardResponse = zod.object({
   "classSession": zod.object({
   "id": zod.number(),
   "title": zod.string(),
-  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed']),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
   "date": zod.string(),
   "startTime": zod.string(),
   "endTime": zod.string().nullish(),
@@ -760,7 +760,7 @@ export const GetStudentDashboardResponse = zod.object({
   "classId": zod.number().nullish(),
   "classTitle": zod.string().nullish(),
   "classLocation": zod.string().nullish(),
-  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed']),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
   "certificateNumber": zod.string(),
   "issuedDate": zod.string(),
   "expiryDate": zod.string()
@@ -768,7 +768,7 @@ export const GetStudentDashboardResponse = zod.object({
   "recommendedClasses": zod.array(zod.object({
   "id": zod.number(),
   "title": zod.string(),
-  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed']),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
   "date": zod.string(),
   "startTime": zod.string(),
   "endTime": zod.string().nullish(),
@@ -806,7 +806,7 @@ export const GetRequestorDashboardResponse = zod.object({
   "organizationName": zod.string(),
   "contactEmail": zod.string(),
   "contactPhone": zod.string().nullish(),
-  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed']),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
   "preferredDate": zod.string(),
   "preferredLocation": zod.string().nullish(),
   "address": zod.string().nullish(),
@@ -823,7 +823,7 @@ export const GetRequestorDashboardResponse = zod.object({
   "createdClasses": zod.array(zod.object({
   "id": zod.number(),
   "title": zod.string(),
-  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed']),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
   "date": zod.string(),
   "startTime": zod.string(),
   "endTime": zod.string().nullish(),
@@ -839,7 +839,7 @@ export const GetRequestorDashboardResponse = zod.object({
   "scheduledClasses": zod.array(zod.object({
   "id": zod.number(),
   "title": zod.string(),
-  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed']),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
   "date": zod.string(),
   "startTime": zod.string(),
   "endTime": zod.string().nullish(),

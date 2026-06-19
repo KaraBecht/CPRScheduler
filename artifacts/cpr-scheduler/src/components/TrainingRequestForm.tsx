@@ -24,6 +24,7 @@ import { formatCertificationType } from "@/lib/format";
 const CERT_TYPES: CertificationType[] = [
   "cpr_aed_first_aid",
   "stop_the_bleed",
+  "cpr_aed_first_aid_stop_the_bleed",
 ];
 
 type Session = { date: string; startTime: string };

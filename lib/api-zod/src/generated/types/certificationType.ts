@@ -12,4 +12,5 @@ export type CertificationType = typeof CertificationType[keyof typeof Certificat
 export const CertificationType = {
   cpr_aed_first_aid: 'cpr_aed_first_aid',
   stop_the_bleed: 'stop_the_bleed',
+  cpr_aed_first_aid_stop_the_bleed: 'cpr_aed_first_aid_stop_the_bleed',
 } as const;

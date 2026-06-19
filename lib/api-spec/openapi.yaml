@@ -519,7 +519,7 @@ components:
 
     CertificationType:
       type: string
-      enum: [cpr_aed_first_aid, stop_the_bleed]
+      enum: [cpr_aed_first_aid, stop_the_bleed, cpr_aed_first_aid_stop_the_bleed]
 
     ClassStatus:
       type: string
