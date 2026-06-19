@@ -20,7 +20,7 @@ export function certificationDuration(type: CertificationType | string): string 
   const map: Record<string, string> = {
     cpr_aed_first_aid: "3.5–4 hours",
     stop_the_bleed: "~1 hour",
-    cpr_aed_first_aid_stop_the_bleed: "~4–4.5 hours",
+    cpr_aed_first_aid_stop_the_bleed: "4.5–5 hours",
   };
   return map[type] ?? "";
 }
