@@ -39,7 +39,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useListUsers } from "@workspace/api-client-react";
 import { Plus, Trash2, LayoutGrid, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { formatCertificationType } from "@/lib/format";
+import { formatCertificationType, certificationDuration } from "@/lib/format";
 import { Link } from "wouter";
 import {
   format,
@@ -61,6 +61,7 @@ import { Badge } from "@/components/ui/badge";
 const CERT_TYPES: CertificationType[] = [
   "cpr_aed_first_aid",
   "stop_the_bleed",
+  "cpr_aed_first_aid_stop_the_bleed",
 ];
 
 type ClassSlot = { date: string; startTime: string };
@@ -174,6 +175,9 @@ function CreateClassDialog() {
                   ))}
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                {certificationDuration(certificationType)}
+              </p>
             </div>
             <div>
               <Label>Instructor</Label>

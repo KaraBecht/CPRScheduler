@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { formatCertificationType } from "@/lib/format";
+import { formatCertificationType, certificationDuration } from "@/lib/format";
 
 const CERT_TYPES: CertificationType[] = [
   "cpr_aed_first_aid",
@@ -174,6 +174,9 @@ export function TrainingRequestForm({ onSuccess, onCancel }: TrainingRequestForm
                 ))}
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground mt-1">
+              {certificationDuration(certificationType)}
+            </p>
           </div>
           <div>
             <Label>Number of classes</Label>
