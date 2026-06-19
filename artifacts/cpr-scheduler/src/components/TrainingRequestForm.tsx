@@ -44,8 +44,8 @@ export function TrainingRequestForm({ onSuccess, onCancel }: TrainingRequestForm
   const [certificationType, setCertificationType] =
     useState<CertificationType>("cpr_aed_first_aid");
   const [numberOfClasses, setNumberOfClasses] = useState(1);
+  const [attendeeCount, setAttendeeCount] = useState(10);
   const [notes, setNotes] = useState("");
-  const attendeeCount = 10;
   const [sessions, setSessions] = useState<Session[]>([
     { date: "", startTime: "09:00" },
   ]);
@@ -192,11 +192,20 @@ export function TrainingRequestForm({ onSuccess, onCancel }: TrainingRequestForm
             <Label>Attendees per class</Label>
             <Input
               type="number"
+              min={1}
               data-testid="input-attendees"
               value={attendeeCount}
-              readOnly
-              disabled
+              onChange={(e) => setAttendeeCount(Math.max(1, parseInt(e.target.value) || 1))}
             />
+            {attendeeCount > 10 ? (
+              <p className="text-xs text-amber-600 mt-1">
+                Groups over 10 need multiple instructors — please describe your needs in the Notes field below.
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground mt-1">
+                Max 10 students per instructor.
+              </p>
+            )}
           </div>
         </div>
       </section>
