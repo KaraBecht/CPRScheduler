@@ -1,6 +1,7 @@
 import { useRoute, Link } from "wouter";
 import {
   useGetClass,
+  useGetClassRoster,
   useEnrollStudent,
   useUpdateEnrollment,
   useDeleteEnrollment,
@@ -8,6 +9,7 @@ import {
   useUpdateClass,
   useListUsers,
   getGetClassQueryKey,
+  getGetClassRosterQueryKey,
   getListClassesQueryKey,
   getGetAdminDashboardQueryKey,
   getGetStudentDashboardQueryKey,
@@ -69,10 +71,12 @@ export default function ClassDetail() {
   const qc = useQueryClient();
   const { role, userId } = useAuth();
   const { data: cls, isLoading } = useGetClass(classId);
+  const { data: rosterData } = useGetClassRoster(classId);
 
   useEffect(() => {
     const id = setInterval(() => {
       qc.invalidateQueries({ queryKey: getGetClassQueryKey(classId) });
+      qc.invalidateQueries({ queryKey: getGetClassRosterQueryKey(classId) });
     }, 5000);
     return () => clearInterval(id);
   }, [classId]);
@@ -195,6 +199,7 @@ export default function ClassDetail() {
   const availableStudents = students.filter((s) => !enrolledStudentIds.has(s.id));
   const canManage = role === "administrator" || role === "instructor";
   const studentEnrollment = enrollments.find((e) => e.studentId === userId);
+  const signInEntries = (rosterData?.entries ?? []).filter((e) => e.name.trim() !== "");
 
   return (
     <>
@@ -527,7 +532,7 @@ export default function ClassDetail() {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-base flex items-center justify-between">
-              <span>Roster · {enrollments.length}</span>
+              <span>Roster · {enrollments.length + signInEntries.length}</span>
               {canManage && availableStudents.length > 0 && remaining > 0 && (
                 <div className="flex items-center gap-2">
                   <Select
@@ -566,12 +571,27 @@ export default function ClassDetail() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {enrollments.length === 0 ? (
+            {enrollments.length === 0 && signInEntries.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 No students enrolled yet.
               </p>
             ) : (
               <div className="divide-y divide-border">
+                {signInEntries.map((e) => (
+                  <div
+                    key={`signin-${e.position}`}
+                    className="flex items-center gap-3 py-3"
+                  >
+                    <div className="h-9 w-9 rounded-full bg-emerald-500/10 text-emerald-700 flex items-center justify-center text-xs font-semibold">
+                      {e.name.split(" ").map((s) => s[0]).slice(0, 2).join("")}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm">{e.name}</p>
+                      <p className="text-xs text-muted-foreground">{e.email || e.phone || "Walk-in sign-in"}</p>
+                    </div>
+                    <Badge variant="secondary" className="text-xs">signed in</Badge>
+                  </div>
+                ))}
                 {enrollments.map((e) => (
                   <div
                     key={e.id}
