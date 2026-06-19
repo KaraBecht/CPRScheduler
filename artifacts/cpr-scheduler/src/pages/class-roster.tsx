@@ -45,25 +45,41 @@ export default function ClassRoster() {
   const { data: cls } = useGetClass(classId);
   const { data: roster, isLoading } = useGetClassRoster(classId);
   const [entries, setEntries] = useState<Entry[]>([]);
+  const [dirtyPositions, setDirtyPositions] = useState<Set<number>>(new Set());
 
   useEffect(() => {
-    if (roster)
-      setEntries(
-        roster.entries.map((e) => ({
-          position: e.position,
-          name: e.name,
-          email: e.email,
-          phone: e.phone,
-          result: (e.result ?? null) as RosterResult,
-          cardSent: e.cardSent,
-        })),
-      );
+    const id = setInterval(() => {
+      qc.invalidateQueries({ queryKey: getGetClassRosterQueryKey(classId) });
+    }, 5000);
+    return () => clearInterval(id);
+  }, [classId]);
+
+  useEffect(() => {
+    if (!roster) return;
+    const incoming = roster.entries.map((e) => ({
+      position: e.position,
+      name: e.name,
+      email: e.email,
+      phone: e.phone,
+      result: (e.result ?? null) as RosterResult,
+      cardSent: e.cardSent,
+    }));
+    setEntries((prev) => {
+      if (prev.length === 0) return incoming;
+      return incoming.map((serverRow) => {
+        if (dirtyPositions.has(serverRow.position)) {
+          return prev.find((r) => r.position === serverRow.position) ?? serverRow;
+        }
+        return serverRow;
+      });
+    });
   }, [roster]);
 
   const save = useSaveClassRoster({
     mutation: {
       onSuccess: () => {
         toast({ title: "Roster saved" });
+        setDirtyPositions(new Set());
         qc.invalidateQueries({ queryKey: getGetClassRosterQueryKey(classId) });
         qc.invalidateQueries({ queryKey: getListRosterAttendeesQueryKey() });
       },
@@ -72,10 +88,12 @@ export default function ClassRoster() {
     },
   });
 
-  const update = (i: number, patch: Partial<Entry>) =>
+  const update = (i: number, patch: Partial<Entry>) => {
+    setDirtyPositions((prev) => new Set(prev).add(entries[i].position));
     setEntries((prev) =>
       prev.map((e, idx) => (idx === i ? { ...e, ...patch } : e)),
     );
+  };
 
   if (isLoading || !roster || !cls) {
     return <PageHeader title="Loading roster..." />;
