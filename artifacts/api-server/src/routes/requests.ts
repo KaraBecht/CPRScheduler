@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { parseId } from "../lib/errors";
-import { db, requestsTable, usersTable } from "@workspace/db";
+import { db, requestsTable, usersTable, classesTable } from "@workspace/db";
 import { and, eq, desc } from "drizzle-orm";
 import {
   CreateRequestBody,
@@ -9,6 +9,7 @@ import {
   SubmitTrainingRequestBody,
 } from "@workspace/api-zod";
 import { sendEmail, buildRequestEmail } from "../lib/sendgrid";
+import { serializeClass } from "./classes";
 
 const router: IRouter = Router();
 
@@ -126,6 +127,50 @@ router.get("/requests/:requestId", async (req, res) => {
 router.patch("/requests/:requestId", async (req, res) => {
   const id = parseId(req.params.requestId, "requestId");
   const body = UpdateRequestBody.parse(req.body);
+
+  if (body.status === "approved") {
+    const [existing] = await db
+      .select()
+      .from(requestsTable)
+      .where(eq(requestsTable.id, id));
+    if (!existing) { res.status(404).json({ error: "Request not found" }); return; }
+
+    const sessions =
+      existing.sessions && existing.sessions.length > 0
+        ? existing.sessions
+        : [{ date: existing.preferredDate, startTime: "09:00" }];
+
+    const { updatedRequest, createdClassRows } = await db.transaction(async (tx) => {
+      const insertedClasses: typeof classesTable.$inferSelect[] = [];
+      for (const session of sessions) {
+        const [cls] = await tx
+          .insert(classesTable)
+          .values({
+            title: existing.organizationName,
+            certificationType: existing.certificationType,
+            date: session.date,
+            startTime: session.startTime,
+            location: "TBD",
+            capacity: existing.attendeeCount,
+          })
+          .returning();
+        if (cls) insertedClasses.push(cls);
+      }
+      const firstClassId = insertedClasses[0]?.id ?? null;
+      const [updated] = await tx
+        .update(requestsTable)
+        .set({ status: "scheduled", classId: firstClassId })
+        .where(eq(requestsTable.id, id))
+        .returning();
+      return { updatedRequest: updated!, createdClassRows: insertedClasses };
+    });
+
+    const serializedRequest = await serializeRequest(updatedRequest);
+    const serializedClasses = await Promise.all(createdClassRows.map(serializeClass));
+    res.json({ ...serializedRequest, createdClasses: serializedClasses });
+    return;
+  }
+
   const [row] = await db
     .update(requestsTable)
     .set(body)

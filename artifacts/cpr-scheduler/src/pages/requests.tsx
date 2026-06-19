@@ -4,6 +4,7 @@ import {
   useCreateRequest,
   useUpdateRequest,
   getListRequestsQueryKey,
+  getListClassesQueryKey,
   getGetAdminDashboardQueryKey,
   getGetRequestorDashboardQueryKey,
   type CertificationType,
@@ -318,6 +319,7 @@ export default function Requests() {
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: getListRequestsQueryKey() });
         qc.invalidateQueries({ queryKey: getGetAdminDashboardQueryKey() });
+        qc.invalidateQueries({ queryKey: getListClassesQueryKey() });
         toast({ title: "Request updated" });
       },
     },

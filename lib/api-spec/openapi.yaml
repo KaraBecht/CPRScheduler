@@ -768,6 +768,9 @@ components:
         status: { $ref: "#/components/schemas/RequestStatus" }
         classId: { type: ["integer", "null"] }
         createdAt: { type: string }
+        createdClasses:
+          type: array
+          items: { $ref: "#/components/schemas/ClassSession" }
 
     TrainingRequestInput:
       type: object

@@ -33,7 +33,12 @@ export function ClassCard({ session }: { session: ClassSession }) {
   const full = remaining <= 0;
   const accent = CERT_COLOR[session.certificationType] ?? DEFAULT_ACCENT;
   const statusStyle = STATUS_STYLE[session.status] ?? STATUS_STYLE.scheduled;
-  const fillPct = Math.round((session.enrolledCount / session.capacity) * 100);
+  const fillPct = session.capacity > 0
+    ? Math.round((session.enrolledCount / session.capacity) * 100)
+    : 0;
+  const locationDisplay = session.location && session.location !== "TBD"
+    ? session.location
+    : <span className="italic text-muted-foreground/60">Location TBD</span>;
 
   return (
     <Link
@@ -84,7 +89,7 @@ export function ClassCard({ session }: { session: ClassSession }) {
             </div>
             <div className="flex items-center gap-1.5">
               <MapPin className="h-3.5 w-3.5 shrink-0" style={{ color: accent }} />
-              <span className="truncate">{session.location}</span>
+              <span className="truncate">{locationDisplay}</span>
             </div>
             {session.instructorName && (
               <div className="flex items-center gap-1.5">

@@ -238,6 +238,7 @@ export interface ClassRequest {
   /** @nullable */
   classId?: number | null;
   createdAt: string;
+  createdClasses?: ClassSession[];
 }
 
 export type TrainingRequestInputSessionsItem = {

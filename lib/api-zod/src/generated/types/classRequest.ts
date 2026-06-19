@@ -7,6 +7,7 @@
  */
 import type { CertificationType } from './certificationType';
 import type { ClassRequestSessionsItem } from './classRequestSessionsItem';
+import type { ClassSession } from './classSession';
 import type { RequestStatus } from './requestStatus';
 
 export interface ClassRequest {
@@ -32,4 +33,5 @@ export interface ClassRequest {
   /** @nullable */
   classId?: number | null;
   createdAt: string;
+  createdClasses?: ClassSession[];
 }
