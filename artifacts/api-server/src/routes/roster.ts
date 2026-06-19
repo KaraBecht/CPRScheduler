@@ -191,9 +191,25 @@ router.post("/public/classes/:classId/roster-signin", async (req, res) => {
     return;
   }
   const existing = await db
-    .select({ position: classRosterTable.position })
+    .select({
+      position: classRosterTable.position,
+      name: classRosterTable.name,
+      email: classRosterTable.email,
+    })
     .from(classRosterTable)
     .where(eq(classRosterTable.classId, classId));
+
+  const trimmedName = name.trim().toLowerCase();
+  const trimmedEmail = email?.trim().toLowerCase() ?? "";
+  const duplicate = existing.find((r) => {
+    if (trimmedEmail && r.email?.toLowerCase() === trimmedEmail) return true;
+    return r.name?.toLowerCase() === trimmedName;
+  });
+  if (duplicate) {
+    res.status(409).json({ error: "You're already on the roster for this class." });
+    return;
+  }
+
   const filled = new Set(existing.map((r) => r.position));
   let slot = -1;
   for (let i = 0; i < cls.capacity; i++) {
