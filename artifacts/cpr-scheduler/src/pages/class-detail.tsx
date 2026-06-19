@@ -19,9 +19,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -35,10 +39,12 @@ import {
 import { useAuth } from "@/lib/auth-context";
 import {
   ArrowLeft,
+  AlertTriangle,
   Award,
   CalendarDays,
   Clock,
   MapPin,
+  Pencil,
   User as UserIcon,
   Users,
   UserPlus,
@@ -49,6 +55,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import {
+  certificationDuration,
   formatCertificationType,
   formatDate,
   formatTime,
@@ -63,9 +70,23 @@ export default function ClassDetail() {
   const { role, userId } = useAuth();
   const { data: cls, isLoading } = useGetClass(classId);
   const { data: students = [] } = useListUsers({ role: "student" });
+  const { data: instructors = [] } = useListUsers({ role: "instructor" });
   const [enrollStudentId, setEnrollStudentId] = useState<string>("");
   const [linkCopied, setLinkCopied] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    title: "",
+    certificationType: "cpr_aed_first_aid" as CertificationType,
+    date: "",
+    startTime: "",
+    endTime: "",
+    location: "",
+    capacity: 10,
+    instructorId: "",
+    description: "",
+    status: "scheduled" as "scheduled" | "completed" | "cancelled",
+  });
   const signInUrl = useMemo(() => {
     const base = import.meta.env.BASE_URL.replace(/\/$/, "");
     return `${window.location.origin}${base}/roster-signin/${classId}`;
@@ -108,6 +129,53 @@ export default function ClassDetail() {
       },
     },
   });
+  const updateClass = useUpdateClass({
+    mutation: {
+      onSuccess: () => {
+        toast({ title: "Class updated" });
+        invalidate();
+        qc.invalidateQueries({ queryKey: getListClassesQueryKey() });
+        setEditOpen(false);
+      },
+      onError: () =>
+        toast({ title: "Could not update class", variant: "destructive" }),
+    },
+  });
+
+  function openEdit() {
+    if (!cls) return;
+    setEditForm({
+      title: cls.title,
+      certificationType: cls.certificationType as CertificationType,
+      date: cls.date,
+      startTime: cls.startTime,
+      endTime: cls.endTime ?? "",
+      location: cls.location === "TBD" ? "" : cls.location,
+      capacity: cls.capacity,
+      instructorId: cls.instructorId?.toString() ?? "",
+      description: cls.description ?? "",
+      status: cls.status as "scheduled" | "completed" | "cancelled",
+    });
+    setEditOpen(true);
+  }
+
+  function submitEdit() {
+    updateClass.mutate({
+      classId,
+      data: {
+        title: editForm.title || undefined,
+        certificationType: editForm.certificationType,
+        date: editForm.date || undefined,
+        startTime: editForm.startTime || undefined,
+        endTime: editForm.endTime || undefined,
+        location: editForm.location || "TBD",
+        capacity: editForm.capacity,
+        instructorId: editForm.instructorId ? parseInt(editForm.instructorId, 10) : undefined,
+        description: editForm.description || undefined,
+        status: editForm.status,
+      },
+    });
+  }
 
   if (isLoading || !cls) {
     return <PageHeader title="Loading..." />;
@@ -146,10 +214,10 @@ export default function ClassDetail() {
               <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                   <DialogTitle>Student sign-in link</DialogTitle>
+                  <DialogDescription>
+                    Share this link with attendees — no login required.
+                  </DialogDescription>
                 </DialogHeader>
-                <p className="text-sm text-muted-foreground">
-                  Share this link with attendees — no login required.
-                </p>
                 <div className="flex gap-2 mt-1">
                   <Input
                     readOnly
@@ -180,6 +248,16 @@ export default function ClassDetail() {
                 </div>
               </DialogContent>
             </Dialog>
+            {role === "administrator" && (
+              <Button
+                variant="outline"
+                size="sm"
+                data-testid="button-edit-class"
+                onClick={openEdit}
+              >
+                <Pencil className="h-4 w-4 mr-1.5" /> Edit class
+              </Button>
+            )}
             <Link href={`/classes/${classId}/roster`}>
               <Button variant="outline" size="sm" data-testid="button-open-roster">
                 <ClipboardList className="h-4 w-4 mr-1.5" /> Roster
@@ -202,6 +280,188 @@ export default function ClassDetail() {
           </div>
         }
       />
+
+      {role === "administrator" &&
+        (cls.location === "TBD" || !cls.location || !cls.instructorId) && (
+          <div className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 mb-2">
+            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-500" />
+            <span>
+              This class is missing{" "}
+              {[
+                (!cls.location || cls.location === "TBD") && "a location",
+                !cls.instructorId && "an instructor",
+              ]
+                .filter(Boolean)
+                .join(" and ")}
+              . Use <strong>Edit class</strong> to fill in the details before the session.
+            </span>
+          </div>
+        )}
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit class</DialogTitle>
+            <DialogDescription>
+              Update class details. Changes take effect immediately.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Title</Label>
+              <Input
+                data-testid="input-edit-title"
+                value={editForm.title}
+                onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Certification</Label>
+                <Select
+                  value={editForm.certificationType}
+                  onValueChange={(v) =>
+                    setEditForm({ ...editForm, certificationType: v as CertificationType })
+                  }
+                >
+                  <SelectTrigger data-testid="select-edit-cert-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(["cpr_aed_first_aid", "stop_the_bleed", "cpr_aed_first_aid_stop_the_bleed"] as CertificationType[]).map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {formatCertificationType(c)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {certificationDuration(editForm.certificationType)}
+                </p>
+              </div>
+              <div>
+                <Label>Status</Label>
+                <Select
+                  value={editForm.status}
+                  onValueChange={(v) =>
+                    setEditForm({ ...editForm, status: v as typeof editForm.status })
+                  }
+                >
+                  <SelectTrigger data-testid="select-edit-status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="scheduled">Scheduled</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Date</Label>
+                <Input
+                  type="date"
+                  data-testid="input-edit-date"
+                  value={editForm.date}
+                  onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Capacity</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  data-testid="input-edit-capacity"
+                  value={editForm.capacity}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, capacity: Math.max(1, parseInt(e.target.value) || 1) })
+                  }
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Start time</Label>
+                <Input
+                  type="time"
+                  data-testid="input-edit-start-time"
+                  value={editForm.startTime}
+                  onChange={(e) => setEditForm({ ...editForm, startTime: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>End time</Label>
+                <Input
+                  type="time"
+                  data-testid="input-edit-end-time"
+                  value={editForm.endTime}
+                  onChange={(e) => setEditForm({ ...editForm, endTime: e.target.value })}
+                />
+              </div>
+            </div>
+            <div>
+              <Label>Location</Label>
+              <Input
+                data-testid="input-edit-location"
+                value={editForm.location}
+                placeholder="Building, address, or room"
+                onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Instructor</Label>
+              <Select
+                value={editForm.instructorId || "none"}
+                onValueChange={(v) =>
+                  setEditForm({ ...editForm, instructorId: v === "none" ? "" : v })
+                }
+              >
+                <SelectTrigger data-testid="select-edit-instructor">
+                  <SelectValue placeholder="Unassigned" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Unassigned</SelectItem>
+                  {instructors.map((i) => (
+                    <SelectItem key={i.id} value={i.id.toString()}>
+                      {i.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Description</Label>
+              <Textarea
+                rows={2}
+                data-testid="input-edit-description"
+                value={editForm.description}
+                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                placeholder="Optional notes about this class"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              data-testid="button-save-class"
+              disabled={
+                !editForm.title ||
+                !editForm.date ||
+                !editForm.startTime ||
+                updateClass.isPending
+              }
+              onClick={submitEdit}
+            >
+              {updateClass.isPending ? "Saving…" : "Save changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-1">
           <CardContent className="pt-6 space-y-3 text-sm">
