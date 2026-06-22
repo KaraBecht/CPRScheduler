@@ -17,6 +17,7 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
+import { LocationAutocomplete } from "@/components/LocationAutocomplete";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -416,11 +417,10 @@ export default function ClassDetail() {
             </div>
             <div>
               <Label>Location</Label>
-              <Input
+              <LocationAutocomplete
                 data-testid="input-edit-location"
                 value={editForm.location}
-                placeholder="Building, address, or room"
-                onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
+                onChange={(v) => setEditForm({ ...editForm, location: v })}
               />
             </div>
             <div>

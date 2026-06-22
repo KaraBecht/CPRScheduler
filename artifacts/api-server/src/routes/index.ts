@@ -7,6 +7,7 @@ import enrollmentsRouter from "./enrollments";
 import requestsRouter from "./requests";
 import certificatesRouter from "./certificates";
 import dashboardRouter from "./dashboard";
+import placesRouter from "./places";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(enrollmentsRouter);
 router.use(requestsRouter);
 router.use(certificatesRouter);
 router.use(dashboardRouter);
+router.use(placesRouter);
 
 export default router;

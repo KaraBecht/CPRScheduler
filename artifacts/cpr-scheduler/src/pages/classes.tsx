@@ -9,6 +9,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
 import { ClassCard } from "@/components/ClassCard";
+import { LocationAutocomplete } from "@/components/LocationAutocomplete";
 import {
   Tabs,
   TabsList,
@@ -204,11 +205,11 @@ function CreateClassDialog() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Location</Label>
-              <Input
+              <LocationAutocomplete
                 data-testid="input-location"
                 value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="1211"
+                onChange={setLocation}
+                placeholder="Building, address, or room"
               />
             </div>
             <div>
