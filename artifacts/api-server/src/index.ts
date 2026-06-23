@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { autoCompletePastClasses } from "./lib/autoComplete";
+import { scheduleRenewalReminders } from "./lib/renewalReminder";
 
 const rawPort = process.env["PORT"];
 
@@ -29,4 +30,6 @@ app.listen(port, async (err) => {
   } catch (e) {
     logger.error({ err: e }, "Failed to auto-complete past classes on startup");
   }
+
+  scheduleRenewalReminders();
 });
