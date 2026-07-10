@@ -31,9 +31,9 @@ function IntakePage() {
                 <div>
                   <h2 className="text-xl font-bold mb-1">Request received!</h2>
                   <p className="text-muted-foreground text-sm max-w-sm mx-auto">
-                    Thank you for reaching out. Our team has been notified and
-                    will follow up with you shortly to confirm trainer
-                    availability.
+                    Your request has been received — we'll be in touch soon!
+                    Check your inbox for a confirmation email, and we'll follow
+                    up shortly to finalize the schedule.
                   </p>
                 </div>
               </CardContent>

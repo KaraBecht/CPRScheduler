@@ -50,11 +50,24 @@ export function TrainingRequestForm({ onSuccess, onCancel }: TrainingRequestForm
     { date: "", startTime: "09:00" },
   ]);
 
+  const resetForm = () => {
+    setLocationName("");
+    setAddress("");
+    setRequestorName("");
+    setRequestorEmail("");
+    setRequestorPhone("");
+    setCertificationType("cpr_aed_first_aid");
+    setNumberOfClasses(1);
+    setNotes("");
+    setSessions([{ date: "", startTime: "09:00" }]);
+  };
+
   const submit = useSubmitTrainingRequest({
     mutation: {
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: getListRequestsQueryKey() });
         qc.invalidateQueries({ queryKey: getGetAdminDashboardQueryKey() });
+        resetForm();
         onSuccess();
       },
       onError: () =>

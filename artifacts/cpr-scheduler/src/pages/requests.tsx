@@ -300,7 +300,8 @@ function SendTrainingRequestDialog() {
             setOpen(false);
             toast({
               title: "Training request submitted",
-              description: "An administrator will follow up shortly.",
+              description:
+                "Your request has been received. Check your inbox for a confirmation email — we'll follow up shortly to finalize the schedule.",
             });
           }}
           onCancel={() => setOpen(false)}
