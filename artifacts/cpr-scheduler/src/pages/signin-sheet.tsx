@@ -1,148 +1,316 @@
+import { useState, useEffect, useRef } from "react";
 import { useRoute } from "wouter";
-import { useGetClass } from "@workspace/api-client-react";
+import {
+  useGetClass,
+  useGetClassRoster,
+  useSaveClassRoster,
+  getGetClassRosterQueryKey,
+  type ClassRosterEntry,
+} from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { formatCertificationType, formatDate, formatTime } from "@/lib/format";
 import { Button } from "@/components/ui/button";
-import { HeartPulse, Printer, Download } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  HeartPulse,
+  Save,
+  CheckCircle2,
+  Users,
+  CalendarDays,
+  MapPin,
+  Clock,
+  ChevronLeft,
+  UserCheck,
+} from "lucide-react";
 
-function downloadCsvTemplate(cls: {
-  id: number;
-  title: string;
-  date: string;
-  startTime: string;
-  location: string;
-  capacity: number;
-}) {
-  const rows = [
-    `# PulsePoint CPR Sign-in Sheet`,
-    `# ClassID: ${cls.id}`,
-    `# Date: ${cls.date}`,
-    `# StartTime: ${cls.startTime}`,
-    `# Class: ${cls.title}`,
-    `# Location: ${cls.location}`,
-    `Name,Email,Phone`,
-    ...Array.from({ length: cls.capacity }, () => ",,"),
-  ];
-  const blob = new Blob([rows.join("\n")], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `signin-${cls.date}-${cls.id}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+function emptyRow(position: number): ClassRosterEntry {
+  return { position, name: "", email: "", phone: "", result: null, cardSent: false };
 }
 
 export default function SigninSheet() {
   const [, params] = useRoute("/classes/:id/signin-sheet");
   const classId = Number(params?.id);
   const { data: cls } = useGetClass(classId);
+  const { data: roster } = useGetClassRoster(classId);
+  const qc = useQueryClient();
+
+  const [rows, setRows] = useState<ClassRosterEntry[]>([]);
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const [dirty, setDirty] = useState(false);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const save = useSaveClassRoster({
+    mutation: {
+      onSuccess: (data) => {
+        qc.invalidateQueries({ queryKey: getGetClassRosterQueryKey(classId) });
+        setSavedAt(new Date());
+        setDirty(false);
+        setRows(data.entries.length > 0 ? buildRows(data.entries, data.capacity) : rows);
+      },
+    },
+  });
+
+  function buildRows(entries: ClassRosterEntry[], capacity: number): ClassRosterEntry[] {
+    const map = new Map(entries.map((e) => [e.position, e]));
+    return Array.from({ length: capacity }, (_, i) => map.get(i + 1) ?? emptyRow(i + 1));
+  }
+
+  useEffect(() => {
+    if (!roster || !cls) return;
+    setRows(buildRows(roster.entries, cls.capacity));
+  }, [roster, cls]);
+
+  function updateRow(idx: number, patch: Partial<ClassRosterEntry>) {
+    setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
+    setDirty(true);
+    setSavedAt(null);
+  }
+
+  function handleSave() {
+    save.mutate({
+      classId,
+      data: { entries: rows.filter((r) => r.name.trim() !== "") },
+    });
+  }
+
+  // Focus next row's name input on Enter in the name field
+  function handleNameKeyDown(e: React.KeyboardEvent, idx: number) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const next = inputRefs.current[idx + 1];
+      if (next) next.focus();
+    }
+  }
+
+  const filledCount = rows.filter((r) => r.name.trim()).length;
+  const capacity = cls?.capacity ?? rows.length;
 
   if (!cls) {
     return (
-      <div className="flex items-center justify-center min-h-screen text-muted-foreground">
+      <div className="flex items-center justify-center min-h-screen text-muted-foreground text-sm">
         Loading…
       </div>
     );
   }
 
-  const rows = Array.from({ length: cls.capacity }, (_, i) => i + 1);
-
   return (
-    <div className="min-h-screen bg-white">
-      {/* Toolbar — hidden when printing */}
-      <div className="print:hidden bg-[#f4f4f5] border-b px-6 py-3 flex items-center gap-3">
-        <a href="javascript:history.back()" className="text-sm text-muted-foreground hover:text-foreground">
-          ← Back
-        </a>
-        <span className="flex-1" />
-        <Button variant="outline" size="sm" onClick={() => downloadCsvTemplate(cls)}>
-          <Download className="h-4 w-4 mr-1.5" />
-          Download CSV template
-        </Button>
-        <Button size="sm" onClick={() => window.print()}>
-          <Printer className="h-4 w-4 mr-1.5" />
-          Print
-        </Button>
-      </div>
-
-      {/* Sheet content */}
-      <div className="max-w-4xl mx-auto px-8 py-10 print:px-6 print:py-6">
-
-        {/* Header */}
-        <div className="flex items-start justify-between border-b-2 border-[#007BA7] pb-5 mb-6">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-xl bg-[#007BA7] flex items-center justify-center flex-shrink-0">
-              <HeartPulse className="h-6 w-6 text-white" />
+    <div className="min-h-screen bg-[#f8fafc] flex flex-col">
+      {/* Top bar */}
+      <div className="bg-white border-b border-border sticky top-0 z-10">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
+          {/* Logo */}
+          <div className="flex items-center gap-2.5 mr-2">
+            <div className="h-8 w-8 rounded-lg bg-[#007BA7] flex items-center justify-center flex-shrink-0">
+              <HeartPulse className="h-4 w-4 text-white" />
             </div>
-            <div>
-              <div className="font-bold text-lg tracking-tight">FOX Medical</div>
-              <div className="text-[10px] text-[#888] uppercase tracking-wider">CPR Training Hub</div>
-            </div>
+            <span className="font-bold text-sm hidden sm:block">FOX Medical</span>
           </div>
-          <div className="text-right">
-            <div className="text-xs text-[#888] uppercase tracking-wider mb-0.5">Class ID</div>
-            <div className="font-mono font-bold text-2xl text-[#007BA7]">#{cls.id}</div>
-          </div>
-        </div>
 
-        {/* Class info */}
-        <div className="mb-6 grid grid-cols-2 gap-x-8 gap-y-1.5 text-sm">
-          <div>
-            <span className="font-semibold">Class: </span>
-            <span>{cls.title}</span>
-          </div>
-          <div>
-            <span className="font-semibold">Certification: </span>
-            <span>{formatCertificationType(cls.certificationType)}</span>
-          </div>
-          <div>
-            <span className="font-semibold">Date: </span>
-            <span>{formatDate(cls.date)}</span>
-          </div>
-          <div>
-            <span className="font-semibold">Time: </span>
+          {/* Back */}
+          <a
+            href="javascript:history.back()"
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ChevronLeft className="h-4 w-4" /> Back
+          </a>
+
+          <span className="flex-1" />
+
+          {/* Attendance counter */}
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <UserCheck className="h-4 w-4" />
             <span>
-              {formatTime(cls.startTime)}
-              {cls.endTime ? ` – ${formatTime(cls.endTime)}` : ""}
+              <span className="font-semibold text-foreground">{filledCount}</span>
+              {" / "}{capacity} signed in
             </span>
           </div>
-          <div className="col-span-2">
-            <span className="font-semibold">Location: </span>
-            <span>{cls.location}</span>
+
+          {/* Save button */}
+          <Button
+            size="sm"
+            onClick={handleSave}
+            disabled={save.isPending || !dirty}
+            className="gap-1.5"
+          >
+            {save.isPending ? (
+              <>Saving…</>
+            ) : savedAt ? (
+              <>
+                <CheckCircle2 className="h-4 w-4" />
+                Saved
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4" />
+                Save
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+
+      <div className="max-w-5xl mx-auto w-full px-4 sm:px-6 py-6 flex flex-col gap-6">
+        {/* Class info card */}
+        <div className="bg-white rounded-xl border border-border shadow-sm px-6 py-5">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Badge variant="secondary" className="text-xs">
+                  {formatCertificationType(cls.certificationType)}
+                </Badge>
+                <Badge
+                  variant={cls.status === "scheduled" ? "default" : "secondary"}
+                  className="text-xs capitalize"
+                >
+                  {cls.status}
+                </Badge>
+              </div>
+              <h1 className="text-xl font-bold tracking-tight">{cls.title}</h1>
+              <div className="flex flex-wrap gap-x-5 gap-y-1 mt-2 text-sm text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <CalendarDays className="h-3.5 w-3.5" />
+                  {formatDate(cls.date)}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5" />
+                  {formatTime(cls.startTime)}
+                  {cls.endTime ? ` – ${formatTime(cls.endTime)}` : ""}
+                </span>
+                {cls.location && cls.location !== "TBD" && (
+                  <span className="flex items-center gap-1.5">
+                    <MapPin className="h-3.5 w-3.5" />
+                    {cls.location}
+                  </span>
+                )}
+                <span className="flex items-center gap-1.5">
+                  <Users className="h-3.5 w-3.5" />
+                  {capacity} seats
+                </span>
+              </div>
+            </div>
+            <div className="text-right shrink-0">
+              <div className="text-xs text-muted-foreground uppercase tracking-wider">Class</div>
+              <div className="font-mono font-bold text-2xl text-[#007BA7]">#{cls.id}</div>
+            </div>
           </div>
         </div>
 
-        {/* Instruction line */}
-        <p className="text-xs text-[#555] mb-4 italic">
-          Please print legibly. By signing below you confirm your attendance in this CPR training session.
-        </p>
+        {/* Digital roster table */}
+        <div className="bg-white rounded-xl border border-border shadow-sm overflow-hidden">
+          {/* Progress bar */}
+          <div className="h-1 bg-muted">
+            <div
+              className="h-full bg-[#007BA7] transition-all duration-300"
+              style={{ width: `${capacity > 0 ? (filledCount / capacity) * 100 : 0}%` }}
+            />
+          </div>
 
-        {/* Roster table */}
-        <table className="w-full text-sm border-collapse">
-          <thead>
-            <tr className="bg-[#007BA7] text-white">
-              <th className="w-10 py-2 px-3 text-left font-semibold border border-[#005f87]">#</th>
-              <th className="py-2 px-3 text-left font-semibold border border-[#005f87]">Full Name (print)</th>
-              <th className="py-2 px-3 text-left font-semibold border border-[#005f87]">Email</th>
-              <th className="py-2 px-3 text-left font-semibold border border-[#005f87]">Phone</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((n) => (
-              <tr key={n} className={n % 2 === 0 ? "bg-[#f9fafb]" : "bg-white"}>
-                <td className="py-3 px-3 border border-[#ddd] text-center text-[#888] font-mono">{n}</td>
-                <td className="py-3 px-3 border border-[#ddd]" style={{ minWidth: "180px" }}>&nbsp;</td>
-                <td className="py-3 px-3 border border-[#ddd]" style={{ minWidth: "160px" }}>&nbsp;</td>
-                <td className="py-3 px-3 border border-[#ddd]" style={{ minWidth: "120px" }}>&nbsp;</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-muted/40">
+                  <th className="w-12 py-3 px-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    #
+                  </th>
+                  <th className="py-3 px-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Full Name
+                  </th>
+                  <th className="py-3 px-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th className="py-3 px-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Phone
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row, idx) => {
+                  const filled = row.name.trim().length > 0;
+                  return (
+                    <tr
+                      key={row.position}
+                      className={`border-b border-border/60 last:border-0 transition-colors ${
+                        filled ? "bg-emerald-50/40" : "bg-white hover:bg-muted/20"
+                      }`}
+                    >
+                      {/* Row number + status dot */}
+                      <td className="py-2 px-4">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className={`h-2 w-2 rounded-full shrink-0 ${
+                              filled ? "bg-emerald-500" : "bg-muted-foreground/20"
+                            }`}
+                          />
+                          <span className="font-mono text-xs text-muted-foreground">
+                            {String(row.position).padStart(2, "0")}
+                          </span>
+                        </div>
+                      </td>
 
-        {/* Footer */}
-        <div className="mt-8 pt-4 border-t border-[#ddd] flex justify-between text-[10px] text-[#aaa]">
-          <span>FOX Medical CPR Training Hub · Confidential attendance record</span>
-          <span>Class #{cls.id} · {cls.date}</span>
+                      {/* Name */}
+                      <td className="py-1.5 px-2">
+                        <Input
+                          ref={(el) => { inputRefs.current[idx] = el; }}
+                          className={`h-8 text-sm border-0 shadow-none focus-visible:ring-1 focus-visible:ring-[#007BA7] bg-transparent ${
+                            filled ? "font-medium" : ""
+                          }`}
+                          placeholder="Full name"
+                          value={row.name}
+                          onChange={(e) => updateRow(idx, { name: e.target.value })}
+                          onKeyDown={(e) => handleNameKeyDown(e, idx)}
+                        />
+                      </td>
+
+                      {/* Email */}
+                      <td className="py-1.5 px-2">
+                        <Input
+                          type="email"
+                          className="h-8 text-sm border-0 shadow-none focus-visible:ring-1 focus-visible:ring-[#007BA7] bg-transparent"
+                          placeholder="email@example.com"
+                          value={row.email}
+                          onChange={(e) => updateRow(idx, { email: e.target.value })}
+                        />
+                      </td>
+
+                      {/* Phone */}
+                      <td className="py-1.5 px-2">
+                        <Input
+                          type="tel"
+                          className="h-8 text-sm border-0 shadow-none focus-visible:ring-1 focus-visible:ring-[#007BA7] bg-transparent"
+                          placeholder="(555) 000-0000"
+                          value={row.phone}
+                          onChange={(e) => updateRow(idx, { phone: e.target.value })}
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Footer */}
+          <div className="px-4 py-3 border-t border-border/60 bg-muted/20 flex items-center justify-between text-xs text-muted-foreground">
+            <span>
+              {filledCount} of {capacity} seats filled
+            </span>
+            {savedAt && (
+              <span className="flex items-center gap-1 text-emerald-600">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Saved {savedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              </span>
+            )}
+            {dirty && !save.isPending && (
+              <span className="text-amber-600">Unsaved changes</span>
+            )}
+          </div>
         </div>
+
+        {/* Keyboard hint */}
+        <p className="text-xs text-center text-muted-foreground pb-4">
+          Press <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-[11px]">Enter</kbd> in the name field to jump to the next row
+        </p>
       </div>
     </div>
   );
