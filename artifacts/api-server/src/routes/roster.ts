@@ -171,6 +171,77 @@ router.put("/classes/:classId/roster", async (req, res) => {
   res.json(await loadRoster(classId, cls.capacity));
 });
 
+router.post("/roster/import", async (req, res) => {
+  const { classId, date, startTime, entries } = req.body as {
+    classId?: number;
+    date?: string;
+    startTime?: string;
+    entries: { name: string; email?: string; phone?: string }[];
+  };
+
+  if (!Array.isArray(entries) || entries.length === 0) {
+    res.status(400).json({ error: "entries array is required" });
+    return;
+  }
+
+  let cls: typeof classesTable.$inferSelect | undefined;
+
+  if (classId) {
+    [cls] = await db.select().from(classesTable).where(eq(classesTable.id, classId));
+  } else if (date && startTime) {
+    [cls] = await db
+      .select()
+      .from(classesTable)
+      .where(and(eq(classesTable.date, date), eq(classesTable.startTime, startTime)));
+  }
+
+  if (!cls) {
+    res.status(404).json({ error: "No matching class found for the provided date/time" });
+    return;
+  }
+
+  const existing = await db
+    .select({ position: classRosterTable.position, name: classRosterTable.name, email: classRosterTable.email })
+    .from(classRosterTable)
+    .where(eq(classRosterTable.classId, cls.id));
+
+  const filledPositions = new Set(existing.map((r) => r.position));
+  const existingNames = new Set(existing.map((r) => r.name.trim().toLowerCase()));
+  const existingEmails = new Set(existing.filter((r) => r.email).map((r) => r.email!.trim().toLowerCase()));
+
+  let nextSlot = 0;
+  const findSlot = () => {
+    while (nextSlot < cls!.capacity && filledPositions.has(nextSlot)) nextSlot++;
+    return nextSlot < cls!.capacity ? nextSlot++ : -1;
+  };
+
+  let imported = 0;
+  let skipped = 0;
+
+  for (const entry of entries) {
+    const name = entry.name?.trim();
+    if (!name) { skipped++; continue; }
+    const email = entry.email?.trim() ?? "";
+    const phone = entry.phone?.trim() ?? "";
+
+    const isDuplicate =
+      existingNames.has(name.toLowerCase()) ||
+      (email && existingEmails.has(email.toLowerCase()));
+    if (isDuplicate) { skipped++; continue; }
+
+    const slot = findSlot();
+    if (slot === -1) { skipped++; continue; }
+
+    await db.insert(classRosterTable).values({ classId: cls.id, position: slot, name, email, phone, result: null, cardSent: false });
+    filledPositions.add(slot);
+    existingNames.add(name.toLowerCase());
+    if (email) existingEmails.add(email.toLowerCase());
+    imported++;
+  }
+
+  res.json({ classId: cls.id, classTitle: cls.title, classDate: cls.date, imported, skipped });
+});
+
 router.post("/public/classes/:classId/roster-signin", async (req, res) => {
   const classId = parseId(req.params.classId, "classId");
   const { name, email, phone } = req.body as {

@@ -48,6 +48,8 @@ import {
   Clock,
   MapPin,
   Pencil,
+  Printer,
+  Upload,
   User as UserIcon,
   Users,
   UserPlus,
@@ -57,6 +59,7 @@ import {
   Check,
   ExternalLink,
 } from "lucide-react";
+import { UploadRosterDialog } from "@/components/UploadRosterDialog";
 import {
   certificationDuration,
   formatCertificationType,
@@ -88,6 +91,7 @@ export default function ClassDetail() {
   const [linkCopied, setLinkCopied] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
   const [editForm, setEditForm] = useState({
     title: "",
     certificationType: "cpr_aed_first_aid" as CertificationType,
@@ -224,6 +228,27 @@ export default function ClassDetail() {
             >
               <Link2 className="h-4 w-4 mr-1.5" /> Share sign-in link
             </Button>
+            {canManage && (
+              <a
+                href={`${import.meta.env.BASE_URL?.replace(/\/$/, "")}/classes/${classId}/signin-sheet`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button variant="outline" size="sm" data-testid="button-print-sheet">
+                  <Printer className="h-4 w-4 mr-1.5" /> Sign-in sheet
+                </Button>
+              </a>
+            )}
+            {canManage && (
+              <Button
+                variant="outline"
+                size="sm"
+                data-testid="button-upload-csv"
+                onClick={() => setUploadOpen(true)}
+              >
+                <Upload className="h-4 w-4 mr-1.5" /> Upload CSV
+              </Button>
+            )}
             <Dialog open={shareOpen} onOpenChange={setShareOpen}>
               <DialogContent className="sm:max-w-md">
                 <DialogHeader>
@@ -679,6 +704,14 @@ export default function ClassDetail() {
           </CardContent>
         </Card>
       </div>
+      <UploadRosterDialog
+        open={uploadOpen}
+        onOpenChange={setUploadOpen}
+        onImported={() => {
+          qc.invalidateQueries({ queryKey: getGetClassRosterQueryKey(classId) });
+          qc.invalidateQueries({ queryKey: getGetClassQueryKey(classId) });
+        }}
+      />
     </>
   );
 }

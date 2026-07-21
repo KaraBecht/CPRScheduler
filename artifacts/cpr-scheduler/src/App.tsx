@@ -15,6 +15,7 @@ import Certificates from "@/pages/certificates";
 import People from "@/pages/people";
 import { RoleGate } from "@/components/RoleGate";
 import EmailPreviewRenewal from "@/pages/email-preview-renewal";
+import SigninSheet from "@/pages/signin-sheet";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 10_000 } },
@@ -26,6 +27,7 @@ function Router() {
       <Route path="/intake" component={PublicIntake} />
       <Route path="/roster-signin/:id" component={PublicRosterSignIn} />
       <Route path="/email-preview/renewal" component={EmailPreviewRenewal} />
+      <Route path="/classes/:id/signin-sheet" component={SigninSheet} />
       <Route>
         <AppShell>
           <Switch>
