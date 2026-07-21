@@ -284,8 +284,9 @@ export function generateSigninSheetHtml(cls: ClassInfo, roster: RosterEntry[]): 
 <!-- Toolbar (hidden when printing) -->
 <div class="toolbar" id="toolbar">
   <button class="primary" onclick="window.print()">🖨 Print / Save as PDF</button>
+  <button onclick="emailSheet()">✉ Email sign-in sheet</button>
   <button onclick="clearAll()">Clear all</button>
-  <span class="hint">Click any cell to type · Changes save in this file until you close it</span>
+  <span class="hint">Click any cell to type · Tab moves between cells</span>
 </div>
 
 <!-- Table -->
@@ -330,6 +331,47 @@ export function generateSigninSheetHtml(cls: ClassInfo, roster: RosterEntry[]): 
   function clearAll() {
     if (!confirm('Clear all entered data?')) return;
     document.querySelectorAll('.cell-inner').forEach(function(el) { el.textContent = ''; });
+  }
+
+  function emailSheet() {
+    var subject = encodeURIComponent('Sign-In Sheet: ${cls.title} \u2014 ${fmtDate(cls.date)}');
+
+    // Collect current cell values from the editable table
+    var rows = document.querySelectorAll('#tbody tr');
+    var lines = [];
+    rows.forEach(function(row) {
+      var numEl = row.querySelector('td.num');
+      var cells = row.querySelectorAll('.cell-inner');
+      var num   = numEl ? numEl.textContent.trim() : '';
+      var name  = cells[0] ? cells[0].textContent.trim() : '';
+      var email = cells[1] ? cells[1].textContent.trim() : '';
+      var phone = cells[2] ? cells[2].textContent.trim() : '';
+      if (name) {
+        lines.push(num + '. ' + name +
+          (email ? '  |  ' + email : '') +
+          (phone ? '  |  ' + phone : ''));
+      }
+    });
+
+    var attendeeBlock = lines.length > 0 ? lines.join('\\n') : '(no entries yet)';
+
+    var body = encodeURIComponent(
+      'FOX Medical \u2014 CPR Training Hub\\n' +
+      '================================\\n' +
+      'Class:       ${cls.title}\\n' +
+      'Date:        ${fmtDate(cls.date)}' +
+      '${timeStr ? "\\nTime:        " + timeStr : ""}' +
+      '${cls.location && cls.location !== "TBD" ? "\\nLocation:    " + cls.location : ""}' +
+      '${instructorLine ? "\\nInstructor:  " + instructorLine : ""}' +
+      '\\nCert type:   ${certLabel(cls.certificationType)}' +
+      '\\nCapacity:    ${cls.capacity} seats\\n' +
+      '\\nATTENDANCE ROSTER\\n' +
+      '-----------------\\n' +
+      attendeeBlock +
+      '\\n\\n(Attach the downloaded .html file to this email if needed.)'
+    );
+
+    window.location.href = 'mailto:?subject=' + subject + '&body=' + body;
   }
 
   // Tab key moves to next editable cell
