@@ -70,8 +70,10 @@ import {
   Link2,
   Check,
   ExternalLink,
+  FileDown,
 } from "lucide-react";
 import { UploadRosterDialog } from "@/components/UploadRosterDialog";
+import { downloadSigninSheet } from "@/lib/generate-signin-sheet";
 import {
   certificationDuration,
   formatCertificationType,
@@ -259,15 +261,16 @@ export default function ClassDetail() {
               <Link2 className="h-4 w-4 mr-1.5" /> Share sign-in link
             </Button>
             {canManage && (
-              <a
-                href={`${import.meta.env.BASE_URL?.replace(/\/$/, "")}/classes/${classId}/signin-sheet`}
-                target="_blank"
-                rel="noopener noreferrer"
+              <Button
+                variant="outline"
+                size="sm"
+                data-testid="button-download-sheet"
+                onClick={() =>
+                  downloadSigninSheet(cls, rosterData?.entries ?? [])
+                }
               >
-                <Button variant="outline" size="sm" data-testid="button-print-sheet">
-                  <Printer className="h-4 w-4 mr-1.5" /> Sign-in sheet
-                </Button>
-              </a>
+                <FileDown className="h-4 w-4 mr-1.5" /> Download sign-in sheet
+              </Button>
             )}
             {canManage && (
               <Button
