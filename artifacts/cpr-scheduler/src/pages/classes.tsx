@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   useListClasses,
   useCreateClass,
+  useDeleteClass,
   getListClassesQueryKey,
   type CertificationType,
   type ClassSession,
@@ -19,8 +20,19 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -435,8 +447,18 @@ export default function Classes() {
   const { role } = useAuth();
   const [view, setView] = useState<"list" | "calendar">("list");
   const [tab, setTab] = useState<"all" | "upcoming" | "completed">("upcoming");
+  const [deletingClass, setDeletingClass] = useState<ClassSession | null>(null);
 
   const { data: allClasses = [], isLoading } = useListClasses();
+  const qc = useQueryClient();
+  const deleteClass = useDeleteClass({
+    mutation: {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: getListClassesQueryKey() });
+        setDeletingClass(null);
+      },
+    },
+  });
 
   const today = new Date().toISOString().split("T")[0]!;
   const listClasses =
@@ -518,13 +540,46 @@ export default function Classes() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {listClasses.map((c) => (
-                  <ClassCard key={c.id} session={c} />
+                  <ClassCard
+                    key={c.id}
+                    session={c}
+                    onDelete={role === "administrator" ? () => setDeletingClass(c) : undefined}
+                  />
                 ))}
               </div>
             )}
           </TabsContent>
         </Tabs>
       )}
+
+      <AlertDialog open={!!deletingClass} onOpenChange={(v) => !v && setDeletingClass(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete "{deletingClass?.title}"?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>This will permanently delete:</p>
+                <ul className="list-disc list-inside space-y-1 pl-1">
+                  <li>The class record</li>
+                  <li>All roster sign-in entries</li>
+                  <li>All enrollment records</li>
+                  <li>Certificates will be preserved but unlinked from this class</li>
+                </ul>
+                <p className="font-medium text-foreground pt-1">This cannot be undone.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deletingClass && deleteClass.mutate({ classId: deletingClass.id })}
+            >
+              {deleteClass.isPending ? "Deleting…" : "Delete class"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

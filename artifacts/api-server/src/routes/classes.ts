@@ -6,8 +6,9 @@ import {
   enrollmentsTable,
   classRosterTable,
   usersTable,
+  certificatesTable,
 } from "@workspace/db";
-import { and, eq, gte, ne, sql, desc, asc } from "drizzle-orm";
+import { and, eq, gte, ne, sql, desc, asc, isNotNull } from "drizzle-orm";
 import {
   CreateClassBody,
   UpdateClassBody,
@@ -138,7 +139,15 @@ router.patch("/classes/:classId", async (req, res) => {
 
 router.delete("/classes/:classId", async (req, res) => {
   const classId = parseId(req.params.classId, "classId");
-  await db.delete(classesTable).where(eq(classesTable.id, classId));
+  await db.transaction(async (tx) => {
+    // Null out classId on certificates (no cascade FK — preserves cert records)
+    await tx
+      .update(certificatesTable)
+      .set({ classId: null })
+      .where(and(isNotNull(certificatesTable.classId), eq(certificatesTable.classId, classId)));
+    // Cascade-delete class (roster + enrollments cascade via FK)
+    await tx.delete(classesTable).where(eq(classesTable.id, classId));
+  });
   res.status(204).end();
 });
 

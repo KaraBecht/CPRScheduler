@@ -1,4 +1,4 @@
-import { useRoute, Link } from "wouter";
+import { useRoute, Link, useLocation } from "wouter";
 import {
   useGetClass,
   useGetClassRoster,
@@ -7,6 +7,7 @@ import {
   useDeleteEnrollment,
   useCreateCertificate,
   useUpdateClass,
+  useDeleteClass,
   useListUsers,
   getGetClassQueryKey,
   getGetClassRosterQueryKey,
@@ -24,6 +25,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Dialog,
   DialogContent,
@@ -49,6 +60,7 @@ import {
   MapPin,
   Pencil,
   Printer,
+  Trash2,
   Upload,
   User as UserIcon,
   Users,
@@ -92,6 +104,18 @@ export default function ClassDetail() {
   const [shareOpen, setShareOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [, navigate] = useLocation();
+
+  const deleteClass = useDeleteClass({
+    mutation: {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: getListClassesQueryKey() });
+        qc.invalidateQueries({ queryKey: getGetAdminDashboardQueryKey() });
+        navigate("/classes");
+      },
+    },
+  });
   const [editForm, setEditForm] = useState({
     title: "",
     certificationType: "cpr_aed_first_aid" as CertificationType,
@@ -247,6 +271,17 @@ export default function ClassDetail() {
                 onClick={() => setUploadOpen(true)}
               >
                 <Upload className="h-4 w-4 mr-1.5" /> Upload CSV
+              </Button>
+            )}
+            {role === "administrator" && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/30"
+                data-testid="button-delete-class"
+                onClick={() => setDeleteOpen(true)}
+              >
+                <Trash2 className="h-4 w-4 mr-1.5" /> Delete
               </Button>
             )}
             <Dialog open={shareOpen} onOpenChange={setShareOpen}>
@@ -712,6 +747,39 @@ export default function ClassDetail() {
           qc.invalidateQueries({ queryKey: getGetClassQueryKey(classId) });
         }}
       />
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete "{cls.title}"?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>This will permanently delete:</p>
+                <ul className="list-disc list-inside space-y-1 pl-1">
+                  <li>The class record</li>
+                  <li>All roster sign-in entries</li>
+                  <li>All enrollment records</li>
+                  <li>
+                    Certificates will be preserved but unlinked from this class
+                  </li>
+                </ul>
+                <p className="font-medium text-foreground pt-1">
+                  This cannot be undone.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteClass.mutate({ classId })}
+              data-testid="button-confirm-delete"
+            >
+              {deleteClass.isPending ? "Deleting…" : "Delete class"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
