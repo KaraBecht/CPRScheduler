@@ -3,12 +3,13 @@ import { parseId } from "../lib/errors";
 import {
   db,
   classesTable,
+  classInstructorsTable,
   enrollmentsTable,
   classRosterTable,
   usersTable,
   certificatesTable,
 } from "@workspace/db";
-import { and, eq, gte, ne, sql, desc, asc, isNotNull } from "drizzle-orm";
+import { and, eq, gte, ne, sql, desc, asc, isNotNull, inArray } from "drizzle-orm";
 import {
   CreateClassBody,
   UpdateClassBody,
@@ -19,7 +20,7 @@ import { serializeUser } from "./users";
 const router: IRouter = Router();
 
 async function serializeClass(row: typeof classesTable.$inferSelect) {
-  const [[enrollCounts], [rosterCounts]] = await Promise.all([
+  const [[enrollCounts], [rosterCounts], classInstructors] = await Promise.all([
     db
       .select({ count: sql<number>`count(*)::int` })
       .from(enrollmentsTable)
@@ -38,19 +39,26 @@ async function serializeClass(row: typeof classesTable.$inferSelect) {
           ne(sql`trim(${classRosterTable.name})`, ""),
         ),
       ),
+    db
+      .select({ id: usersTable.id, name: usersTable.name })
+      .from(classInstructorsTable)
+      .innerJoin(usersTable, eq(classInstructorsTable.userId, usersTable.id))
+      .where(eq(classInstructorsTable.classId, row.id)),
   ]);
   const enrolledCount = Math.max(
     enrollCounts?.count ?? 0,
     rosterCounts?.count ?? 0,
   );
-  let instructorName: string | null = null;
-  if (row.instructorId) {
+  // Fall back to instructor_id column if class_instructors is empty (migration compat)
+  let instructors: { id: number; name: string }[] = classInstructors;
+  if (instructors.length === 0 && row.instructorId) {
     const [u] = await db
       .select()
       .from(usersTable)
       .where(eq(usersTable.id, row.instructorId));
-    instructorName = u?.name ?? null;
+    if (u) instructors = [{ id: u.id, name: u.name }];
   }
+  const first = instructors[0] ?? null;
   return {
     id: row.id,
     title: row.title,
@@ -62,8 +70,9 @@ async function serializeClass(row: typeof classesTable.$inferSelect) {
     capacity: row.capacity,
     enrolledCount,
     status: row.status,
-    instructorId: row.instructorId,
-    instructorName,
+    instructorId: first?.id ?? null,
+    instructorName: first?.name ?? null,
+    instructors,
     description: row.description,
   };
 }
@@ -72,8 +81,16 @@ router.get("/classes", async (req, res) => {
   const params = ListClassesQueryParams.parse(req.query);
   const conditions = [];
   if (params.status) conditions.push(eq(classesTable.status, params.status));
-  if (params.instructorId)
-    conditions.push(eq(classesTable.instructorId, params.instructorId));
+  if (params.instructorId) {
+    // Match classes where instructor_id = X OR class is in class_instructors for this user
+    const classIdsForInstructor = db
+      .select({ classId: classInstructorsTable.classId })
+      .from(classInstructorsTable)
+      .where(eq(classInstructorsTable.userId, params.instructorId));
+    conditions.push(
+      sql`(${classesTable.instructorId} = ${params.instructorId} OR ${classesTable.id} IN (${classIdsForInstructor}))`,
+    );
+  }
   if (params.upcoming) {
     const today = new Date().toISOString().split("T")[0]!;
     conditions.push(gte(classesTable.date, today));
@@ -89,7 +106,17 @@ router.get("/classes", async (req, res) => {
 
 router.post("/classes", async (req, res) => {
   const body = CreateClassBody.parse(req.body);
-  const [row] = await db.insert(classesTable).values(body).returning();
+  const { instructorIds, ...classData } = body;
+  const [row] = await db
+    .insert(classesTable)
+    .values({ ...classData, instructorId: instructorIds?.[0] ?? null })
+    .returning();
+  if (instructorIds && instructorIds.length > 0) {
+    await db
+      .insert(classInstructorsTable)
+      .values(instructorIds.map((userId) => ({ classId: row.id, userId })))
+      .onConflictDoNothing();
+  }
   res.status(201).json(await serializeClass(row));
 });
 
@@ -128,24 +155,40 @@ router.get("/classes/:classId", async (req, res) => {
 router.patch("/classes/:classId", async (req, res) => {
   const classId = parseId(req.params.classId, "classId");
   const body = UpdateClassBody.parse(req.body);
+  const { instructorIds, ...classData } = body;
+  const updateData: typeof classData & { instructorId?: number | null } = {
+    ...classData,
+  };
+  if (instructorIds !== undefined) {
+    updateData.instructorId = instructorIds[0] ?? null;
+  }
   const [row] = await db
     .update(classesTable)
-    .set(body)
+    .set(updateData)
     .where(eq(classesTable.id, classId))
     .returning();
   if (!row) { res.status(404).json({ error: "Class not found" }); return; }
+  if (instructorIds !== undefined) {
+    await db
+      .delete(classInstructorsTable)
+      .where(eq(classInstructorsTable.classId, classId));
+    if (instructorIds.length > 0) {
+      await db
+        .insert(classInstructorsTable)
+        .values(instructorIds.map((userId) => ({ classId, userId })))
+        .onConflictDoNothing();
+    }
+  }
   res.json(await serializeClass(row));
 });
 
 router.delete("/classes/:classId", async (req, res) => {
   const classId = parseId(req.params.classId, "classId");
   await db.transaction(async (tx) => {
-    // Null out classId on certificates (no cascade FK — preserves cert records)
     await tx
       .update(certificatesTable)
       .set({ classId: null })
       .where(and(isNotNull(certificatesTable.classId), eq(certificatesTable.classId, classId)));
-    // Cascade-delete class (roster + enrollments cascade via FK)
     await tx.delete(classesTable).where(eq(classesTable.id, classId));
   });
   res.status(204).end();

@@ -6,6 +6,7 @@ import {
   timestamp,
   pgEnum,
   date,
+  unique,
 } from "drizzle-orm/pg-core";
 import { usersTable } from "./users";
 
@@ -38,3 +39,17 @@ export const classesTable = pgTable("classes", {
 
 export type ClassRow = typeof classesTable.$inferSelect;
 export type NewClassRow = typeof classesTable.$inferInsert;
+
+export const classInstructorsTable = pgTable(
+  "class_instructors",
+  {
+    id: serial("id").primaryKey(),
+    classId: integer("class_id")
+      .notNull()
+      .references(() => classesTable.id, { onDelete: "cascade" }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => usersTable.id, { onDelete: "cascade" }),
+  },
+  (t) => [unique().on(t.classId, t.userId)],
+);

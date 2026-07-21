@@ -84,6 +84,11 @@ export interface UserInput {
   avatarUrl?: string;
 }
 
+export type ClassSessionInstructorsItem = {
+  id: number;
+  name: string;
+};
+
 export interface ClassSession {
   id: number;
   title: string;
@@ -100,6 +105,7 @@ export interface ClassSession {
   instructorId?: number | null;
   /** @nullable */
   instructorName?: string | null;
+  instructors?: ClassSessionInstructorsItem[];
   /** @nullable */
   description?: string | null;
 }
@@ -129,7 +135,7 @@ export interface ClassInput {
   location: string;
   /** @minimum 1 */
   capacity: number;
-  instructorId?: number;
+  instructorIds?: number[];
   description?: string;
 }
 
@@ -187,7 +193,7 @@ export interface ClassUpdate {
   endTime?: string;
   location?: string;
   capacity?: number;
-  instructorId?: number;
+  instructorIds?: number[];
   description?: string;
   status?: ClassStatus;
 }

@@ -16,7 +16,7 @@ export interface ClassUpdate {
   endTime?: string;
   location?: string;
   capacity?: number;
-  instructorId?: number;
+  instructorIds?: number[];
   description?: string;
   status?: ClassStatus;
 }

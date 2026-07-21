@@ -50,7 +50,7 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth-context";
 import { useListUsers } from "@workspace/api-client-react";
-import { Plus, Trash2, LayoutGrid, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Trash2, LayoutGrid, CalendarDays, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { formatCertificationType, certificationDuration } from "@/lib/format";
 import { Link } from "wouter";
@@ -83,22 +83,24 @@ function CreateClassDialog() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const { data: instructors = [] } = useListUsers({ role: "instructor" });
-  const CAPACITY = 10;
   const [title, setTitle] = useState("");
   const [certificationType, setCertificationType] =
     useState<CertificationType>("cpr_aed_first_aid");
   const [location, setLocation] = useState("");
-  const [instructorId, setInstructorId] = useState<number | null>(null);
+  const [capacity, setCapacity] = useState(10);
+  const [instructorIds, setInstructorIds] = useState<number[]>([]);
   const [description, setDescription] = useState("");
   const [slots, setSlots] = useState<ClassSlot[]>([
     { date: "", startTime: "09:00" },
   ]);
+  const maxInstructors = Math.ceil(capacity / 10);
 
   const reset = () => {
     setTitle("");
     setCertificationType("cpr_aed_first_aid");
     setLocation("");
-    setInstructorId(null);
+    setCapacity(10);
+    setInstructorIds([]);
     setDescription("");
     setSlots([{ date: "", startTime: "09:00" }]);
   };
@@ -132,8 +134,8 @@ function CreateClassDialog() {
             date: slot.date,
             startTime: slot.startTime,
             location,
-            capacity: CAPACITY,
-            instructorId: instructorId ?? undefined,
+            capacity,
+            instructorIds: instructorIds.length > 0 ? instructorIds : undefined,
             description,
           },
         });
@@ -193,40 +195,98 @@ function CreateClassDialog() {
               </p>
             </div>
             <div>
-              <Label>Instructor</Label>
-              <Select
-                value={instructorId?.toString() ?? "none"}
-                onValueChange={(v) =>
-                  setInstructorId(v === "none" ? null : parseInt(v, 10))
-                }
-              >
-                <SelectTrigger data-testid="select-instructor">
-                  <SelectValue placeholder="Unassigned" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Unassigned</SelectItem>
-                  {instructors.map((i) => (
-                    <SelectItem key={i.id} value={i.id.toString()}>
-                      {i.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Capacity</Label>
+              <Input
+                type="number"
+                min={1}
+                data-testid="input-capacity"
+                value={capacity}
+                onChange={(e) => {
+                  const newCap = Math.max(1, parseInt(e.target.value) || 1);
+                  setCapacity(newCap);
+                  const newMax = Math.ceil(newCap / 10);
+                  if (instructorIds.length > newMax) {
+                    setInstructorIds(instructorIds.slice(0, newMax));
+                  }
+                }}
+              />
+              {maxInstructors > 1 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Up to {maxInstructors} instructors for {capacity} students
+                </p>
+              )}
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Location</Label>
-              <LocationAutocomplete
-                data-testid="input-location"
-                value={location}
-                onChange={setLocation}
-                placeholder="Building, address, or room"
-              />
-            </div>
-            <div>
-              <Label>Capacity</Label>
-              <Input type="number" value={CAPACITY} readOnly disabled />
+          <div>
+            <Label>Location</Label>
+            <LocationAutocomplete
+              data-testid="input-location"
+              value={location}
+              onChange={setLocation}
+              placeholder="Building, address, or room"
+            />
+          </div>
+          <div>
+            <Label>
+              {maxInstructors > 1
+                ? `Instructors (up to ${maxInstructors})`
+                : "Instructor"}
+            </Label>
+            <div className="space-y-2 mt-1">
+              {instructorIds.map((id, idx) => {
+                const instr = instructors.find((i) => i.id === id);
+                return (
+                  <div key={idx} className="flex items-center gap-2">
+                    <span className="flex-1 text-sm border rounded-md px-3 py-2 bg-background">
+                      {instr?.name ?? "Unknown"}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 shrink-0"
+                      onClick={() =>
+                        setInstructorIds(instructorIds.filter((_, i) => i !== idx))
+                      }
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                );
+              })}
+              {instructorIds.length < maxInstructors && (
+                <Select
+                  value="none"
+                  onValueChange={(v) => {
+                    if (v !== "none")
+                      setInstructorIds([...instructorIds, parseInt(v, 10)]);
+                  }}
+                >
+                  <SelectTrigger data-testid="select-instructor">
+                    <SelectValue
+                      placeholder={
+                        instructorIds.length === 0
+                          ? "Unassigned"
+                          : "Add another instructor"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">
+                      {instructorIds.length === 0
+                        ? "Unassigned"
+                        : "— add instructor —"}
+                    </SelectItem>
+                    {instructors
+                      .filter((i) => !instructorIds.includes(i.id))
+                      .map((i) => (
+                        <SelectItem key={i.id} value={i.id.toString()}>
+                          {i.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
           <div className="space-y-2">

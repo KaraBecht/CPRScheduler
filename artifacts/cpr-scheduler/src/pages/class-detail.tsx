@@ -124,7 +124,7 @@ export default function ClassDetail() {
     endTime: "",
     location: "",
     capacity: 10,
-    instructorId: "",
+    instructorIds: [] as number[],
     description: "",
     status: "scheduled" as "scheduled" | "completed" | "cancelled",
   });
@@ -185,6 +185,12 @@ export default function ClassDetail() {
 
   function openEdit() {
     if (!cls) return;
+    const ids =
+      cls.instructors && cls.instructors.length > 0
+        ? cls.instructors.map((i) => i.id)
+        : cls.instructorId
+          ? [cls.instructorId]
+          : [];
     setEditForm({
       title: cls.title,
       certificationType: cls.certificationType as CertificationType,
@@ -193,7 +199,7 @@ export default function ClassDetail() {
       endTime: cls.endTime ?? "",
       location: cls.location === "TBD" ? "" : cls.location,
       capacity: cls.capacity,
-      instructorId: cls.instructorId?.toString() ?? "",
+      instructorIds: ids,
       description: cls.description ?? "",
       status: cls.status as "scheduled" | "completed" | "cancelled",
     });
@@ -211,7 +217,7 @@ export default function ClassDetail() {
         endTime: editForm.endTime || undefined,
         location: editForm.location || "TBD",
         capacity: editForm.capacity,
-        instructorId: editForm.instructorId ? parseInt(editForm.instructorId, 10) : undefined,
+        instructorIds: editForm.instructorIds,
         description: editForm.description || undefined,
         status: editForm.status,
       },
@@ -356,14 +362,16 @@ export default function ClassDetail() {
       />
 
       {role === "administrator" &&
-        (cls.location === "TBD" || !cls.location || !cls.instructorId) && (
+        (cls.location === "TBD" ||
+          !cls.location ||
+          !cls.instructors?.length) && (
           <div className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 mb-2">
             <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-500" />
             <span>
               This class is missing{" "}
               {[
                 (!cls.location || cls.location === "TBD") && "a location",
-                !cls.instructorId && "an instructor",
+                !cls.instructors?.length && "an instructor",
               ]
                 .filter(Boolean)
                 .join(" and ")}
@@ -484,25 +492,92 @@ export default function ClassDetail() {
               />
             </div>
             <div>
-              <Label>Instructor</Label>
-              <Select
-                value={editForm.instructorId || "none"}
-                onValueChange={(v) =>
-                  setEditForm({ ...editForm, instructorId: v === "none" ? "" : v })
-                }
-              >
-                <SelectTrigger data-testid="select-edit-instructor">
-                  <SelectValue placeholder="Unassigned" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Unassigned</SelectItem>
-                  {instructors.map((i) => (
-                    <SelectItem key={i.id} value={i.id.toString()}>
-                      {i.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {(() => {
+                const maxInst = Math.ceil(editForm.capacity / 10);
+                return (
+                  <>
+                    <Label>
+                      {maxInst > 1
+                        ? `Instructors (up to ${maxInst})`
+                        : "Instructor"}
+                    </Label>
+                    {maxInst > 1 && (
+                      <p className="text-xs text-muted-foreground mb-1">
+                        1 instructor per 10 students
+                      </p>
+                    )}
+                    <div className="space-y-2 mt-1">
+                      {editForm.instructorIds.map((id, idx) => {
+                        const instr = instructors.find((i) => i.id === id);
+                        return (
+                          <div key={idx} className="flex items-center gap-2">
+                            <span className="flex-1 text-sm border rounded-md px-3 py-2 bg-background">
+                              {instr?.name ?? "Unknown"}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9 shrink-0"
+                              onClick={() =>
+                                setEditForm({
+                                  ...editForm,
+                                  instructorIds: editForm.instructorIds.filter(
+                                    (_, i) => i !== idx,
+                                  ),
+                                })
+                              }
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        );
+                      })}
+                      {editForm.instructorIds.length < maxInst && (
+                        <Select
+                          value="none"
+                          onValueChange={(v) => {
+                            if (v !== "none")
+                              setEditForm({
+                                ...editForm,
+                                instructorIds: [
+                                  ...editForm.instructorIds,
+                                  parseInt(v, 10),
+                                ],
+                              });
+                          }}
+                        >
+                          <SelectTrigger data-testid="select-edit-instructor">
+                            <SelectValue
+                              placeholder={
+                                editForm.instructorIds.length === 0
+                                  ? "Unassigned"
+                                  : "Add another instructor"
+                              }
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">
+                              {editForm.instructorIds.length === 0
+                                ? "Unassigned"
+                                : "— add instructor —"}
+                            </SelectItem>
+                            {instructors
+                              .filter(
+                                (i) => !editForm.instructorIds.includes(i.id),
+                              )
+                              .map((i) => (
+                                <SelectItem key={i.id} value={i.id.toString()}>
+                                  {i.name}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
             </div>
             <div>
               <Label>Description</Label>
@@ -553,9 +628,13 @@ export default function ClassDetail() {
               <MapPin className="h-4 w-4 text-muted-foreground" />
               <span>{cls.location}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <UserIcon className="h-4 w-4 text-muted-foreground" />
-              <span>{cls.instructorName ?? "Unassigned"}</span>
+            <div className="flex items-start gap-2">
+              <UserIcon className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+              <span>
+                {cls.instructors && cls.instructors.length > 0
+                  ? cls.instructors.map((i) => i.name).join(", ")
+                  : (cls.instructorName ?? "Unassigned")}
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-muted-foreground" />

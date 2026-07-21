@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CertificationType } from './certificationType';
+import type { ClassSessionInstructorsItem } from './classSessionInstructorsItem';
 import type { ClassStatus } from './classStatus';
 
 export interface ClassSession {
@@ -24,6 +25,7 @@ export interface ClassSession {
   instructorId?: number | null;
   /** @nullable */
   instructorName?: string | null;
+  instructors?: ClassSessionInstructorsItem[];
   /** @nullable */
   description?: string | null;
 }

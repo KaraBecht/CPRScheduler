@@ -25,6 +25,7 @@ export * from './classRosterEntry';
 export * from './classRosterEntryUpdate';
 export * from './classRosterInput';
 export * from './classSession';
+export * from './classSessionInstructorsItem';
 export * from './classStatus';
 export * from './classUpdate';
 export * from './enrollment';

@@ -17,6 +17,6 @@ export interface ClassInput {
   location: string;
   /** @minimum 1 */
   capacity: number;
-  instructorId?: number;
+  instructorIds?: number[];
   description?: string;
 }

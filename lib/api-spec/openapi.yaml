@@ -586,6 +586,14 @@ components:
         status: { $ref: "#/components/schemas/ClassStatus" }
         instructorId: { type: ["integer", "null"] }
         instructorName: { type: ["string", "null"] }
+        instructors:
+          type: array
+          items:
+            type: object
+            required: [id, name]
+            properties:
+              id: { type: integer }
+              name: { type: string }
         description: { type: ["string", "null"] }
 
     ClassDetail:
@@ -609,7 +617,9 @@ components:
         endTime: { type: string }
         location: { type: string }
         capacity: { type: integer, minimum: 1 }
-        instructorId: { type: integer }
+        instructorIds:
+          type: array
+          items: { type: integer }
         description: { type: string }
 
     RosterResult:
@@ -687,7 +697,9 @@ components:
         endTime: { type: string }
         location: { type: string }
         capacity: { type: integer }
-        instructorId: { type: integer }
+        instructorIds:
+          type: array
+          items: { type: integer }
         description: { type: string }
         status: { $ref: "#/components/schemas/ClassStatus" }
 
