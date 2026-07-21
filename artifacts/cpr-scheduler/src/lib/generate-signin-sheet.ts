@@ -150,8 +150,41 @@ export function generateSigninSheetHtml(cls: ClassInfo, roster: RosterEntry[]): 
     color: white;
     border-color: #007BA7;
   }
+  .toolbar button.outlook {
+    background: #0078D4;
+    color: white;
+    border-color: #0078D4;
+  }
   .toolbar button:hover { opacity: 0.85; }
   .toolbar .hint { font-size: 11px; color: #888; align-self: center; margin-left: 4px; }
+
+  /* ── Attach notice overlay ── */
+  #attach-notice {
+    display: none;
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1a1a1a;
+    color: #fff;
+    border-radius: 10px;
+    padding: 14px 22px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.28);
+    z-index: 9999;
+    font-size: 13px;
+    line-height: 1.5;
+    max-width: 460px;
+    text-align: center;
+  }
+  #attach-notice strong { color: #60cdff; }
+  #attach-notice .dismiss {
+    display: block;
+    margin-top: 8px;
+    font-size: 11px;
+    color: #aaa;
+    cursor: pointer;
+    text-decoration: underline;
+  }
 
   /* ── Table ── */
   table {
@@ -284,7 +317,7 @@ export function generateSigninSheetHtml(cls: ClassInfo, roster: RosterEntry[]): 
 <!-- Toolbar (hidden when printing) -->
 <div class="toolbar" id="toolbar">
   <button class="primary" onclick="window.print()">🖨 Print / Save as PDF</button>
-  <button onclick="emailSheet()">✉ Email sign-in sheet</button>
+  <button class="outlook" onclick="emailSheet()">✉ Email via Outlook</button>
   <button onclick="clearAll()">Clear all</button>
   <span class="hint">Click any cell to type · Tab moves between cells</span>
 </div>
@@ -327,34 +360,79 @@ export function generateSigninSheetHtml(cls: ClassInfo, roster: RosterEntry[]): 
   <span>${cls.capacity} seats · ${certLabel(cls.certificationType)}</span>
 </div>
 
+<!-- Attach notice (shown after clicking Email) -->
+<div id="attach-notice">
+  📎 <strong>File saved to your Downloads folder.</strong><br>
+  In Outlook, click <strong>Attach File</strong> and select the file, or drag it from Downloads into the email.
+  <span class="dismiss" onclick="document.getElementById('attach-notice').style.display='none'">Dismiss</span>
+</div>
+
 <script>
   function clearAll() {
     if (!confirm('Clear all entered data?')) return;
     document.querySelectorAll('.cell-inner').forEach(function(el) { el.textContent = ''; });
   }
 
-  function emailSheet() {
-    var subject = encodeURIComponent('Sign-In Sheet: ${cls.title} \u2014 ${fmtDate(cls.date)}');
+  function escHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
 
-    // Collect current cell values from the editable table
-    var rows = document.querySelectorAll('#tbody tr');
+  function emailSheet() {
+    // ── Step 1: capture current cell values and save updated file ──
+    var trs = document.querySelectorAll('#tbody tr');
     var lines = [];
-    rows.forEach(function(row) {
+    var newTbody = '';
+
+    trs.forEach(function(row) {
       var numEl = row.querySelector('td.num');
       var cells = row.querySelectorAll('.cell-inner');
       var num   = numEl ? numEl.textContent.trim() : '';
       var name  = cells[0] ? cells[0].textContent.trim() : '';
       var email = cells[1] ? cells[1].textContent.trim() : '';
       var phone = cells[2] ? cells[2].textContent.trim() : '';
+
       if (name) {
         lines.push(num + '. ' + name +
           (email ? '  |  ' + email : '') +
           (phone ? '  |  ' + phone : ''));
       }
+
+      newTbody += '<tr>' +
+        '<td class="num">' + escHtml(num) + '</td>' +
+        '<td><div class="cell-inner" contenteditable="true">' + escHtml(name) + '</div></td>' +
+        '<td><div class="cell-inner" contenteditable="true">' + escHtml(email) + '</div></td>' +
+        '<td><div class="cell-inner" contenteditable="true">' + escHtml(phone) + '</div></td>' +
+        '</tr>';
     });
 
-    var attendeeBlock = lines.length > 0 ? lines.join('\\n') : '(no entries yet)';
+    // Serialize the current DOM then swap tbody to include typed values
+    var html = '<!DOCTYPE html>\\n' + document.documentElement.outerHTML;
+    // Replace the old tbody block with the freshly built one
+    var tbodyStart = html.indexOf('<tbody id="tbody">');
+    var tbodyEnd   = html.indexOf('</tbody>', tbodyStart) + '</tbody>'.length;
+    if (tbodyStart !== -1 && tbodyEnd !== -1) {
+      html = html.slice(0, tbodyStart) +
+             '<tbody id="tbody">\\n    ' + newTbody + '\\n  </tbody>' +
+             html.slice(tbodyEnd);
+    }
 
+    var blob = new Blob([html], { type: 'text/html' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href   = url;
+    a.download = document.title.replace(/\s*\u2014\s*/, '-').replace(/\s+/g, '-').toLowerCase() + '-filled.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    // ── Step 2: open Outlook via mailto: ──
+    var subject = encodeURIComponent('Sign-In Sheet: ${cls.title} \u2014 ${fmtDate(cls.date)}');
+    var attendeeBlock = lines.length > 0 ? lines.join('\\n') : '(no entries yet)';
     var body = encodeURIComponent(
       'FOX Medical \u2014 CPR Training Hub\\n' +
       '================================\\n' +
@@ -367,11 +445,19 @@ export function generateSigninSheetHtml(cls: ClassInfo, roster: RosterEntry[]): 
       '\\nCapacity:    ${cls.capacity} seats\\n' +
       '\\nATTENDANCE ROSTER\\n' +
       '-----------------\\n' +
-      attendeeBlock +
-      '\\n\\n(Attach the downloaded .html file to this email if needed.)'
+      attendeeBlock
     );
 
-    window.location.href = 'mailto:?subject=' + subject + '&body=' + body;
+    setTimeout(function() {
+      window.location.href = 'mailto:?subject=' + subject + '&body=' + body;
+    }, 400);
+
+    // ── Step 3: show attach reminder ──
+    var notice = document.getElementById('attach-notice');
+    if (notice) {
+      notice.style.display = 'block';
+      setTimeout(function() { notice.style.display = 'none'; }, 18000);
+    }
   }
 
   // Tab key moves to next editable cell
