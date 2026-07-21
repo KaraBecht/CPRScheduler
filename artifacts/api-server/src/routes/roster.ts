@@ -242,6 +242,40 @@ router.post("/roster/import", async (req, res) => {
   res.json({ classId: cls.id, classTitle: cls.title, classDate: cls.date, imported, skipped });
 });
 
+router.get("/public/classes/:classId/signin-sheet", async (req, res) => {
+  const classId = parseId(req.params.classId, "classId");
+  const [cls] = await db
+    .select()
+    .from(classesTable)
+    .where(eq(classesTable.id, classId));
+  if (!cls) {
+    res.status(404).json({ error: "Class not found" });
+    return;
+  }
+  const rows = await db
+    .select({
+      position: classRosterTable.position,
+      name: classRosterTable.name,
+    })
+    .from(classRosterTable)
+    .where(eq(classRosterTable.classId, classId))
+    .orderBy(asc(classRosterTable.position));
+
+  const signedIn = rows.filter((r) => r.name?.trim());
+  res.json({
+    classId: cls.id,
+    title: cls.title,
+    date: cls.date,
+    startTime: cls.startTime,
+    endTime: cls.endTime,
+    location: cls.location,
+    capacity: cls.capacity,
+    certificationType: cls.certificationType,
+    signedInCount: signedIn.length,
+    attendees: signedIn.map((r) => ({ position: r.position, name: r.name })),
+  });
+});
+
 router.post("/public/classes/:classId/roster-signin", async (req, res) => {
   const classId = parseId(req.params.classId, "classId");
   const { name, email, phone } = req.body as {

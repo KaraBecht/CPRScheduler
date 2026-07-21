@@ -1,315 +1,304 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRoute } from "wouter";
-import {
-  useGetClass,
-  useGetClassRoster,
-  useSaveClassRoster,
-  getGetClassRosterQueryKey,
-  type ClassRosterEntry,
-} from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
-import { formatCertificationType, formatDate, formatTime } from "@/lib/format";
+import { formatDate, formatTime } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
   HeartPulse,
-  Save,
   CheckCircle2,
   Users,
   CalendarDays,
   MapPin,
   Clock,
-  ChevronLeft,
   UserCheck,
+  RotateCcw,
 } from "lucide-react";
 
-function emptyRow(position: number): ClassRosterEntry {
-  return { position, name: "", email: "", phone: "", result: null, cardSent: false };
+type SheetData = {
+  classId: number;
+  title: string;
+  date: string;
+  startTime: string | null;
+  endTime: string | null;
+  location: string | null;
+  capacity: number;
+  certificationType: string;
+  signedInCount: number;
+  attendees: { position: number; name: string | null }[];
+};
+
+function certLabel(ct: string) {
+  if (ct === "cpr_aed_first_aid") return "CPR / AED / First Aid";
+  if (ct === "stop_the_bleed") return "Stop the Bleed";
+  if (ct === "cpr_aed_first_aid_stop_the_bleed") return "CPR + Stop the Bleed";
+  return ct;
 }
 
 export default function SigninSheet() {
   const [, params] = useRoute("/classes/:id/signin-sheet");
   const classId = Number(params?.id);
-  const { data: cls } = useGetClass(classId);
-  const { data: roster } = useGetClassRoster(classId);
-  const qc = useQueryClient();
 
-  const [rows, setRows] = useState<ClassRosterEntry[]>([]);
-  const [savedAt, setSavedAt] = useState<Date | null>(null);
-  const [dirty, setDirty] = useState(false);
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [sheet, setSheet] = useState<SheetData | null>(null);
+  const [loadError, setLoadError] = useState(false);
 
-  const save = useSaveClassRoster({
-    mutation: {
-      onSuccess: (data) => {
-        qc.invalidateQueries({ queryKey: getGetClassRosterQueryKey(classId) });
-        setSavedAt(new Date());
-        setDirty(false);
-        setRows(data.entries.length > 0 ? buildRows(data.entries, data.capacity) : rows);
-      },
-    },
-  });
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState(5);
 
-  function buildRows(entries: ClassRosterEntry[], capacity: number): ClassRosterEntry[] {
-    const map = new Map(entries.map((e) => [e.position, e]));
-    return Array.from({ length: capacity }, (_, i) => map.get(i + 1) ?? emptyRow(i + 1));
-  }
+  const fetchSheet = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/public/classes/${classId}/signin-sheet`);
+      if (!res.ok) { setLoadError(true); return; }
+      setSheet(await res.json());
+    } catch {
+      setLoadError(true);
+    }
+  }, [classId]);
 
   useEffect(() => {
-    if (!roster || !cls) return;
-    setRows(buildRows(roster.entries, cls.capacity));
-  }, [roster, cls]);
+    fetchSheet();
+  }, [fetchSheet]);
 
-  function updateRow(idx: number, patch: Partial<ClassRosterEntry>) {
-    setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
-    setDirty(true);
-    setSavedAt(null);
+  useEffect(() => {
+    const id = setInterval(fetchSheet, 6000);
+    return () => clearInterval(id);
+  }, [fetchSheet]);
+
+  useEffect(() => {
+    if (!submitted) return;
+    setCountdown(5);
+    const interval = setInterval(() => {
+      setCountdown((n) => {
+        if (n <= 1) { clearInterval(interval); resetForm(); return 0; }
+        return n - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [submitted]);
+
+  function resetForm() {
+    setName(""); setEmail(""); setPhone("");
+    setSubmitted(false); setSubmitError(null);
   }
 
-  function handleSave() {
-    save.mutate({
-      classId,
-      data: { entries: rows.filter((r) => r.name.trim() !== "") },
-    });
-  }
-
-  // Focus next row's name input on Enter in the name field
-  function handleNameKeyDown(e: React.KeyboardEvent, idx: number) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      const next = inputRefs.current[idx + 1];
-      if (next) next.focus();
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitError(null);
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/public/classes/${classId}/roster-signin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, phone }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setSubmitError((data as { error?: string }).error ?? "Something went wrong. Please try again.");
+        return;
+      }
+      setSubmitted(true);
+      await fetchSheet();
+    } catch {
+      setSubmitError("Could not connect. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
   }
 
-  const filledCount = rows.filter((r) => r.name.trim()).length;
-  const capacity = cls?.capacity ?? rows.length;
-
-  if (!cls) {
+  if (loadError) {
     return (
-      <div className="flex items-center justify-center min-h-screen text-muted-foreground text-sm">
+      <div className="min-h-screen flex items-center justify-center text-center px-4">
+        <div>
+          <div className="h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
+            <HeartPulse className="h-6 w-6 text-destructive" />
+          </div>
+          <p className="font-semibold text-lg mb-1">Class not found</p>
+          <p className="text-sm text-muted-foreground">This link may be invalid or expired.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!sheet) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-muted-foreground text-sm">
         Loading…
       </div>
     );
   }
 
+  const pct = sheet.capacity > 0 ? (sheet.signedInCount / sheet.capacity) * 100 : 0;
+
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col">
-      {/* Top bar */}
-      <div className="bg-white border-b border-border sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
-          {/* Logo */}
-          <div className="flex items-center gap-2.5 mr-2">
-            <div className="h-8 w-8 rounded-lg bg-[#007BA7] flex items-center justify-center flex-shrink-0">
-              <HeartPulse className="h-4 w-4 text-white" />
-            </div>
-            <span className="font-bold text-sm hidden sm:block">FOX Medical</span>
+      {/* Header */}
+      <header className="bg-white border-b border-border sticky top-0 z-10">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
+          <div className="h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "#008080" }}>
+            <HeartPulse className="h-4 w-4 text-white" />
           </div>
-
-          {/* Back */}
-          <a
-            href="javascript:history.back()"
-            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ChevronLeft className="h-4 w-4" /> Back
-          </a>
-
-          <span className="flex-1" />
-
-          {/* Attendance counter */}
-          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <div className="leading-tight">
+            <div className="font-bold text-sm">FOX Medical</div>
+            <div className="text-[9px] uppercase tracking-widest font-semibold" style={{ color: "#008080" }}>
+              CPR Training Hub
+            </div>
+          </div>
+          <div className="ml-auto flex items-center gap-1.5 text-sm text-muted-foreground">
             <UserCheck className="h-4 w-4" />
             <span>
-              <span className="font-semibold text-foreground">{filledCount}</span>
-              {" / "}{capacity} signed in
+              <span className="font-semibold text-foreground">{sheet.signedInCount}</span>
+              {" / "}{sheet.capacity}
             </span>
           </div>
-
-          {/* Save button */}
-          <Button
-            size="sm"
-            onClick={handleSave}
-            disabled={save.isPending || !dirty}
-            className="gap-1.5"
-          >
-            {save.isPending ? (
-              <>Saving…</>
-            ) : savedAt ? (
-              <>
-                <CheckCircle2 className="h-4 w-4" />
-                Saved
-              </>
-            ) : (
-              <>
-                <Save className="h-4 w-4" />
-                Save
-              </>
-            )}
-          </Button>
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-5xl mx-auto w-full px-4 sm:px-6 py-6 flex flex-col gap-6">
-        {/* Class info card */}
-        <div className="bg-white rounded-xl border border-border shadow-sm px-6 py-5">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Badge variant="secondary" className="text-xs">
-                  {formatCertificationType(cls.certificationType)}
-                </Badge>
-                <Badge
-                  variant={cls.status === "scheduled" ? "default" : "secondary"}
-                  className="text-xs capitalize"
-                >
-                  {cls.status}
-                </Badge>
-              </div>
-              <h1 className="text-xl font-bold tracking-tight">{cls.title}</h1>
-              <div className="flex flex-wrap gap-x-5 gap-y-1 mt-2 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1.5">
-                  <CalendarDays className="h-3.5 w-3.5" />
-                  {formatDate(cls.date)}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5" />
-                  {formatTime(cls.startTime)}
-                  {cls.endTime ? ` – ${formatTime(cls.endTime)}` : ""}
-                </span>
-                {cls.location && cls.location !== "TBD" && (
-                  <span className="flex items-center gap-1.5">
-                    <MapPin className="h-3.5 w-3.5" />
-                    {cls.location}
+      <div className="max-w-2xl mx-auto w-full px-4 sm:px-6 py-6 flex flex-col gap-5">
+        {/* Class info */}
+        <div className="bg-white rounded-xl border border-border shadow-sm px-5 py-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <Badge variant="secondary" className="text-xs mb-1.5">
+                {certLabel(sheet.certificationType)}
+              </Badge>
+              <h1 className="text-lg font-bold tracking-tight leading-snug">{sheet.title}</h1>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" />{formatDate(sheet.date)}</span>
+                {sheet.startTime && (
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {formatTime(sheet.startTime)}{sheet.endTime ? ` – ${formatTime(sheet.endTime)}` : ""}
                   </span>
                 )}
-                <span className="flex items-center gap-1.5">
-                  <Users className="h-3.5 w-3.5" />
-                  {capacity} seats
-                </span>
+                {sheet.location && sheet.location !== "TBD" && (
+                  <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{sheet.location}</span>
+                )}
+                <span className="flex items-center gap-1"><Users className="h-3 w-3" />{sheet.capacity} seats</span>
               </div>
             </div>
-            <div className="text-right shrink-0">
-              <div className="text-xs text-muted-foreground uppercase tracking-wider">Class</div>
-              <div className="font-mono font-bold text-2xl text-[#007BA7]">#{cls.id}</div>
+            <div className="font-mono font-bold text-2xl shrink-0" style={{ color: "#007BA7" }}>
+              #{sheet.classId}
+            </div>
+          </div>
+
+          {/* Attendance progress */}
+          <div className="mt-4">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+              <span>{sheet.signedInCount} signed in</span>
+              <span>{sheet.capacity - sheet.signedInCount} spots remaining</span>
+            </div>
+            <div className="h-2 bg-muted rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{ width: `${pct}%`, background: pct >= 100 ? "#ef4444" : "#007BA7" }}
+              />
             </div>
           </div>
         </div>
 
-        {/* Digital roster table */}
-        <div className="bg-white rounded-xl border border-border shadow-sm overflow-hidden">
-          {/* Progress bar */}
-          <div className="h-1 bg-muted">
-            <div
-              className="h-full bg-[#007BA7] transition-all duration-300"
-              style={{ width: `${capacity > 0 ? (filledCount / capacity) * 100 : 0}%` }}
-            />
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-muted/40">
-                  <th className="w-12 py-3 px-4 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    #
-                  </th>
-                  <th className="py-3 px-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Full Name
-                  </th>
-                  <th className="py-3 px-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Email
-                  </th>
-                  <th className="py-3 px-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Phone
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row, idx) => {
-                  const filled = row.name.trim().length > 0;
-                  return (
-                    <tr
-                      key={row.position}
-                      className={`border-b border-border/60 last:border-0 transition-colors ${
-                        filled ? "bg-emerald-50/40" : "bg-white hover:bg-muted/20"
-                      }`}
-                    >
-                      {/* Row number + status dot */}
-                      <td className="py-2 px-4">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={`h-2 w-2 rounded-full shrink-0 ${
-                              filled ? "bg-emerald-500" : "bg-muted-foreground/20"
-                            }`}
-                          />
-                          <span className="font-mono text-xs text-muted-foreground">
-                            {String(row.position).padStart(2, "0")}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Name */}
-                      <td className="py-1.5 px-2">
-                        <Input
-                          ref={(el) => { inputRefs.current[idx] = el; }}
-                          className={`h-8 text-sm border-0 shadow-none focus-visible:ring-1 focus-visible:ring-[#007BA7] bg-transparent ${
-                            filled ? "font-medium" : ""
-                          }`}
-                          placeholder="Full name"
-                          value={row.name}
-                          onChange={(e) => updateRow(idx, { name: e.target.value })}
-                          onKeyDown={(e) => handleNameKeyDown(e, idx)}
-                        />
-                      </td>
-
-                      {/* Email */}
-                      <td className="py-1.5 px-2">
-                        <Input
-                          type="email"
-                          className="h-8 text-sm border-0 shadow-none focus-visible:ring-1 focus-visible:ring-[#007BA7] bg-transparent"
-                          placeholder="email@example.com"
-                          value={row.email}
-                          onChange={(e) => updateRow(idx, { email: e.target.value })}
-                        />
-                      </td>
-
-                      {/* Phone */}
-                      <td className="py-1.5 px-2">
-                        <Input
-                          type="tel"
-                          className="h-8 text-sm border-0 shadow-none focus-visible:ring-1 focus-visible:ring-[#007BA7] bg-transparent"
-                          placeholder="(555) 000-0000"
-                          value={row.phone}
-                          onChange={(e) => updateRow(idx, { phone: e.target.value })}
-                        />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Footer */}
-          <div className="px-4 py-3 border-t border-border/60 bg-muted/20 flex items-center justify-between text-xs text-muted-foreground">
-            <span>
-              {filledCount} of {capacity} seats filled
-            </span>
-            {savedAt && (
-              <span className="flex items-center gap-1 text-emerald-600">
-                <CheckCircle2 className="h-3.5 w-3.5" />
-                Saved {savedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-              </span>
-            )}
-            {dirty && !save.isPending && (
-              <span className="text-amber-600">Unsaved changes</span>
-            )}
-          </div>
+        {/* Sign-in form or success */}
+        <div className="bg-white rounded-xl border border-border shadow-sm px-5 py-5">
+          {submitted ? (
+            <div className="flex flex-col items-center text-center gap-3 py-4">
+              <div className="h-14 w-14 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                <CheckCircle2 className="h-7 w-7 text-emerald-600" />
+              </div>
+              <div>
+                <p className="font-bold text-base">You're signed in!</p>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  Thanks, <strong>{name}</strong>. Your attendance has been recorded.
+                </p>
+              </div>
+              <Button variant="outline" size="sm" onClick={resetForm} className="gap-1.5 mt-1">
+                <RotateCcw className="h-3.5 w-3.5" /> Next person
+              </Button>
+              <p className="text-xs text-muted-foreground">Form resets in {countdown}s</p>
+            </div>
+          ) : (
+            <>
+              <h2 className="font-semibold text-sm mb-4">Sign in below</h2>
+              <form onSubmit={handleSubmit} className="space-y-3">
+                <div className="space-y-1">
+                  <Label htmlFor="name" className="text-xs">
+                    Full name <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="name"
+                    placeholder="Jane Smith"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    autoComplete="name"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="email" className="text-xs">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="jane@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    autoComplete="email"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="phone" className="text-xs">Phone</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="(555) 123-4567"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    autoComplete="tel"
+                  />
+                </div>
+                {submitError && (
+                  <p className="text-sm text-destructive">{submitError}</p>
+                )}
+                <Button
+                  type="submit"
+                  className="w-full mt-1"
+                  disabled={submitting || sheet.signedInCount >= sheet.capacity}
+                  style={{ background: "#007BA7" }}
+                >
+                  {submitting ? "Signing in…" : sheet.signedInCount >= sheet.capacity ? "Class is full" : "Sign in"}
+                </Button>
+              </form>
+            </>
+          )}
         </div>
 
-        {/* Keyboard hint */}
-        <p className="text-xs text-center text-muted-foreground pb-4">
-          Press <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-[11px]">Enter</kbd> in the name field to jump to the next row
+        {/* Who's signed in */}
+        {sheet.attendees.length > 0 && (
+          <div className="bg-white rounded-xl border border-border shadow-sm overflow-hidden">
+            <div className="px-5 py-3 border-b border-border/60 flex items-center justify-between">
+              <h2 className="text-sm font-semibold">Signed in</h2>
+              <span className="text-xs text-muted-foreground">{sheet.signedInCount} of {sheet.capacity}</span>
+            </div>
+            <div className="divide-y divide-border/60">
+              {sheet.attendees.map((a, i) => (
+                <div key={a.position} className="flex items-center gap-3 px-5 py-2.5">
+                  <div className="h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
+                    style={{ background: "#007BA7" }}>
+                    {i + 1}
+                  </div>
+                  <span className="text-sm font-medium">{a.name}</span>
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 ml-auto shrink-0" />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <p className="text-center text-xs text-muted-foreground pb-2">
+          This page updates automatically · No account required
         </p>
       </div>
     </div>
