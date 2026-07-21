@@ -479,10 +479,18 @@ export function downloadSigninSheet(cls: ClassInfo, roster: RosterEntry[]): void
   const html = generateSigninSheetHtml(cls, roster);
   const blob = new Blob([html], { type: "text/html" });
   const url = URL.createObjectURL(blob);
+  const safeTitle = cls.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+  const filename = `signin-sheet-${safeTitle}-${cls.date}.html`;
+
+  // Open in a new tab so the user can fill it out immediately
+  window.open(url, "_blank");
+
+  // Also trigger the file download so they have a saved copy
   const a = document.createElement("a");
   a.href = url;
-  const safeTitle = cls.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
-  a.download = `signin-sheet-${safeTitle}-${cls.date}.html`;
+  a.download = filename;
   a.click();
-  URL.revokeObjectURL(url);
+
+  // Revoke after a short delay to allow both operations to complete
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
