@@ -124,7 +124,6 @@ export default function SigninSheet() {
               <th className="py-2 px-3 text-left font-semibold border border-[#005f87]">Full Name (print)</th>
               <th className="py-2 px-3 text-left font-semibold border border-[#005f87]">Email</th>
               <th className="py-2 px-3 text-left font-semibold border border-[#005f87]">Phone</th>
-              <th className="py-2 px-3 text-left font-semibold border border-[#005f87]">Signature</th>
             </tr>
           </thead>
           <tbody>
@@ -134,7 +133,6 @@ export default function SigninSheet() {
                 <td className="py-3 px-3 border border-[#ddd]" style={{ minWidth: "180px" }}>&nbsp;</td>
                 <td className="py-3 px-3 border border-[#ddd]" style={{ minWidth: "160px" }}>&nbsp;</td>
                 <td className="py-3 px-3 border border-[#ddd]" style={{ minWidth: "120px" }}>&nbsp;</td>
-                <td className="py-3 px-3 border border-[#ddd]" style={{ minWidth: "160px" }}>&nbsp;</td>
               </tr>
             ))}
           </tbody>
