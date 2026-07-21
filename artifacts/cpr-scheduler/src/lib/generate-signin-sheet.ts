@@ -420,15 +420,20 @@ export function generateSigninSheetHtml(cls: ClassInfo, roster: RosterEntry[]): 
              html.slice(tbodyEnd);
     }
 
+    var filename = document.title.replace(/\s*\u2014\s*/, '-').replace(/\s+/g, '-').toLowerCase() + '-filled.html';
     var blob = new Blob([html], { type: 'text/html' });
-    var url  = URL.createObjectURL(blob);
-    var a    = document.createElement('a');
-    a.href   = url;
-    a.download = document.title.replace(/\s*\u2014\s*/, '-').replace(/\s+/g, '-').toLowerCase() + '-filled.html';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    if (navigator.msSaveOrOpenBlob) {
+      navigator.msSaveOrOpenBlob(blob, filename);
+    } else {
+      var url = URL.createObjectURL(blob);
+      var a   = document.createElement('a');
+      a.href  = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function() { URL.revokeObjectURL(url); }, 5000);
+    }
 
     // ── Step 2: open Outlook via mailto: ──
     var subject = encodeURIComponent('Sign-In Sheet: ${cls.title} \u2014 ${fmtDate(cls.date)}');
@@ -478,19 +483,27 @@ export function generateSigninSheetHtml(cls: ClassInfo, roster: RosterEntry[]): 
 export function downloadSigninSheet(cls: ClassInfo, roster: RosterEntry[]): void {
   const html = generateSigninSheetHtml(cls, roster);
   const blob = new Blob([html], { type: "text/html" });
-  const url = URL.createObjectURL(blob);
   const safeTitle = cls.title.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
   const filename = `signin-sheet-${safeTitle}-${cls.date}.html`;
 
-  // Open in a new tab so the user can fill it out immediately
-  window.open(url, "_blank");
+  // Open in a new tab — write HTML directly to avoid blob URL blocks in Edge
+  const newWin = window.open("about:blank", "_blank");
+  if (newWin) {
+    newWin.document.open();
+    newWin.document.write(html);
+    newWin.document.close();
+  }
 
-  // Also trigger the file download so they have a saved copy
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-
-  // Revoke after a short delay to allow both operations to complete
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  // Download the file — use msSaveOrOpenBlob for Edge Legacy, standard otherwise
+  if ("msSaveOrOpenBlob" in navigator) {
+    (navigator as unknown as { msSaveOrOpenBlob: (b: Blob, n: string) => void })
+      .msSaveOrOpenBlob(blob, filename);
+  } else {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
 }
