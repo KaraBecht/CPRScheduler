@@ -973,23 +973,13 @@ function EditClassDialog({
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Start time *</Label>
-              <Input
-                type="time"
-                value={form.startTime}
-                onChange={(e) => setForm({ ...form, startTime: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label>End time</Label>
-              <Input
-                type="time"
-                value={form.endTime}
-                onChange={(e) => setForm({ ...form, endTime: e.target.value })}
-              />
-            </div>
+          <div>
+            <Label>Start time *</Label>
+            <Input
+              type="time"
+              value={form.startTime}
+              onChange={(e) => setForm({ ...form, startTime: e.target.value })}
+            />
           </div>
           <div>
             <Label>Certification type</Label>
