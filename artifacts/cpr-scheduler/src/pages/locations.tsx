@@ -94,6 +94,18 @@ function parseBusinessUnit(notes: string): string {
   return m?.[1]?.trim() ?? "";
 }
 
+/**
+ * Classify a location's certification status based on last class date.
+ * Certs are valid 2 years; warn at 1.5 years (18 months).
+ */
+function certStatusFromLastClass(lastClassDate: string | null | undefined): "expired" | "expiring" | null {
+  if (!lastClassDate) return null;
+  const days = (Date.now() - new Date(lastClassDate).getTime()) / 86_400_000;
+  if (days > 730) return "expired";
+  if (days > 548) return "expiring";
+  return null;
+}
+
 /** Return notes stripped of Business Unit and Last Class Held lines (for display in comm notes). */
 function importedNotesBody(notes: string): string {
   return notes
@@ -998,12 +1010,19 @@ function LocationCard({ loc }: { loc: LocationDetail }) {
 
   const expiringCount = loc.expiringCertificates?.length ?? 0;
   const businessUnit = parseBusinessUnit(loc.notes ?? "");
+  const classCertStatus = certStatusFromLastClass(loc.lastClassDate);
 
   return (
     <Card
       className={cn(
         "overflow-hidden transition-shadow",
-        expiringCount > 0 && "ring-2 ring-amber-400 shadow-amber-100 shadow-md",
+        classCertStatus === "expired"
+          ? "ring-2 ring-red-500 shadow-red-100 shadow-md"
+          : classCertStatus === "expiring"
+          ? "ring-2 ring-amber-400 shadow-amber-100 shadow-md"
+          : expiringCount > 0
+          ? "ring-2 ring-amber-400 shadow-amber-100 shadow-md"
+          : "",
       )}
       data-testid={`location-card-${loc.id}`}
     >
@@ -1145,14 +1164,27 @@ function LocationCard({ loc }: { loc: LocationDetail }) {
         {/* ── Quick stats row ── */}
         <div className="mt-3 flex flex-wrap gap-3 text-xs">
           <div className="flex items-center gap-1.5 text-muted-foreground">
-            <CalendarDays className="h-3.5 w-3.5" />
+            <CalendarDays className={cn(
+              "h-3.5 w-3.5",
+              classCertStatus === "expired" && "text-red-500",
+              classCertStatus === "expiring" && "text-amber-500",
+            )} />
             {loc.lastClassDate ? (
               <span>
                 Last class:{" "}
-                <span className="font-medium text-foreground">
+                <span className={cn(
+                  "font-medium",
+                  classCertStatus === "expired" ? "text-red-600" : classCertStatus === "expiring" ? "text-amber-600" : "text-foreground",
+                )}>
                   {formatDate(loc.lastClassDate)}
                 </span>
-                {loc.lastClassTitle && (
+                {classCertStatus === "expired" && (
+                  <span className="ml-1 text-red-500 font-medium">— certs expired</span>
+                )}
+                {classCertStatus === "expiring" && !loc.lastClassTitle && (
+                  <span className="ml-1 text-amber-500 font-medium">— certs expiring</span>
+                )}
+                {loc.lastClassTitle && !classCertStatus && (
                   <span className="ml-1 text-muted-foreground">
                     — {loc.lastClassTitle}
                   </span>
@@ -1333,6 +1365,7 @@ export default function Locations() {
   const qc = useQueryClient();
   const [query, setQuery] = useState("");
   const [buFilter, setBuFilter] = useState("");
+  const [certFilter, setCertFilter] = useState<"" | "expiring" | "expired">("");
   const { data: locations = [], isLoading } = useListLocations();
 
   const create = useCreateLocation({
@@ -1359,6 +1392,11 @@ export default function Locations() {
   const q = query.trim().toLowerCase();
   const filtered = locations.filter((loc) => {
     if (buFilter && parseBusinessUnit(loc.notes ?? "") !== buFilter) return false;
+    if (certFilter) {
+      const status = certStatusFromLastClass(loc.lastClassDate);
+      if (certFilter === "expired" && status !== "expired") return false;
+      if (certFilter === "expiring" && status !== "expiring") return false;
+    }
     if (!q) return true;
     return (
       loc.name.toLowerCase().includes(q) ||
@@ -1372,6 +1410,12 @@ export default function Locations() {
     (sum, l) => sum + (l.expiringCertificates?.length ?? 0),
     0,
   );
+  const certExpiredCount = locations.filter(
+    (l) => certStatusFromLastClass(l.lastClassDate) === "expired",
+  ).length;
+  const certExpiringCount = locations.filter(
+    (l) => certStatusFromLastClass(l.lastClassDate) === "expiring",
+  ).length;
 
   return (
     <>
@@ -1411,11 +1455,29 @@ export default function Locations() {
           <Badge variant="outline">
             {locations.length} location{locations.length !== 1 ? "s" : ""}
           </Badge>
-          {expiringTotal > 0 && (
-            <Badge variant="destructive" className="text-[10px]">
+          {certExpiredCount > 0 && (
+            <Badge
+              variant="destructive"
+              className="text-[10px] cursor-pointer"
+              onClick={() => setCertFilter(certFilter === "expired" ? "" : "expired")}
+            >
               <AlertTriangle className="h-2.5 w-2.5 mr-1" />
-              {expiringTotal} cert{expiringTotal !== 1 ? "s" : ""} expiring &lt;
-              90 days
+              {certExpiredCount} location{certExpiredCount !== 1 ? "s" : ""} — certs expired
+            </Badge>
+          )}
+          {certExpiringCount > 0 && (
+            <Badge
+              className="text-[10px] cursor-pointer bg-amber-500 hover:bg-amber-600 text-white"
+              onClick={() => setCertFilter(certFilter === "expiring" ? "" : "expiring")}
+            >
+              <AlertTriangle className="h-2.5 w-2.5 mr-1" />
+              {certExpiringCount} location{certExpiringCount !== 1 ? "s" : ""} — certs expiring soon
+            </Badge>
+          )}
+          {expiringTotal > 0 && (
+            <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-300">
+              <AlertTriangle className="h-2.5 w-2.5 mr-1" />
+              {expiringTotal} individual cert{expiringTotal !== 1 ? "s" : ""} expiring &lt; 6 mo
             </Badge>
           )}
         </div>
@@ -1434,6 +1496,53 @@ export default function Locations() {
               data-testid="input-locations-filter"
             />
           </div>
+
+          {/* Cert status filter */}
+          {(certExpiredCount > 0 || certExpiringCount > 0) && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-xs text-muted-foreground flex items-center gap-1 mr-1">
+                <AlertTriangle className="h-3.5 w-3.5" /> Cert status:
+              </span>
+              <button
+                onClick={() => setCertFilter("")}
+                className={cn(
+                  "rounded-full px-3 py-0.5 text-xs font-medium transition-colors border",
+                  certFilter === ""
+                    ? "bg-foreground text-background border-foreground"
+                    : "bg-transparent text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground",
+                )}
+              >
+                All
+              </button>
+              {certExpiringCount > 0 && (
+                <button
+                  onClick={() => setCertFilter(certFilter === "expiring" ? "" : "expiring")}
+                  className={cn(
+                    "rounded-full px-3 py-0.5 text-xs font-medium transition-colors border",
+                    certFilter === "expiring"
+                      ? "bg-amber-500 text-white border-transparent"
+                      : "bg-transparent text-muted-foreground border-border hover:border-amber-400 hover:text-amber-700",
+                  )}
+                >
+                  Expiring soon ({certExpiringCount})
+                </button>
+              )}
+              {certExpiredCount > 0 && (
+                <button
+                  onClick={() => setCertFilter(certFilter === "expired" ? "" : "expired")}
+                  className={cn(
+                    "rounded-full px-3 py-0.5 text-xs font-medium transition-colors border",
+                    certFilter === "expired"
+                      ? "bg-red-500 text-white border-transparent"
+                      : "bg-transparent text-muted-foreground border-border hover:border-red-400 hover:text-red-700",
+                  )}
+                >
+                  Expired ({certExpiredCount})
+                </button>
+              )}
+            </div>
+          )}
+
           {allBUs.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-xs text-muted-foreground flex items-center gap-1 mr-1">
