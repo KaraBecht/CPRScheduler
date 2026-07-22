@@ -7,7 +7,7 @@ import {
   certificatesTable,
   classRosterTable,
 } from "@workspace/db";
-import { eq, desc, ilike, lte } from "drizzle-orm";
+import { eq, desc, ilike, lte, or } from "drizzle-orm";
 import {
   CreateLocationBody,
   UpdateLocationBody,
@@ -23,11 +23,16 @@ async function buildDetail(loc: typeof locationsTable.$inferSelect) {
     .where(eq(locationNotesTable.locationId, loc.id))
     .orderBy(desc(locationNotesTable.createdAt));
 
-  // Find classes whose location text matches this location's name
+  // Find classes whose location text OR title matches this location's name
   const matchedClasses = await db
     .select()
     .from(classesTable)
-    .where(ilike(classesTable.location, `%${loc.name}%`))
+    .where(
+      or(
+        ilike(classesTable.location, `%${loc.name}%`),
+        ilike(classesTable.title, `%${loc.name}%`),
+      )
+    )
     .orderBy(desc(classesTable.date));
 
   const lastClass = matchedClasses[0] ?? null;
