@@ -162,6 +162,12 @@ function nh(h: string): string {
   return h.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
+// Extract "Last Class Held: YYYY-MM-DD" from a notes string.
+function parseLastClassHeld(notes: string): string | null {
+  const m = notes.match(/Last Class Held:\s*(\d{4}-\d{2}-\d{2})/i);
+  return m ? m[1]! : null;
+}
+
 // Columns that get grouped together under a "Notes" heading on import.
 // Each entry is [normalizedHeader, displayLabel].
 const NOTES_COLS: [string, string][] = [
@@ -365,8 +371,28 @@ function CsvImportDialog({ onImported }: { onImported: () => void }) {
             notes: row.notes || undefined,
           }),
         });
-        if (res.ok) ok++;
-        else fail++;
+        if (res.ok) {
+          ok++;
+          // If the row has a Last Class Held date, create a historical class record
+          const lastHeld = parseLastClassHeld(row.notes ?? "");
+          if (lastHeld) {
+            await fetch("/api/classes", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                title: row.name,
+                location: row.name,
+                date: lastHeld,
+                startTime: "09:00",
+                capacity: 20,
+                status: "completed",
+                certificationType: "cpr_aed_first_aid",
+              }),
+            });
+          }
+        } else {
+          fail++;
+        }
       } catch {
         fail++;
       }
@@ -374,6 +400,7 @@ function CsvImportDialog({ onImported }: { onImported: () => void }) {
     setImporting(false);
     setResults({ ok, fail });
     qc.invalidateQueries({ queryKey: getListLocationsQueryKey() });
+    qc.invalidateQueries({ queryKey: getListClassesQueryKey() });
     if (ok > 0) onImported();
   }
 
