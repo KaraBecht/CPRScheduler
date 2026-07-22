@@ -770,7 +770,10 @@ function LocationCard({ loc }: { loc: LocationDetail }) {
 
   return (
     <Card
-      className="overflow-hidden"
+      className={cn(
+        "overflow-hidden transition-shadow",
+        expiringCount > 0 && "ring-2 ring-amber-400 shadow-amber-100 shadow-md",
+      )}
       data-testid={`location-card-${loc.id}`}
     >
       {businessUnit && (

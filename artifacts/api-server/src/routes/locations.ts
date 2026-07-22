@@ -32,11 +32,11 @@ async function buildDetail(loc: typeof locationsTable.$inferSelect) {
 
   const lastClass = matchedClasses[0] ?? null;
 
-  // Expiring certificates: those tied to classes at this location, expiring within 90 days
+  // Expiring certificates: those tied to classes at this location, expiring within 6 months
   const classIds = matchedClasses.map((c) => c.id);
-  const ninety = new Date();
-  ninety.setDate(ninety.getDate() + 90);
-  const ninetyStr = ninety.toISOString().split("T")[0]!;
+  const sixMonths = new Date();
+  sixMonths.setMonth(sixMonths.getMonth() + 6);
+  const ninetyStr = sixMonths.toISOString().split("T")[0]!;
   const today = new Date().toISOString().split("T")[0]!;
 
   let expiringCertificates: object[] = [];
