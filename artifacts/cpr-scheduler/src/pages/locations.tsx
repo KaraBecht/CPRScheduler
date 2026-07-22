@@ -106,7 +106,13 @@ const BU_PALETTE = [
   "bg-purple-100 text-purple-800",
 ] as const;
 
+// Manual overrides for business units that need a specific color.
+const BU_COLOR_OVERRIDES: Record<string, string> = {
+  "FOX Television Stations": "bg-orange-100 text-orange-800",
+};
+
 function buColor(name: string): string {
+  if (BU_COLOR_OVERRIDES[name]) return BU_COLOR_OVERRIDES[name]!;
   let h = 0;
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) | 0;
   return BU_PALETTE[Math.abs(h) % BU_PALETTE.length]!;
