@@ -94,9 +94,13 @@ function parseBusinessUnit(notes: string): string {
   return m?.[1]?.trim() ?? "";
 }
 
-/** Return the notes string with the Business Unit line removed. */
-function notesBody(notes: string): string {
-  return notes.replace(/^Business Unit:.*$/m, "").replace(/\n{2,}/g, "\n").trim();
+/** Return notes stripped of Business Unit and Last Class Held lines (for display in comm notes). */
+function importedNotesBody(notes: string): string {
+  return notes
+    .replace(/^Business Unit:.*$/m, "")
+    .replace(/^Last Class Held:.*$/m, "")
+    .replace(/\n{2,}/g, "\n")
+    .trim();
 }
 
 /** Deterministic pastel color class for a given business unit name. */
@@ -1175,12 +1179,6 @@ function LocationCard({ loc }: { loc: LocationDetail }) {
           </div>
         </div>
 
-        {/* ── General notes (always visible if present) ── */}
-        {notesBody(loc.notes ?? "") && (
-          <p className="mt-3 text-xs text-foreground/70 bg-muted/50 rounded-lg px-3 py-2 italic whitespace-pre-wrap">
-            {notesBody(loc.notes ?? "")}
-          </p>
-        )}
 
         {/* ── Expand / collapse toggle ── */}
         <Button
@@ -1270,7 +1268,14 @@ function LocationCard({ loc }: { loc: LocationDetail }) {
                 />
               )}
 
-              {(loc.notes_log?.length ?? 0) === 0 && !addingNote ? (
+              {/* Imported notes from location record (PlusTrac, Online Scheduler, etc.) */}
+              {importedNotesBody(loc.notes ?? "") && (
+                <p className="text-xs text-foreground/70 bg-muted/50 rounded-lg px-3 py-2 italic whitespace-pre-wrap mt-2">
+                  {importedNotesBody(loc.notes ?? "")}
+                </p>
+              )}
+
+              {(loc.notes_log?.length ?? 0) === 0 && !addingNote && !importedNotesBody(loc.notes ?? "") ? (
                 <p className="text-xs text-muted-foreground italic">
                   No communication notes yet.
                 </p>
