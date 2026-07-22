@@ -20,6 +20,11 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -50,7 +55,7 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth-context";
 import { useListUsers } from "@workspace/api-client-react";
-import { Plus, Trash2, LayoutGrid, CalendarDays, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Plus, Trash2, LayoutGrid, CalendarDays, ChevronLeft, ChevronRight, X, Search, SlidersHorizontal } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { formatCertificationType, certificationDuration } from "@/lib/format";
 import { Link } from "wouter";
@@ -508,6 +513,9 @@ export default function Classes() {
   const [view, setView] = useState<"list" | "calendar">("list");
   const [tab, setTab] = useState<"all" | "upcoming" | "completed">("upcoming");
   const [deletingClass, setDeletingClass] = useState<ClassSession | null>(null);
+  const [search, setSearch] = useState("");
+  const [certFilter, setCertFilter] = useState<CertificationType | "all">("all");
+  const [filterOpen, setFilterOpen] = useState(false);
 
   const { data: allClasses = [], isLoading } = useListClasses();
   const qc = useQueryClient();
@@ -521,12 +529,38 @@ export default function Classes() {
   });
 
   const today = new Date().toISOString().split("T")[0]!;
-  const listClasses =
+  const tabClasses =
     tab === "upcoming"
       ? allClasses.filter((c) => c.date >= today && c.status === "scheduled")
       : tab === "completed"
         ? allClasses.filter((c) => c.status === "completed")
         : allClasses;
+
+  const q = search.trim().toLowerCase();
+  const listClasses = tabClasses.filter((c) => {
+    const matchSearch =
+      !q ||
+      c.title.toLowerCase().includes(q) ||
+      (c.location ?? "").toLowerCase().includes(q);
+    const matchCert = certFilter === "all" || c.certificationType === certFilter;
+    return matchSearch && matchCert;
+  });
+
+  const calendarClasses = allClasses.filter((c) => {
+    const matchSearch =
+      !q ||
+      c.title.toLowerCase().includes(q) ||
+      (c.location ?? "").toLowerCase().includes(q);
+    const matchCert = certFilter === "all" || c.certificationType === certFilter;
+    return matchSearch && matchCert;
+  });
+
+  const activeFilterCount = (certFilter !== "all" ? 1 : 0);
+
+  function clearFilters() {
+    setSearch("");
+    setCertFilter("all");
+  }
 
   return (
     <>
@@ -569,11 +603,90 @@ export default function Classes() {
         }
       />
 
+      {/* Search + Filter bar */}
+      <div className="flex items-center gap-2 mb-4">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <Input
+            placeholder="Search by title or location…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-8 h-9 text-sm"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+
+        <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-9 gap-1.5 relative">
+              <SlidersHorizontal className="h-4 w-4" />
+              Filters
+              {activeFilterCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full text-[10px] font-bold flex items-center justify-center text-white"
+                  style={{ background: "#007BA7" }}>
+                  {activeFilterCount}
+                </span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-64 p-4 space-y-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                Certification type
+              </p>
+              <div className="space-y-1.5">
+                {([["all", "Any type"], ...CERT_TYPES.map((c) => [c, formatCertificationType(c)])] as [string, string][]).map(
+                  ([value, label]) => (
+                    <button
+                      key={value}
+                      onClick={() => setCertFilter(value as CertificationType | "all")}
+                      className={cn(
+                        "w-full text-left text-sm px-3 py-1.5 rounded-md transition-colors",
+                        certFilter === value
+                          ? "font-semibold text-white"
+                          : "text-foreground hover:bg-muted",
+                      )}
+                      style={certFilter === value ? { background: "#007BA7" } : {}}
+                    >
+                      {label}
+                    </button>
+                  ),
+                )}
+              </div>
+            </div>
+            {activeFilterCount > 0 && (
+              <button
+                onClick={() => { clearFilters(); setFilterOpen(false); }}
+                className="w-full text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 text-center pt-1"
+              >
+                Clear all filters
+              </button>
+            )}
+          </PopoverContent>
+        </Popover>
+
+        {(search || activeFilterCount > 0) && (
+          <button
+            onClick={clearFilters}
+            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+          >
+            <X className="h-3 w-3" /> Clear
+          </button>
+        )}
+      </div>
+
       {view === "calendar" ? (
         isLoading ? (
           <p className="text-sm text-muted-foreground">Loading…</p>
         ) : (
-          <CalendarView classes={allClasses} />
+          <CalendarView classes={calendarClasses} />
         )
       ) : (
         <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
@@ -594,7 +707,9 @@ export default function Classes() {
             ) : listClasses.length === 0 ? (
               <Card>
                 <CardContent className="pt-6 text-sm text-muted-foreground text-center">
-                  No classes found.
+                  {search || activeFilterCount > 0
+                    ? "No classes match your search or filters."
+                    : "No classes found."}
                 </CardContent>
               </Card>
             ) : (
