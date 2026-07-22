@@ -155,8 +155,50 @@ export function generateSigninSheetHtml(cls: ClassInfo, roster: RosterEntry[]): 
     color: white;
     border-color: #0078D4;
   }
+  .toolbar button.save-btn {
+    background: #1a7f37;
+    color: white;
+    border-color: #1a7f37;
+  }
   .toolbar button:hover { opacity: 0.85; }
   .toolbar .hint { font-size: 11px; color: #888; align-self: center; margin-left: 4px; }
+  #save-indicator {
+    font-size: 11px;
+    font-weight: 600;
+    color: #1a7f37;
+    align-self: center;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  #save-indicator.show { opacity: 1; }
+
+  /* ── Editable signature fields ── */
+  .sig-edit {
+    display: block;
+    width: 220px;
+    min-height: 28px;
+    border-bottom: 2px solid #aaa;
+    margin-top: 14px;
+    padding: 3px 4px;
+    font-size: 14px;
+    font-style: italic;
+    color: #1a1a1a;
+    outline: none;
+    cursor: text;
+  }
+  .sig-edit:focus { border-bottom: 2px solid #007BA7; background: #f0f8ff; }
+  .sig-edit:empty:before {
+    content: attr(data-placeholder);
+    color: #bbb;
+    font-style: normal;
+    font-size: 12px;
+    pointer-events: none;
+  }
+  @media print {
+    .sig-edit:empty:before { display: none; }
+    .sig-edit:focus { background: transparent; border-bottom: 1px solid #aaa; }
+    #save-indicator { display: none; }
+  }
 
   /* ── Attach notice overlay ── */
   #attach-notice {
@@ -317,6 +359,8 @@ export function generateSigninSheetHtml(cls: ClassInfo, roster: RosterEntry[]): 
 <!-- Toolbar (hidden when printing) -->
 <div class="toolbar" id="toolbar">
   <button class="primary" onclick="window.print()">🖨 Print / Save as PDF</button>
+  <button class="save-btn" onclick="saveSheet()">💾 Save</button>
+  <span id="save-indicator">✓ Saved</span>
   <button class="outlook" onclick="emailSheet()">✉ Email via Outlook</button>
   <button onclick="clearAll()">Clear all</button>
   <span class="hint">Click any cell to type · Tab moves between cells</span>
@@ -346,11 +390,11 @@ export function generateSigninSheetHtml(cls: ClassInfo, roster: RosterEntry[]): 
 <!-- Signature footer -->
 <div class="footer-sig" style="margin-top:24px;">
   <div>
-    <div class="sig-line"></div>
+    <div class="sig-edit" id="sig-instructor" contenteditable="true" data-placeholder="Type instructor name here"></div>
     <div class="sig-label">Instructor Signature</div>
   </div>
   <div>
-    <div class="sig-line"></div>
+    <div class="sig-edit" id="sig-date" contenteditable="true" data-placeholder="MM/DD/YYYY"></div>
     <div class="sig-label">Date</div>
   </div>
 </div>
@@ -381,10 +425,9 @@ export function generateSigninSheetHtml(cls: ClassInfo, roster: RosterEntry[]): 
       .replace(/"/g, '&quot;');
   }
 
-  function emailSheet() {
-    // ── Step 1: capture current cell values and save updated file ──
+  // Shared: build updated HTML from current DOM state and trigger download
+  function captureAndSave(filename) {
     var trs = document.querySelectorAll('#tbody tr');
-    var lines = [];
     var newTbody = '';
 
     trs.forEach(function(row) {
@@ -394,13 +437,6 @@ export function generateSigninSheetHtml(cls: ClassInfo, roster: RosterEntry[]): 
       var name  = cells[0] ? cells[0].textContent.trim() : '';
       var email = cells[1] ? cells[1].textContent.trim() : '';
       var phone = cells[2] ? cells[2].textContent.trim() : '';
-
-      if (name) {
-        lines.push(num + '. ' + name +
-          (email ? '  |  ' + email : '') +
-          (phone ? '  |  ' + phone : ''));
-      }
-
       newTbody += '<tr>' +
         '<td class="num">' + escHtml(num) + '</td>' +
         '<td><div class="cell-inner" contenteditable="true">' + escHtml(name) + '</div></td>' +
@@ -409,9 +445,15 @@ export function generateSigninSheetHtml(cls: ClassInfo, roster: RosterEntry[]): 
         '</tr>';
     });
 
-    // Serialize the current DOM then swap tbody to include typed values
+    // Capture signature fields
+    var sigInst = document.getElementById('sig-instructor');
+    var sigDate = document.getElementById('sig-date');
+    var sigInstVal = sigInst ? escHtml(sigInst.textContent.trim()) : '';
+    var sigDateVal = sigDate ? escHtml(sigDate.textContent.trim()) : '';
+
     var html = '<!DOCTYPE html>\\n' + document.documentElement.outerHTML;
-    // Replace the old tbody block with the freshly built one
+
+    // Replace tbody
     var tbodyStart = html.indexOf('<tbody id="tbody">');
     var tbodyEnd   = html.indexOf('</tbody>', tbodyStart) + '</tbody>'.length;
     if (tbodyStart !== -1 && tbodyEnd !== -1) {
@@ -420,7 +462,14 @@ export function generateSigninSheetHtml(cls: ClassInfo, roster: RosterEntry[]): 
              html.slice(tbodyEnd);
     }
 
-    var filename = document.title.replace(/\s*\u2014\s*/, '-').replace(/\s+/g, '-').toLowerCase() + '-filled.html';
+    // Replace sig-instructor content
+    var reSigInst = /(<div class="sig-edit" id="sig-instructor"[^>]*>)[^<]*/;
+    html = html.replace(reSigInst, function(_, open) { return open + sigInstVal; });
+
+    // Replace sig-date content
+    var reSigDate = /(<div class="sig-edit" id="sig-date"[^>]*>)[^<]*/;
+    html = html.replace(reSigDate, function(_, open) { return open + sigDateVal; });
+
     var blob = new Blob([html], { type: 'text/html' });
     if (navigator.msSaveOrOpenBlob) {
       navigator.msSaveOrOpenBlob(blob, filename);
@@ -434,6 +483,43 @@ export function generateSigninSheetHtml(cls: ClassInfo, roster: RosterEntry[]): 
       document.body.removeChild(a);
       setTimeout(function() { URL.revokeObjectURL(url); }, 5000);
     }
+
+    return html; // also returned so emailSheet() can read the roster lines
+  }
+
+  function saveSheet() {
+    var filename = document.title.replace(/\s*\u2014\s*/, '-').replace(/\s+/g, '-').toLowerCase() + '.html';
+    captureAndSave(filename);
+
+    // Flash "✓ Saved" indicator
+    var indicator = document.getElementById('save-indicator');
+    if (indicator) {
+      indicator.classList.add('show');
+      setTimeout(function() { indicator.classList.remove('show'); }, 2500);
+    }
+  }
+
+  function emailSheet() {
+    // ── Step 1: save current state to Downloads ──
+    var filename = document.title.replace(/\s*\u2014\s*/, '-').replace(/\s+/g, '-').toLowerCase() + '-filled.html';
+    captureAndSave(filename);
+
+    // ── Step 2: build attendee list for email body ──
+    var trs = document.querySelectorAll('#tbody tr');
+    var lines = [];
+    trs.forEach(function(row) {
+      var numEl = row.querySelector('td.num');
+      var cells = row.querySelectorAll('.cell-inner');
+      var num   = numEl ? numEl.textContent.trim() : '';
+      var name  = cells[0] ? cells[0].textContent.trim() : '';
+      var email = cells[1] ? cells[1].textContent.trim() : '';
+      var phone = cells[2] ? cells[2].textContent.trim() : '';
+      if (name) {
+        lines.push(num + '. ' + name +
+          (email ? '  |  ' + email : '') +
+          (phone ? '  |  ' + phone : ''));
+      }
+    });
 
     // ── Step 2: open Outlook via mailto: ──
     var subject = encodeURIComponent('Sign-In Sheet: ${cls.title} \u2014 ${fmtDate(cls.date)}');
