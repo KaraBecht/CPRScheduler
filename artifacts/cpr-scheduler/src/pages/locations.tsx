@@ -109,118 +109,123 @@ function downloadTemplate() {
   URL.revokeObjectURL(url);
 }
 
+// Strip everything except a-z and 0-9 so "FOX Contact", "fox_contact",
+// "Fox Contact", "foxcontact" all normalize to "foxcontact".
+function nh(h: string): string {
+  return h.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+// Columns that get grouped together under a "Notes" heading on import.
+// Each entry is [normalizedHeader, displayLabel].
+const NOTES_COLS: [string, string][] = [
+  ["plustrac",        "PlusTrac"],
+  ["othernotes",      "Other Notes"],
+  ["othernote",       "Other Notes"],
+  ["aednotes",        "AED Notes"],
+  ["aednote",         "AED Notes"],
+  ["ordered",         "Ordered"],
+  ["onlinescheduler", "Online Scheduler"],
+  ["lastclassheld",   "Last Class Held"],
+  ["lastclassdate",   "Last Class Held"],
+  ["lastclass",       "Last Class Held"],
+  ["businessunit",    "Business Unit"],
+  ["unit",            "Business Unit"],
+  ["notes",           ""],
+  ["note",            ""],
+  ["comments",        ""],
+  ["comment",         ""],
+];
+
+// Build a CsvRow from an arbitrary key→value object (works for both CSV and XLSX).
+function buildRowFromObj(obj: Record<string, unknown>): CsvRow {
+  // Normalize all keys once up-front
+  const raw: Record<string, string> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    const norm = nh(k);
+    if (norm) raw[norm] = String(v ?? "").trim();
+  }
+
+  // ── Name ──
+  const name =
+    raw["name"] ?? raw["locationname"] ?? raw["location"] ?? "";
+
+  // ── Address: combine street + city + state ──
+  const street = raw["address"] ?? raw["streetaddress"] ?? raw["street"] ?? "";
+  const city   = raw["city"] ?? "";
+  const state  = raw["state"] ?? "";
+  const addressParts = [street, city, state].filter(Boolean);
+  const address = addressParts.join(", ");
+
+  // ── Contact ──
+  const contactName =
+    raw["foxcontact"] ??
+    raw["contact"] ??
+    raw["contactname"] ??
+    raw["contactperson"] ??
+    raw["poc"] ??
+    "";
+  const contactEmail =
+    raw["contactemail"] ?? raw["email"] ?? raw["emailaddress"] ?? "";
+  const contactPhone =
+    raw["contactphone"] ?? raw["phone"] ?? raw["phonenumber"] ?? raw["tel"] ?? "";
+
+  // ── Notes: merge all note-ish columns ──
+  const noteParts: string[] = [];
+  const usedKeys = new Set<string>();
+  for (const [key, label] of NOTES_COLS) {
+    if (usedKeys.has(key)) continue;
+    const val = raw[key];
+    if (val) {
+      noteParts.push(label ? `${label}: ${val}` : val);
+      usedKeys.add(key);
+    }
+  }
+  const notes = noteParts.join("\n");
+
+  return {
+    name: name.trim(),
+    address: address.trim(),
+    contactName: contactName.trim(),
+    contactEmail: contactEmail.trim(),
+    contactPhone: contactPhone.trim(),
+    notes: notes.trim(),
+    _valid: name.trim().length > 0,
+    _error: name.trim().length === 0 ? "Name is required" : undefined,
+  };
+}
+
+// Shared CSV line parser (handles quoted fields and escaped quotes).
+function parseCsvLine(line: string): string[] {
+  const result: string[] = [];
+  let cur = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') { cur += '"'; i++; }
+      else inQuotes = !inQuotes;
+    } else if (ch === "," && !inQuotes) {
+      result.push(cur.trim()); cur = "";
+    } else {
+      cur += ch;
+    }
+  }
+  result.push(cur.trim());
+  return result;
+}
+
 function parseCsv(text: string): CsvRow[] {
   const lines = text.split(/\r?\n/).filter((l) => l.trim());
   if (lines.length < 2) return [];
-
-  // Parse a single CSV line respecting quoted fields
-  function parseLine(line: string): string[] {
-    const result: string[] = [];
-    let cur = "";
-    let inQuotes = false;
-    for (let i = 0; i < line.length; i++) {
-      const ch = line[i];
-      if (ch === '"') {
-        if (inQuotes && line[i + 1] === '"') {
-          cur += '"';
-          i++;
-        } else {
-          inQuotes = !inQuotes;
-        }
-      } else if (ch === "," && !inQuotes) {
-        result.push(cur.trim());
-        cur = "";
-      } else {
-        cur += ch;
-      }
-    }
-    result.push(cur.trim());
-    return result;
-  }
-
-  const headers = parseLine(lines[0]!).map((h) => h.toLowerCase().replace(/\s+/g, ""));
-  // Map header names to our CsvCol keys
-  const colMap: Record<string, CsvCol> = {
-    name: "name",
-    address: "address",
-    contactname: "contactName",
-    "contact name": "contactName",
-    contact_name: "contactName",
-    contactemail: "contactEmail",
-    "contact email": "contactEmail",
-    contact_email: "contactEmail",
-    contactphone: "contactPhone",
-    "contact phone": "contactPhone",
-    contact_phone: "contactPhone",
-    phone: "contactPhone",
-    notes: "notes",
-    note: "notes",
-    comments: "notes",
-  };
-
-  return lines.slice(1).map((line) => {
-    const vals = parseLine(line);
-    const row: Partial<Record<CsvCol, string>> = {};
-    headers.forEach((h, i) => {
-      const col = colMap[h];
-      if (col) row[col] = vals[i] ?? "";
-    });
-    const name = (row.name ?? "").trim();
-    return {
-      name,
-      address: (row.address ?? "").trim(),
-      contactName: (row.contactName ?? "").trim(),
-      contactEmail: (row.contactEmail ?? "").trim(),
-      contactPhone: (row.contactPhone ?? "").trim(),
-      notes: (row.notes ?? "").trim(),
-      _valid: name.length > 0,
-      _error: name.length === 0 ? "Name is required" : undefined,
-    };
-  });
-}
-
-// Flexible alias map shared between CSV and XLSX parsers
-const HEADER_ALIAS: Record<string, CsvCol> = {
-  name: "name",
-  locationname: "name",
-  location: "name",
-  address: "address",
-  streetaddress: "address",
-  contactname: "contactName",
-  contact: "contactName",
-  contactperson: "contactName",
-  contactemail: "contactEmail",
-  email: "contactEmail",
-  contactphone: "contactPhone",
-  phone: "contactPhone",
-  phonenumber: "contactPhone",
-  notes: "notes",
-  note: "notes",
-  comments: "notes",
-  comment: "notes",
-};
-
-function normalizeHeader(h: string): string {
-  return h.toLowerCase().replace(/[\s_\-]+/g, "");
-}
-
-function buildRowFromObj(obj: Record<string, unknown>): CsvRow {
-  const row: Partial<Record<CsvCol, string>> = {};
-  for (const [k, v] of Object.entries(obj)) {
-    const col = HEADER_ALIAS[normalizeHeader(k)];
-    if (col) row[col] = String(v ?? "").trim();
-  }
-  const name = (row.name ?? "").trim();
-  return {
-    name,
-    address: (row.address ?? "").trim(),
-    contactName: (row.contactName ?? "").trim(),
-    contactEmail: (row.contactEmail ?? "").trim(),
-    contactPhone: (row.contactPhone ?? "").trim(),
-    notes: (row.notes ?? "").trim(),
-    _valid: name.length > 0,
-    _error: name.length === 0 ? "Name is required" : undefined,
-  };
+  const rawHeaders = parseCsvLine(lines[0]!);
+  return lines.slice(1)
+    .map((line) => {
+      const vals = parseCsvLine(line);
+      const obj: Record<string, unknown> = {};
+      rawHeaders.forEach((h, i) => { obj[h] = vals[i] ?? ""; });
+      return buildRowFromObj(obj);
+    })
+    .filter((r) => CSV_COLUMNS.some((c) => r[c] !== ""));
 }
 
 function parseXlsxBuffer(buffer: ArrayBuffer): CsvRow[] {
@@ -233,7 +238,9 @@ function parseXlsxBuffer(buffer: ArrayBuffer): CsvRow[] {
     defval: "",
     raw: false,
   });
-  return data.map(buildRowFromObj).filter((r) => Object.values(r).some((v) => typeof v === "string" && v !== "" && v !== "true" && v !== "false"));
+  return data
+    .map(buildRowFromObj)
+    .filter((r) => CSV_COLUMNS.some((c) => r[c] !== ""));
 }
 
 // ─── CSV Import dialog ─────────────────────────────────────────────────────────
