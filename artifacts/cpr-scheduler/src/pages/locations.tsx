@@ -234,12 +234,30 @@ function parseXlsxBuffer(buffer: ArrayBuffer): CsvRow[] {
   if (!sheetName) return [];
   const sheet = workbook.Sheets[sheetName];
   if (!sheet) return [];
-  const data = xlsxUtils.sheet_to_json<Record<string, unknown>>(sheet, {
+
+  // Read as a 2-D array so we can skip any title rows that appear before
+  // the real header row (e.g. "CPR Training 2026" title rows).
+  const raw = xlsxUtils.sheet_to_json<string[]>(sheet, {
+    header: 1,
     defval: "",
     raw: false,
   });
-  return data
-    .map(buildRowFromObj)
+
+  // Find the first row that contains a cell normalising to "name" — that
+  // is the true header row.
+  const headerIdx = raw.findIndex((row) =>
+    (row as unknown[]).some((cell) => nh(String(cell)) === "name"),
+  );
+  if (headerIdx === -1) return [];
+
+  const headers = raw[headerIdx] as string[];
+
+  return (raw.slice(headerIdx + 1) as string[][])
+    .map((vals) => {
+      const obj: Record<string, unknown> = {};
+      headers.forEach((h, i) => { obj[h] = vals[i] ?? ""; });
+      return buildRowFromObj(obj);
+    })
     .filter((r) => CSV_COLUMNS.some((c) => r[c] !== ""));
 }
 
