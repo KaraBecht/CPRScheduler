@@ -752,9 +752,10 @@ type ClassForm = {
   title: string;
   date: string;
   startTime: string;
-  endTime: string;
   certificationType: string;
   capacity: string;
+  instructorId: string;
+  status: string;
 };
 
 function ScheduleClassDialog({
@@ -772,13 +773,16 @@ function ScheduleClassDialog({
     title: locationName,
     date: "",
     startTime: "09:00",
-    endTime: "",
     certificationType: "cpr_aed_first_aid",
     capacity: "10",
+    instructorId: "",
+    status: "scheduled",
   });
 
+  const { data: instructors = [] } = useListUsers({ role: "instructor" });
+
   function handleOpen(v: boolean) {
-    if (v) setForm({ title: locationName, date: "", startTime: "09:00", endTime: "", certificationType: "cpr_aed_first_aid", capacity: "10" });
+    if (v) setForm({ title: locationName, date: "", startTime: "09:00", certificationType: "cpr_aed_first_aid", capacity: "10", instructorId: "", status: "scheduled" });
     setOpen(v);
   }
 
@@ -825,15 +829,9 @@ function ScheduleClassDialog({
               <Input type="number" min={1} value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Start time *</Label>
-              <Input type="time" value={form.startTime} onChange={(e) => setForm({ ...form, startTime: e.target.value })} />
-            </div>
-            <div>
-              <Label>End time</Label>
-              <Input type="time" value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })} />
-            </div>
+          <div>
+            <Label>Start time *</Label>
+            <Input type="time" value={form.startTime} onChange={(e) => setForm({ ...form, startTime: e.target.value })} />
           </div>
           <div>
             <Label>Certification type *</Label>
@@ -843,6 +841,31 @@ function ScheduleClassDialog({
               onChange={(e) => setForm({ ...form, certificationType: e.target.value })}
             >
               {CERT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <Label>Instructor</Label>
+            <select
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              value={form.instructorId}
+              onChange={(e) => setForm({ ...form, instructorId: e.target.value })}
+            >
+              <option value="">— None —</option>
+              {instructors.map((i) => (
+                <option key={i.id} value={String(i.id)}>{i.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <Label>Status</Label>
+            <select
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              value={form.status}
+              onChange={(e) => setForm({ ...form, status: e.target.value })}
+            >
+              {STATUS_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </select>
@@ -858,10 +881,11 @@ function ScheduleClassDialog({
                   title: form.title.trim(),
                   date: form.date,
                   startTime: form.startTime,
-                  endTime: form.endTime || undefined,
                   location: locationName,
                   certificationType: form.certificationType as ClassSession["certificationType"],
                   capacity: Number(form.capacity),
+                  instructorIds: form.instructorId ? [Number(form.instructorId)] : undefined,
+                  status: form.status as ClassSession["status"],
                 },
               })
             }
@@ -880,7 +904,7 @@ const STATUS_OPTIONS = [
   { value: "cancelled", label: "Cancelled" },
 ];
 
-type EditClassForm = ClassForm & { status: string; instructorId: string };
+type EditClassForm = ClassForm;
 
 function EditClassDialog({
   cls,
@@ -895,7 +919,6 @@ function EditClassDialog({
     title: cls.title,
     date: cls.date,
     startTime: cls.startTime,
-    endTime: cls.endTime ?? "",
     certificationType: cls.certificationType,
     capacity: String(cls.capacity),
     status: cls.status,
@@ -910,7 +933,6 @@ function EditClassDialog({
         title: cls.title,
         date: cls.date,
         startTime: cls.startTime,
-        endTime: cls.endTime ?? "",
         certificationType: cls.certificationType,
         capacity: String(cls.capacity),
         status: cls.status,
@@ -1035,7 +1057,6 @@ function EditClassDialog({
                   title: form.title.trim(),
                   date: form.date,
                   startTime: form.startTime,
-                  endTime: form.endTime || undefined,
                   certificationType: form.certificationType as ClassSession["certificationType"],
                   capacity: Number(form.capacity),
                   status: form.status as ClassSession["status"],

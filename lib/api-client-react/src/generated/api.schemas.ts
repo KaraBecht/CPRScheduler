@@ -136,6 +136,7 @@ export interface ClassInput {
   /** @minimum 1 */
   capacity: number;
   instructorIds?: number[];
+  status?: ClassStatus;
   description?: string;
 }
 

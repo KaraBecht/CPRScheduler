@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { CertificationType } from './certificationType';
+import type { ClassStatus } from './classStatus';
 
 export interface ClassInput {
   /** @minLength 1 */
@@ -18,5 +19,6 @@ export interface ClassInput {
   /** @minimum 1 */
   capacity: number;
   instructorIds?: number[];
+  status?: ClassStatus;
   description?: string;
 }

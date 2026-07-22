@@ -107,6 +107,7 @@ export const CreateClassBody = zod.object({
   "location": zod.string(),
   "capacity": zod.number().min(1),
   "instructorIds": zod.array(zod.number()).optional(),
+  "status": zod.enum(['scheduled', 'completed', 'cancelled']).optional(),
   "description": zod.string().optional()
 })
 

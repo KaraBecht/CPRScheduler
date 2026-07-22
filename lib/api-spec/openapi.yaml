@@ -747,6 +747,7 @@ components:
         instructorIds:
           type: array
           items: { type: integer }
+        status: { $ref: "#/components/schemas/ClassStatus" }
         description: { type: string }
 
     RosterResult:
