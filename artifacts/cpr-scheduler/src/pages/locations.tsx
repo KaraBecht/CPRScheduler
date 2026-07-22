@@ -755,13 +755,13 @@ function ScheduleClassDialog({
       <DialogTrigger asChild>
         {trigger ?? (
           <Button size="sm" variant="outline" className="h-6 px-2 text-xs">
-            <CalendarPlus className="h-3 w-3 mr-1" /> Schedule class
+            <CalendarPlus className="h-3 w-3 mr-1" /> Add class
           </Button>
         )}
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Schedule a class</DialogTitle>
+          <DialogTitle>Add a class</DialogTitle>
         </DialogHeader>
         <div className="space-y-3 py-1">
           <div>
@@ -819,7 +819,7 @@ function ScheduleClassDialog({
               })
             }
           >
-            {create.isPending ? "Scheduling…" : "Schedule class"}
+            {create.isPending ? "Adding…" : "Add class"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1133,7 +1133,7 @@ function LocationCard({ loc }: { loc: LocationDetail }) {
                 onCreated={() => {}}
                 trigger={
                   <button className="italic hover:not-italic hover:underline underline-offset-2 cursor-pointer">
-                    No classes yet — schedule one
+                    No classes yet — add one
                   </button>
                 }
               />
