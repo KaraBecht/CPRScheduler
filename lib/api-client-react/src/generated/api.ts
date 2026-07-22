@@ -46,6 +46,11 @@ import type {
   ListEnrollmentsParams,
   ListRequestsParams,
   ListUsersParams,
+  LocationDetail,
+  LocationInput,
+  LocationNote,
+  LocationNoteInput,
+  LocationUpdate,
   RequestorDashboard,
   RosterAttendee,
   StudentDashboard,
@@ -2167,4 +2172,515 @@ export function useGetActivityFeed<TData = Awaited<ReturnType<typeof getActivity
 
 
 
+
+export const getListLocationsUrl = () => {
+
+
+
+
+  return `/api/locations`
+}
+
+/**
+ * @summary List all locations
+ */
+export const listLocations = async ( options?: RequestInit): Promise<LocationDetail[]> => {
+
+  return customFetch<LocationDetail[]>(getListLocationsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListLocationsQueryKey = () => {
+    return [
+    `/api/locations`
+    ] as const;
+    }
+
+
+export const getListLocationsQueryOptions = <TData = Awaited<ReturnType<typeof listLocations>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLocations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListLocationsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listLocations>>> = ({ signal }) => listLocations({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listLocations>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListLocationsQueryResult = NonNullable<Awaited<ReturnType<typeof listLocations>>>
+export type ListLocationsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all locations
+ */
+
+export function useListLocations<TData = Awaited<ReturnType<typeof listLocations>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listLocations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListLocationsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateLocationUrl = () => {
+
+
+
+
+  return `/api/locations`
+}
+
+/**
+ * @summary Create a location
+ */
+export const createLocation = async (locationInput: LocationInput, options?: RequestInit): Promise<LocationDetail> => {
+
+  return customFetch<LocationDetail>(getCreateLocationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      locationInput,)
+  }
+);}
+
+
+
+
+export const getCreateLocationMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createLocation>>, TError,{data: BodyType<LocationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createLocation>>, TError,{data: BodyType<LocationInput>}, TContext> => {
+
+const mutationKey = ['createLocation'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createLocation>>, {data: BodyType<LocationInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createLocation(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateLocationMutationResult = NonNullable<Awaited<ReturnType<typeof createLocation>>>
+    export type CreateLocationMutationBody = BodyType<LocationInput>
+    export type CreateLocationMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a location
+ */
+export const useCreateLocation = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createLocation>>, TError,{data: BodyType<LocationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createLocation>>,
+        TError,
+        {data: BodyType<LocationInput>},
+        TContext
+      > => {
+      return useMutation(getCreateLocationMutationOptions(options));
+    }
+
+export const getGetLocationUrl = (locationId: number,) => {
+
+
+
+
+  return `/api/locations/${locationId}`
+}
+
+/**
+ * @summary Get a location with stats
+ */
+export const getLocation = async (locationId: number, options?: RequestInit): Promise<LocationDetail> => {
+
+  return customFetch<LocationDetail>(getGetLocationUrl(locationId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetLocationQueryKey = (locationId: number,) => {
+    return [
+    `/api/locations/${locationId}`
+    ] as const;
+    }
+
+
+export const getGetLocationQueryOptions = <TData = Awaited<ReturnType<typeof getLocation>>, TError = ErrorType<void>>(locationId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLocation>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetLocationQueryKey(locationId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getLocation>>> = ({ signal }) => getLocation(locationId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(locationId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLocation>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetLocationQueryResult = NonNullable<Awaited<ReturnType<typeof getLocation>>>
+export type GetLocationQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get a location with stats
+ */
+
+export function useGetLocation<TData = Awaited<ReturnType<typeof getLocation>>, TError = ErrorType<void>>(
+ locationId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLocation>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetLocationQueryOptions(locationId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateLocationUrl = (locationId: number,) => {
+
+
+
+
+  return `/api/locations/${locationId}`
+}
+
+/**
+ * @summary Update a location
+ */
+export const updateLocation = async (locationId: number,
+    locationUpdate: LocationUpdate, options?: RequestInit): Promise<LocationDetail> => {
+
+  return customFetch<LocationDetail>(getUpdateLocationUrl(locationId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      locationUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateLocationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateLocation>>, TError,{locationId: number;data: BodyType<LocationUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateLocation>>, TError,{locationId: number;data: BodyType<LocationUpdate>}, TContext> => {
+
+const mutationKey = ['updateLocation'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateLocation>>, {locationId: number;data: BodyType<LocationUpdate>}> = (props) => {
+          const {locationId,data} = props ?? {};
+
+          return  updateLocation(locationId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateLocationMutationResult = NonNullable<Awaited<ReturnType<typeof updateLocation>>>
+    export type UpdateLocationMutationBody = BodyType<LocationUpdate>
+    export type UpdateLocationMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a location
+ */
+export const useUpdateLocation = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateLocation>>, TError,{locationId: number;data: BodyType<LocationUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateLocation>>,
+        TError,
+        {locationId: number;data: BodyType<LocationUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateLocationMutationOptions(options));
+    }
+
+export const getDeleteLocationUrl = (locationId: number,) => {
+
+
+
+
+  return `/api/locations/${locationId}`
+}
+
+/**
+ * @summary Delete a location
+ */
+export const deleteLocation = async (locationId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteLocationUrl(locationId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteLocationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteLocation>>, TError,{locationId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteLocation>>, TError,{locationId: number}, TContext> => {
+
+const mutationKey = ['deleteLocation'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteLocation>>, {locationId: number}> = (props) => {
+          const {locationId} = props ?? {};
+
+          return  deleteLocation(locationId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteLocationMutationResult = NonNullable<Awaited<ReturnType<typeof deleteLocation>>>
+
+    export type DeleteLocationMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a location
+ */
+export const useDeleteLocation = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteLocation>>, TError,{locationId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteLocation>>,
+        TError,
+        {locationId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteLocationMutationOptions(options));
+    }
+
+export const getCreateLocationNoteUrl = (locationId: number,) => {
+
+
+
+
+  return `/api/locations/${locationId}/notes`
+}
+
+/**
+ * @summary Add a communication note to a location
+ */
+export const createLocationNote = async (locationId: number,
+    locationNoteInput: LocationNoteInput, options?: RequestInit): Promise<LocationNote> => {
+
+  return customFetch<LocationNote>(getCreateLocationNoteUrl(locationId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      locationNoteInput,)
+  }
+);}
+
+
+
+
+export const getCreateLocationNoteMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createLocationNote>>, TError,{locationId: number;data: BodyType<LocationNoteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createLocationNote>>, TError,{locationId: number;data: BodyType<LocationNoteInput>}, TContext> => {
+
+const mutationKey = ['createLocationNote'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createLocationNote>>, {locationId: number;data: BodyType<LocationNoteInput>}> = (props) => {
+          const {locationId,data} = props ?? {};
+
+          return  createLocationNote(locationId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateLocationNoteMutationResult = NonNullable<Awaited<ReturnType<typeof createLocationNote>>>
+    export type CreateLocationNoteMutationBody = BodyType<LocationNoteInput>
+    export type CreateLocationNoteMutationError = ErrorType<void>
+
+    /**
+ * @summary Add a communication note to a location
+ */
+export const useCreateLocationNote = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createLocationNote>>, TError,{locationId: number;data: BodyType<LocationNoteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createLocationNote>>,
+        TError,
+        {locationId: number;data: BodyType<LocationNoteInput>},
+        TContext
+      > => {
+      return useMutation(getCreateLocationNoteMutationOptions(options));
+    }
+
+export const getDeleteLocationNoteUrl = (locationId: number,
+    noteId: number,) => {
+
+
+
+
+  return `/api/locations/${locationId}/notes/${noteId}`
+}
+
+/**
+ * @summary Delete a location note
+ */
+export const deleteLocationNote = async (locationId: number,
+    noteId: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteLocationNoteUrl(locationId,noteId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteLocationNoteMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteLocationNote>>, TError,{locationId: number;noteId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteLocationNote>>, TError,{locationId: number;noteId: number}, TContext> => {
+
+const mutationKey = ['deleteLocationNote'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteLocationNote>>, {locationId: number;noteId: number}> = (props) => {
+          const {locationId,noteId} = props ?? {};
+
+          return  deleteLocationNote(locationId,noteId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteLocationNoteMutationResult = NonNullable<Awaited<ReturnType<typeof deleteLocationNote>>>
+
+    export type DeleteLocationNoteMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a location note
+ */
+export const useDeleteLocationNote = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteLocationNote>>, TError,{locationId: number;noteId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteLocationNote>>,
+        TError,
+        {locationId: number;noteId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteLocationNoteMutationOptions(options));
+    }
 

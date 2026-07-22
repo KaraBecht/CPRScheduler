@@ -934,3 +934,180 @@ export const GetActivityFeedResponseItem = zod.object({
 export const GetActivityFeedResponse = zod.array(GetActivityFeedResponseItem)
 
 
+/**
+ * @summary List all locations
+ */
+export const ListLocationsResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "address": zod.string().nullish(),
+  "contactName": zod.string().nullish(),
+  "contactEmail": zod.string().nullish(),
+  "contactPhone": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string(),
+  "notes_log": zod.array(zod.object({
+  "id": zod.number(),
+  "locationId": zod.number(),
+  "body": zod.string(),
+  "createdAt": zod.string()
+})),
+  "lastClassDate": zod.string().nullable(),
+  "lastClassTitle": zod.string().nullish(),
+  "expiringCertificates": zod.array(zod.object({
+  "id": zod.number(),
+  "studentId": zod.number(),
+  "studentName": zod.string(),
+  "classId": zod.number().nullish(),
+  "classTitle": zod.string().nullish(),
+  "classLocation": zod.string().nullish(),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
+  "certificateNumber": zod.string(),
+  "issuedDate": zod.string(),
+  "expiryDate": zod.string()
+}))
+})
+export const ListLocationsResponse = zod.array(ListLocationsResponseItem)
+
+
+/**
+ * @summary Create a location
+ */
+
+
+
+export const CreateLocationBody = zod.object({
+  "name": zod.string().min(1),
+  "address": zod.string().optional(),
+  "contactName": zod.string().optional(),
+  "contactEmail": zod.string().optional(),
+  "contactPhone": zod.string().optional(),
+  "notes": zod.string().optional()
+})
+
+
+/**
+ * @summary Get a location with stats
+ */
+export const GetLocationParams = zod.object({
+  "locationId": zod.coerce.number()
+})
+
+export const GetLocationResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "address": zod.string().nullish(),
+  "contactName": zod.string().nullish(),
+  "contactEmail": zod.string().nullish(),
+  "contactPhone": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string(),
+  "notes_log": zod.array(zod.object({
+  "id": zod.number(),
+  "locationId": zod.number(),
+  "body": zod.string(),
+  "createdAt": zod.string()
+})),
+  "lastClassDate": zod.string().nullable(),
+  "lastClassTitle": zod.string().nullish(),
+  "expiringCertificates": zod.array(zod.object({
+  "id": zod.number(),
+  "studentId": zod.number(),
+  "studentName": zod.string(),
+  "classId": zod.number().nullish(),
+  "classTitle": zod.string().nullish(),
+  "classLocation": zod.string().nullish(),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
+  "certificateNumber": zod.string(),
+  "issuedDate": zod.string(),
+  "expiryDate": zod.string()
+}))
+})
+
+
+/**
+ * @summary Update a location
+ */
+export const UpdateLocationParams = zod.object({
+  "locationId": zod.coerce.number()
+})
+
+
+
+
+export const UpdateLocationBody = zod.object({
+  "name": zod.string().min(1).optional(),
+  "address": zod.string().optional(),
+  "contactName": zod.string().optional(),
+  "contactEmail": zod.string().optional(),
+  "contactPhone": zod.string().optional(),
+  "notes": zod.string().optional()
+})
+
+export const UpdateLocationResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "address": zod.string().nullish(),
+  "contactName": zod.string().nullish(),
+  "contactEmail": zod.string().nullish(),
+  "contactPhone": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string(),
+  "notes_log": zod.array(zod.object({
+  "id": zod.number(),
+  "locationId": zod.number(),
+  "body": zod.string(),
+  "createdAt": zod.string()
+})),
+  "lastClassDate": zod.string().nullable(),
+  "lastClassTitle": zod.string().nullish(),
+  "expiringCertificates": zod.array(zod.object({
+  "id": zod.number(),
+  "studentId": zod.number(),
+  "studentName": zod.string(),
+  "classId": zod.number().nullish(),
+  "classTitle": zod.string().nullish(),
+  "classLocation": zod.string().nullish(),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
+  "certificateNumber": zod.string(),
+  "issuedDate": zod.string(),
+  "expiryDate": zod.string()
+}))
+})
+
+
+/**
+ * @summary Delete a location
+ */
+export const DeleteLocationParams = zod.object({
+  "locationId": zod.coerce.number()
+})
+
+
+/**
+ * @summary Add a communication note to a location
+ */
+export const CreateLocationNoteParams = zod.object({
+  "locationId": zod.coerce.number()
+})
+
+
+
+
+export const CreateLocationNoteBody = zod.object({
+  "body": zod.string().min(1)
+})
+
+
+/**
+ * @summary Delete a location note
+ */
+export const DeleteLocationNoteParams = zod.object({
+  "locationId": zod.coerce.number(),
+  "noteId": zod.coerce.number()
+})
+
+

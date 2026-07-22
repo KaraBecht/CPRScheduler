@@ -13,6 +13,7 @@ import Requests from "@/pages/requests";
 import PublicIntake from "@/pages/public-intake";
 import Certificates from "@/pages/certificates";
 import People from "@/pages/people";
+import Locations from "@/pages/locations";
 import { RoleGate } from "@/components/RoleGate";
 import EmailPreviewRenewal from "@/pages/email-preview-renewal";
 import SigninSheet from "@/pages/signin-sheet";
@@ -44,6 +45,11 @@ function Router() {
             <Route path="/people">
               <RoleGate allow={["administrator"]}>
                 <People />
+              </RoleGate>
+            </Route>
+            <Route path="/locations">
+              <RoleGate allow={["administrator"]}>
+                <Locations />
               </RoleGate>
             </Route>
             <Route component={NotFound} />

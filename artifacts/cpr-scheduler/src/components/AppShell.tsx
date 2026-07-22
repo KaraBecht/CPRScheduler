@@ -9,6 +9,7 @@ import {
   Award,
   GraduationCap,
   HeartPulse,
+  MapPin,
 } from "lucide-react";
 import type { UserRole } from "@workspace/api-client-react";
 import { cn } from "@/lib/utils";
@@ -32,6 +33,7 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { href: "/requests",     label: "Requests",     icon: Inbox,           testId: "nav-requests"      },
     { href: "/people",       label: "People",       icon: Users,           testId: "nav-people"        },
     { href: "/certificates", label: "Certificates", icon: Award,           testId: "nav-certificates"  },
+    { href: "/locations",    label: "Locations",    icon: MapPin,          testId: "nav-locations"     },
   ],
   instructor: [
     { href: "/",        label: "Dashboard",  icon: LayoutDashboard, testId: "nav-dashboard" },

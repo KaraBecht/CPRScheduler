@@ -15,6 +15,7 @@ tags:
   - name: requests
   - name: certificates
   - name: dashboard
+  - name: locations
 paths:
   /healthz:
     get:
@@ -504,6 +505,127 @@ paths:
               schema:
                 type: array
                 items: { $ref: "#/components/schemas/ActivityEvent" }
+
+  /locations:
+    get:
+      operationId: listLocations
+      tags: [locations]
+      summary: List all locations
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/LocationDetail" }
+    post:
+      operationId: createLocation
+      tags: [locations]
+      summary: Create a location
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LocationInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LocationDetail" }
+
+  /locations/{locationId}:
+    get:
+      operationId: getLocation
+      tags: [locations]
+      summary: Get a location with stats
+      parameters:
+        - name: locationId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LocationDetail" }
+        "404": { description: Not found }
+    patch:
+      operationId: updateLocation
+      tags: [locations]
+      summary: Update a location
+      parameters:
+        - name: locationId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LocationUpdate" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LocationDetail" }
+        "404": { description: Not found }
+    delete:
+      operationId: deleteLocation
+      tags: [locations]
+      summary: Delete a location
+      parameters:
+        - name: locationId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204": { description: Deleted }
+        "404": { description: Not found }
+
+  /locations/{locationId}/notes:
+    post:
+      operationId: createLocationNote
+      tags: [locations]
+      summary: Add a communication note to a location
+      parameters:
+        - name: locationId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LocationNoteInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LocationNote" }
+        "404": { description: Not found }
+
+  /locations/{locationId}/notes/{noteId}:
+    delete:
+      operationId: deleteLocationNote
+      tags: [locations]
+      summary: Delete a location note
+      parameters:
+        - name: locationId
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: noteId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204": { description: Deleted }
+        "404": { description: Not found }
 
 components:
   schemas:
@@ -1002,3 +1124,75 @@ components:
         message: { type: string }
         timestamp: { type: string }
         actorName: { type: ["string", "null"] }
+
+    Location:
+      type: object
+      required: [id, name, createdAt, updatedAt]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        address: { type: ["string", "null"] }
+        contactName: { type: ["string", "null"] }
+        contactEmail: { type: ["string", "null"] }
+        contactPhone: { type: ["string", "null"] }
+        notes: { type: ["string", "null"] }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+
+    LocationNote:
+      type: object
+      required: [id, locationId, body, createdAt]
+      properties:
+        id: { type: integer }
+        locationId: { type: integer }
+        body: { type: string }
+        createdAt: { type: string }
+
+    LocationDetail:
+      type: object
+      required: [id, name, createdAt, updatedAt, notes_log, lastClassDate, expiringCertificates]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        address: { type: ["string", "null"] }
+        contactName: { type: ["string", "null"] }
+        contactEmail: { type: ["string", "null"] }
+        contactPhone: { type: ["string", "null"] }
+        notes: { type: ["string", "null"] }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+        notes_log:
+          type: array
+          items: { $ref: "#/components/schemas/LocationNote" }
+        lastClassDate: { type: ["string", "null"] }
+        lastClassTitle: { type: ["string", "null"] }
+        expiringCertificates:
+          type: array
+          items: { $ref: "#/components/schemas/Certificate" }
+
+    LocationInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1 }
+        address: { type: string }
+        contactName: { type: string }
+        contactEmail: { type: string }
+        contactPhone: { type: string }
+        notes: { type: string }
+
+    LocationUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        address: { type: string }
+        contactName: { type: string }
+        contactEmail: { type: string }
+        contactPhone: { type: string }
+        notes: { type: string }
+
+    LocationNoteInput:
+      type: object
+      required: [body]
+      properties:
+        body: { type: string, minLength: 1 }

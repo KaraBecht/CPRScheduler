@@ -387,6 +387,78 @@ export interface ActivityEvent {
   actorName?: string | null;
 }
 
+export interface Location {
+  id: number;
+  name: string;
+  /** @nullable */
+  address?: string | null;
+  /** @nullable */
+  contactName?: string | null;
+  /** @nullable */
+  contactEmail?: string | null;
+  /** @nullable */
+  contactPhone?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LocationNote {
+  id: number;
+  locationId: number;
+  body: string;
+  createdAt: string;
+}
+
+export interface LocationDetail {
+  id: number;
+  name: string;
+  /** @nullable */
+  address?: string | null;
+  /** @nullable */
+  contactName?: string | null;
+  /** @nullable */
+  contactEmail?: string | null;
+  /** @nullable */
+  contactPhone?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  notes_log: LocationNote[];
+  /** @nullable */
+  lastClassDate: string | null;
+  /** @nullable */
+  lastClassTitle?: string | null;
+  expiringCertificates: Certificate[];
+}
+
+export interface LocationInput {
+  /** @minLength 1 */
+  name: string;
+  address?: string;
+  contactName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  notes?: string;
+}
+
+export interface LocationUpdate {
+  /** @minLength 1 */
+  name?: string;
+  address?: string;
+  contactName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  notes?: string;
+}
+
+export interface LocationNoteInput {
+  /** @minLength 1 */
+  body: string;
+}
+
 export type ListUsersParams = {
 role?: UserRole;
 };

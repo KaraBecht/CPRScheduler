@@ -8,6 +8,7 @@ import requestsRouter from "./requests";
 import certificatesRouter from "./certificates";
 import dashboardRouter from "./dashboard";
 import placesRouter from "./places";
+import locationsRouter from "./locations";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(requestsRouter);
 router.use(certificatesRouter);
 router.use(dashboardRouter);
 router.use(placesRouter);
+router.use(locationsRouter);
 
 export default router;
