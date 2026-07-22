@@ -1171,6 +1171,7 @@ components:
           items: { $ref: "#/components/schemas/LocationNote" }
         lastClassDate: { type: ["string", "null"] }
         lastClassTitle: { type: ["string", "null"] }
+        lastClassId: { type: ["integer", "null"] }
         expiringCertificates:
           type: array
           items: { $ref: "#/components/schemas/Certificate" }

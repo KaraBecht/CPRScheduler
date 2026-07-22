@@ -9,6 +9,7 @@ import {
   useDeleteLocationNote,
   useListClasses,
   useCreateClass,
+  useUpdateClass,
   getListLocationsQueryKey,
   getListClassesQueryKey,
   type LocationDetail,
@@ -65,6 +66,8 @@ import {
   CalendarPlus,
   Clock,
   Users,
+  Check,
+  X,
 } from "lucide-react";
 import { useRef } from "react";
 import {
@@ -1008,6 +1011,21 @@ function LocationCard({ loc }: { loc: LocationDetail }) {
     },
   });
 
+  const [editingDate, setEditingDate] = useState(false);
+  const [dateValue, setDateValue] = useState("");
+
+  const updateClass = useUpdateClass({
+    mutation: {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: getListLocationsQueryKey() });
+        qc.invalidateQueries({ queryKey: getListClassesQueryKey() });
+        setEditingDate(false);
+        toast({ title: "Class date updated" });
+      },
+      onError: () => toast({ title: "Failed to update date", variant: "destructive" }),
+    },
+  });
+
   const expiringCount = loc.expiringCertificates?.length ?? 0;
   const businessUnit = parseBusinessUnit(loc.notes ?? "");
   const classCertStatus = certStatusFromLastClass(loc.lastClassDate);
@@ -1170,23 +1188,65 @@ function LocationCard({ loc }: { loc: LocationDetail }) {
               classCertStatus === "expiring" && "text-amber-500",
             )} />
             {loc.lastClassDate ? (
-              <span>
+              <span className="flex items-center gap-1 flex-wrap">
                 Last class:{" "}
-                <span className={cn(
-                  "font-medium",
-                  classCertStatus === "expired" ? "text-red-600" : classCertStatus === "expiring" ? "text-amber-600" : "text-foreground",
-                )}>
-                  {formatDate(loc.lastClassDate)}
-                </span>
-                {classCertStatus === "expired" && (
-                  <span className="ml-1 text-red-500 font-medium">— certs expired</span>
-                )}
-                {classCertStatus === "expiring" && !loc.lastClassTitle && (
-                  <span className="ml-1 text-amber-500 font-medium">— certs expiring</span>
-                )}
-                {loc.lastClassTitle && !classCertStatus && (
-                  <span className="ml-1 text-muted-foreground">
-                    — {loc.lastClassTitle}
+                {editingDate ? (
+                  <span className="flex items-center gap-1">
+                    <Input
+                      type="date"
+                      className="h-6 text-xs px-1 py-0 w-36"
+                      value={dateValue}
+                      onChange={(e) => setDateValue(e.target.value)}
+                      autoFocus
+                    />
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-5 w-5 text-green-600 hover:text-green-700"
+                      disabled={!dateValue || updateClass.isPending || !loc.lastClassId}
+                      onClick={() => {
+                        if (!loc.lastClassId || !dateValue) return;
+                        updateClass.mutate({ classId: loc.lastClassId, data: { date: dateValue } });
+                      }}
+                    >
+                      <Check className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-5 w-5 text-muted-foreground hover:text-foreground"
+                      onClick={() => setEditingDate(false)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 group/date">
+                    <span className={cn(
+                      "font-medium",
+                      classCertStatus === "expired" ? "text-red-600" : classCertStatus === "expiring" ? "text-amber-600" : "text-foreground",
+                    )}>
+                      {formatDate(loc.lastClassDate)}
+                    </span>
+                    {classCertStatus === "expired" && (
+                      <span className="text-red-500 font-medium">— certs expired</span>
+                    )}
+                    {classCertStatus === "expiring" && (
+                      <span className="text-amber-500 font-medium">— certs expiring</span>
+                    )}
+                    {loc.lastClassTitle && !classCertStatus && (
+                      <span className="text-muted-foreground">— {loc.lastClassTitle}</span>
+                    )}
+                    <button
+                      className="opacity-0 group-hover/date:opacity-100 transition-opacity ml-0.5"
+                      title="Edit date"
+                      onClick={() => {
+                        setDateValue(loc.lastClassDate ?? "");
+                        setEditingDate(true);
+                      }}
+                    >
+                      <Pencil className="h-2.5 w-2.5 text-muted-foreground hover:text-foreground" />
+                    </button>
                   </span>
                 )}
               </span>

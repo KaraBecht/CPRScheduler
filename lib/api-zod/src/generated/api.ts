@@ -956,6 +956,7 @@ export const ListLocationsResponseItem = zod.object({
 })),
   "lastClassDate": zod.string().nullable(),
   "lastClassTitle": zod.string().nullish(),
+  "lastClassId": zod.number().nullish(),
   "expiringCertificates": zod.array(zod.object({
   "id": zod.number(),
   "studentId": zod.number(),
@@ -1013,6 +1014,7 @@ export const GetLocationResponse = zod.object({
 })),
   "lastClassDate": zod.string().nullable(),
   "lastClassTitle": zod.string().nullish(),
+  "lastClassId": zod.number().nullish(),
   "expiringCertificates": zod.array(zod.object({
   "id": zod.number(),
   "studentId": zod.number(),
@@ -1065,6 +1067,7 @@ export const UpdateLocationResponse = zod.object({
 })),
   "lastClassDate": zod.string().nullable(),
   "lastClassTitle": zod.string().nullish(),
+  "lastClassId": zod.number().nullish(),
   "expiringCertificates": zod.array(zod.object({
   "id": zod.number(),
   "studentId": zod.number(),

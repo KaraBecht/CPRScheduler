@@ -28,5 +28,7 @@ export interface LocationDetail {
   lastClassDate: string | null;
   /** @nullable */
   lastClassTitle?: string | null;
+  /** @nullable */
+  lastClassId?: number | null;
   expiringCertificates: Certificate[];
 }

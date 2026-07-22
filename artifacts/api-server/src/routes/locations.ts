@@ -105,6 +105,7 @@ async function buildDetail(loc: typeof locationsTable.$inferSelect) {
     })),
     lastClassDate: lastClass?.date ?? null,
     lastClassTitle: lastClass?.title ?? null,
+    lastClassId: lastClass?.id ?? null,
     expiringCertificates,
   };
 }
