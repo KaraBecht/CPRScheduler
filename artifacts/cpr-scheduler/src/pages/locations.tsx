@@ -7,8 +7,12 @@ import {
   useDeleteLocation,
   useCreateLocationNote,
   useDeleteLocationNote,
+  useListClasses,
+  useCreateClass,
   getListLocationsQueryKey,
+  getListClassesQueryKey,
   type LocationDetail,
+  type ClassSession,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
@@ -58,6 +62,9 @@ import {
   XCircle,
   FileText,
   Building2,
+  CalendarPlus,
+  Clock,
+  Users,
 } from "lucide-react";
 import { useRef } from "react";
 import {
@@ -686,6 +693,189 @@ function LocationFormDialog({
 
 // ─── Add note inline ──────────────────────────────────────────────────────────
 
+// ─── Schedule class for a location ────────────────────────────────────────────
+
+const CERT_OPTIONS: { value: string; label: string }[] = [
+  { value: "cpr_aed_first_aid",               label: "CPR + AED + First Aid" },
+  { value: "stop_the_bleed",                  label: "Stop the Bleed" },
+  { value: "cpr_aed_first_aid_stop_the_bleed", label: "CPR + AED + First Aid + Stop the Bleed" },
+];
+
+type ClassForm = {
+  title: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  certificationType: string;
+  capacity: string;
+};
+
+function ScheduleClassDialog({
+  locationName,
+  onCreated,
+}: {
+  locationName: string;
+  onCreated: () => void;
+}) {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState<ClassForm>({
+    title: locationName,
+    date: "",
+    startTime: "09:00",
+    endTime: "",
+    certificationType: "cpr_aed_first_aid",
+    capacity: "20",
+  });
+
+  function handleOpen(v: boolean) {
+    if (v) setForm({ title: locationName, date: "", startTime: "09:00", endTime: "", certificationType: "cpr_aed_first_aid", capacity: "20" });
+    setOpen(v);
+  }
+
+  const create = useCreateClass({
+    mutation: {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: getListClassesQueryKey() });
+        qc.invalidateQueries({ queryKey: getListLocationsQueryKey() });
+        setOpen(false);
+        onCreated();
+        toast({ title: "Class scheduled" });
+      },
+      onError: () => toast({ title: "Failed to schedule class", variant: "destructive" }),
+    },
+  });
+
+  const valid = form.title.trim() && form.date && form.startTime && Number(form.capacity) >= 1;
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline" className="h-6 px-2 text-xs">
+          <CalendarPlus className="h-3 w-3 mr-1" /> Schedule class
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Schedule a class</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 py-1">
+          <div>
+            <Label>Class title</Label>
+            <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. KCPQ Seattle CPR Training" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Date *</Label>
+              <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+            </div>
+            <div>
+              <Label>Capacity *</Label>
+              <Input type="number" min={1} value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Start time *</Label>
+              <Input type="time" value={form.startTime} onChange={(e) => setForm({ ...form, startTime: e.target.value })} />
+            </div>
+            <div>
+              <Label>End time</Label>
+              <Input type="time" value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })} />
+            </div>
+          </div>
+          <div>
+            <Label>Certification type *</Label>
+            <select
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              value={form.certificationType}
+              onChange={(e) => setForm({ ...form, certificationType: e.target.value })}
+            >
+              {CERT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button
+            disabled={!valid || create.isPending}
+            onClick={() =>
+              create.mutate({
+                data: {
+                  title: form.title.trim(),
+                  date: form.date,
+                  startTime: form.startTime,
+                  endTime: form.endTime || undefined,
+                  location: locationName,
+                  certificationType: form.certificationType as ClassSession["certificationType"],
+                  capacity: Number(form.capacity),
+                },
+              })
+            }
+          >
+            {create.isPending ? "Scheduling…" : "Schedule class"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function LocationClasses({ locationName }: { locationName: string }) {
+  const { data: classes = [] } = useListClasses({ location: locationName });
+  const sorted = [...classes].sort((a, b) => b.date.localeCompare(a.date));
+
+  if (sorted.length === 0) {
+    return (
+      <p className="text-xs text-muted-foreground italic">
+        No classes scheduled yet at this location.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-1">
+      {sorted.map((cls) => (
+        <div
+          key={cls.id}
+          className="flex items-center justify-between text-xs py-1.5 border-b border-border last:border-0"
+        >
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <CalendarPlus className="h-3 w-3 text-muted-foreground shrink-0" />
+              <span className="font-medium">{formatDate(cls.date)}</span>
+              <span className="text-muted-foreground flex items-center gap-0.5">
+                <Clock className="h-2.5 w-2.5" /> {cls.startTime}
+              </span>
+            </div>
+            {cls.title !== locationName && (
+              <p className="text-muted-foreground mt-0.5 pl-4 truncate">{cls.title}</p>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0 ml-2">
+            <Badge variant="outline" className="text-[10px] px-1">
+              {CERT_LABELS[cls.certificationType] ?? cls.certificationType}
+            </Badge>
+            <span className="text-muted-foreground flex items-center gap-0.5">
+              <Users className="h-2.5 w-2.5" /> {cls.enrolledCount}/{cls.capacity}
+            </span>
+            <Badge
+              variant={cls.status === "scheduled" ? "default" : "outline"}
+              className="text-[10px] px-1 capitalize"
+            >
+              {cls.status}
+            </Badge>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Add note inline ──────────────────────────────────────────────────────────
+
 function AddNoteForm({
   locationId,
   onDone,
@@ -976,10 +1166,21 @@ function LocationCard({ loc }: { loc: LocationDetail }) {
         {expanded && (
           <div className="mt-2 space-y-4 border-t border-border pt-4">
 
+            {/* Classes */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Classes
+                </h4>
+                <ScheduleClassDialog locationName={loc.name} onCreated={() => {}} />
+              </div>
+              <LocationClasses locationName={loc.name} />
+            </div>
+
             {/* Expiring certificates */}
             <div>
               <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-                Certificates expiring within 90 days
+                Certificates expiring within 6 months
               </h4>
               {expiringCount === 0 ? (
                 <p className="text-xs text-muted-foreground italic">

@@ -467,6 +467,10 @@ export type ListClassesParams = {
 status?: ClassStatus;
 instructorId?: number;
 upcoming?: boolean;
+/**
+ * Filter classes whose location contains this string (case-insensitive)
+ */
+location?: string;
 };
 
 export type ListEnrollmentsParams = {

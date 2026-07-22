@@ -68,7 +68,8 @@ export const GetUserResponse = zod.object({
 export const ListClassesQueryParams = zod.object({
   "status": zod.enum(['scheduled', 'completed', 'cancelled']).optional(),
   "instructorId": zod.coerce.number().optional(),
-  "upcoming": zod.coerce.boolean().optional()
+  "upcoming": zod.coerce.boolean().optional(),
+  "location": zod.coerce.string().optional().describe('Filter classes whose location contains this string (case-insensitive)')
 })
 
 export const ListClassesResponseItem = zod.object({

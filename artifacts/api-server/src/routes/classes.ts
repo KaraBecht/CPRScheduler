@@ -9,7 +9,7 @@ import {
   usersTable,
   certificatesTable,
 } from "@workspace/db";
-import { and, eq, gte, ne, sql, desc, asc, isNotNull, inArray } from "drizzle-orm";
+import { and, eq, gte, ilike, ne, sql, desc, asc, isNotNull, inArray } from "drizzle-orm";
 import {
   CreateClassBody,
   UpdateClassBody,
@@ -94,6 +94,9 @@ router.get("/classes", async (req, res) => {
   if (params.upcoming) {
     const today = new Date().toISOString().split("T")[0]!;
     conditions.push(gte(classesTable.date, today));
+  }
+  if (params.location) {
+    conditions.push(ilike(classesTable.location, `%${params.location}%`));
   }
   const rows = await db
     .select()

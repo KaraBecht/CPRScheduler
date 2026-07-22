@@ -95,6 +95,11 @@ paths:
           in: query
           required: false
           schema: { type: boolean }
+        - name: location
+          in: query
+          required: false
+          schema: { type: string }
+          description: Filter classes whose location contains this string (case-insensitive)
       responses:
         "200":
           description: OK

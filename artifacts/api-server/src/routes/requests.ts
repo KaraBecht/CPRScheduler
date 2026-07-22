@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { parseId } from "../lib/errors";
-import { db, requestsTable, usersTable, classesTable } from "@workspace/db";
-import { and, eq, desc } from "drizzle-orm";
+import { db, requestsTable, usersTable, classesTable, locationsTable } from "@workspace/db";
+import { and, eq, desc, ilike } from "drizzle-orm";
 import {
   CreateRequestBody,
   UpdateRequestBody,
@@ -140,6 +140,22 @@ router.patch("/requests/:requestId", async (req, res) => {
         ? existing.sessions
         : [{ date: existing.preferredDate, startTime: "09:00" }];
 
+    // Upsert a location record for this organization so it appears in the Locations tab
+    const locationName = existing.organizationName;
+    const [existingLoc] = await db
+      .select()
+      .from(locationsTable)
+      .where(ilike(locationsTable.name, locationName))
+      .limit(1);
+    if (!existingLoc) {
+      await db.insert(locationsTable).values({
+        name: locationName,
+        address: existing.address ?? null,
+        contactEmail: existing.contactEmail ?? null,
+        contactPhone: existing.contactPhone ?? null,
+      });
+    }
+
     const { updatedRequest, createdClassRows } = await db.transaction(async (tx) => {
       const insertedClasses: typeof classesTable.$inferSelect[] = [];
       for (const session of sessions) {
@@ -150,7 +166,7 @@ router.patch("/requests/:requestId", async (req, res) => {
             certificationType: existing.certificationType,
             date: session.date,
             startTime: session.startTime,
-            location: "TBD",
+            location: locationName,
             capacity: existing.attendeeCount,
           })
           .returning();
