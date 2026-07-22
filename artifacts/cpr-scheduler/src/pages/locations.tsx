@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { read as xlsxRead, utils as xlsxUtils } from "xlsx";
 import {
   useListLocations,
   useCreateLocation,
@@ -178,6 +179,63 @@ function parseCsv(text: string): CsvRow[] {
   });
 }
 
+// Flexible alias map shared between CSV and XLSX parsers
+const HEADER_ALIAS: Record<string, CsvCol> = {
+  name: "name",
+  locationname: "name",
+  location: "name",
+  address: "address",
+  streetaddress: "address",
+  contactname: "contactName",
+  contact: "contactName",
+  contactperson: "contactName",
+  contactemail: "contactEmail",
+  email: "contactEmail",
+  contactphone: "contactPhone",
+  phone: "contactPhone",
+  phonenumber: "contactPhone",
+  notes: "notes",
+  note: "notes",
+  comments: "notes",
+  comment: "notes",
+};
+
+function normalizeHeader(h: string): string {
+  return h.toLowerCase().replace(/[\s_\-]+/g, "");
+}
+
+function buildRowFromObj(obj: Record<string, unknown>): CsvRow {
+  const row: Partial<Record<CsvCol, string>> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    const col = HEADER_ALIAS[normalizeHeader(k)];
+    if (col) row[col] = String(v ?? "").trim();
+  }
+  const name = (row.name ?? "").trim();
+  return {
+    name,
+    address: (row.address ?? "").trim(),
+    contactName: (row.contactName ?? "").trim(),
+    contactEmail: (row.contactEmail ?? "").trim(),
+    contactPhone: (row.contactPhone ?? "").trim(),
+    notes: (row.notes ?? "").trim(),
+    _valid: name.length > 0,
+    _error: name.length === 0 ? "Name is required" : undefined,
+  };
+}
+
+function parseXlsxBuffer(buffer: ArrayBuffer): CsvRow[] {
+  const workbook = xlsxRead(buffer, { type: "array" });
+  const sheetName = workbook.SheetNames[0];
+  if (!sheetName) return [];
+  const sheet = workbook.Sheets[sheetName];
+  if (!sheet) return [];
+  const data = xlsxUtils.sheet_to_json<Record<string, unknown>>(sheet, {
+    defval: "",
+    raw: false,
+  });
+  return data.map(buildRowFromObj).filter((r) => Object.values(r).some((v) => typeof v === "string" && v !== "" && v !== "true" && v !== "false"));
+}
+
 // ─── CSV Import dialog ─────────────────────────────────────────────────────────
 
 function CsvImportDialog({ onImported }: { onImported: () => void }) {
@@ -194,14 +252,25 @@ function CsvImportDialog({ onImported }: { onImported: () => void }) {
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    const isXlsx = /\.(xlsx|xls|xlsm|xlsb)$/i.test(file.name);
     const reader = new FileReader();
-    reader.onload = (ev) => {
-      const text = ev.target?.result as string;
-      const parsed = parseCsv(text);
-      setRows(parsed);
-      setResults(null);
-    };
-    reader.readAsText(file);
+    if (isXlsx) {
+      reader.onload = (ev) => {
+        const buffer = ev.target?.result as ArrayBuffer;
+        const parsed = parseXlsxBuffer(buffer);
+        setRows(parsed);
+        setResults(null);
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      reader.onload = (ev) => {
+        const text = ev.target?.result as string;
+        const parsed = parseCsv(text);
+        setRows(parsed);
+        setResults(null);
+      };
+      reader.readAsText(file);
+    }
     // reset so same file can be re-selected
     e.target.value = "";
   }
@@ -248,14 +317,14 @@ function CsvImportDialog({ onImported }: { onImported: () => void }) {
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogTrigger asChild>
         <Button variant="outline" data-testid="button-import-csv">
-          <Upload className="h-4 w-4 mr-1.5" /> Import CSV
+          <Upload className="h-4 w-4 mr-1.5" /> Import file
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Import locations from CSV
+            Import locations from CSV or Excel
           </DialogTitle>
         </DialogHeader>
 
@@ -291,12 +360,14 @@ function CsvImportDialog({ onImported }: { onImported: () => void }) {
           data-testid="csv-drop-zone"
         >
           <Upload className="h-7 w-7 text-muted-foreground" />
-          <p className="text-sm font-medium">Click to choose a CSV file</p>
-          <p className="text-xs text-muted-foreground">Comma-separated, UTF-8 encoding</p>
+          <p className="text-sm font-medium">Click to choose a file</p>
+          <p className="text-xs text-muted-foreground">
+            CSV <span className="mx-1 text-muted-foreground/50">·</span> Excel (.xlsx, .xls)
+          </p>
           <input
             ref={fileRef}
             type="file"
-            accept=".csv,text/csv"
+            accept=".csv,text/csv,.xlsx,.xls,.xlsm,.xlsb,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
             className="hidden"
             onChange={handleFile}
             data-testid="input-csv-file"
