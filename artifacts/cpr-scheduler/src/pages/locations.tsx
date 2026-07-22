@@ -873,6 +873,176 @@ function ScheduleClassDialog({
   );
 }
 
+const STATUS_OPTIONS = [
+  { value: "scheduled", label: "Scheduled" },
+  { value: "completed", label: "Completed" },
+  { value: "cancelled", label: "Cancelled" },
+];
+
+type EditClassForm = ClassForm & { status: string };
+
+function EditClassDialog({
+  cls,
+  locationName,
+}: {
+  cls: ClassSession;
+  locationName: string;
+}) {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState<EditClassForm>({
+    title: cls.title,
+    date: cls.date,
+    startTime: cls.startTime,
+    endTime: cls.endTime ?? "",
+    certificationType: cls.certificationType,
+    capacity: String(cls.capacity),
+    status: cls.status,
+  });
+
+  function handleOpen(v: boolean) {
+    if (v) {
+      setForm({
+        title: cls.title,
+        date: cls.date,
+        startTime: cls.startTime,
+        endTime: cls.endTime ?? "",
+        certificationType: cls.certificationType,
+        capacity: String(cls.capacity),
+        status: cls.status,
+      });
+    }
+    setOpen(v);
+  }
+
+  const update = useUpdateClass({
+    mutation: {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: getListClassesQueryKey() });
+        qc.invalidateQueries({ queryKey: getListLocationsQueryKey() });
+        setOpen(false);
+        toast({ title: "Class updated" });
+      },
+      onError: () => toast({ title: "Failed to update class", variant: "destructive" }),
+    },
+  });
+
+  const valid = form.title.trim() && form.date && form.startTime && Number(form.capacity) >= 1;
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpen}>
+      <DialogTrigger asChild>
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-5 w-5 opacity-0 group-hover/classrow:opacity-100 transition-opacity"
+          title="Edit class"
+        >
+          <Pencil className="h-2.5 w-2.5" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit class</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 py-1">
+          <div>
+            <Label>Class title</Label>
+            <Input
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              placeholder={locationName}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Date *</Label>
+              <Input
+                type="date"
+                value={form.date}
+                onChange={(e) => setForm({ ...form, date: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>Capacity *</Label>
+              <Input
+                type="number"
+                min={1}
+                value={form.capacity}
+                onChange={(e) => setForm({ ...form, capacity: e.target.value })}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Start time *</Label>
+              <Input
+                type="time"
+                value={form.startTime}
+                onChange={(e) => setForm({ ...form, startTime: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>End time</Label>
+              <Input
+                type="time"
+                value={form.endTime}
+                onChange={(e) => setForm({ ...form, endTime: e.target.value })}
+              />
+            </div>
+          </div>
+          <div>
+            <Label>Certification type</Label>
+            <select
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              value={form.certificationType}
+              onChange={(e) => setForm({ ...form, certificationType: e.target.value })}
+            >
+              {CERT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <Label>Status</Label>
+            <select
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              value={form.status}
+              onChange={(e) => setForm({ ...form, status: e.target.value })}
+            >
+              {STATUS_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button
+            disabled={!valid || update.isPending}
+            onClick={() =>
+              update.mutate({
+                classId: cls.id,
+                data: {
+                  title: form.title.trim(),
+                  date: form.date,
+                  startTime: form.startTime,
+                  endTime: form.endTime || undefined,
+                  certificationType: form.certificationType as ClassSession["certificationType"],
+                  capacity: Number(form.capacity),
+                  status: form.status as ClassSession["status"],
+                },
+              })
+            }
+          >
+            {update.isPending ? "Saving…" : "Save changes"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function LocationClasses({ locationName }: { locationName: string }) {
   const { data: classes = [] } = useListClasses({ location: locationName });
   const sorted = [...classes].sort((a, b) => b.date.localeCompare(a.date));
@@ -890,7 +1060,7 @@ function LocationClasses({ locationName }: { locationName: string }) {
       {sorted.map((cls) => (
         <div
           key={cls.id}
-          className="flex items-center justify-between text-xs py-1.5 border-b border-border last:border-0"
+          className="group/classrow flex items-center justify-between text-xs py-1.5 border-b border-border last:border-0"
         >
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
@@ -917,6 +1087,7 @@ function LocationClasses({ locationName }: { locationName: string }) {
             >
               {cls.status}
             </Badge>
+            <EditClassDialog cls={cls} locationName={locationName} />
           </div>
         </div>
       ))}
