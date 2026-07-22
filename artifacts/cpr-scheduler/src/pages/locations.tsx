@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { read as xlsxRead, utils as xlsxUtils } from "xlsx";
 import {
   useListLocations,
@@ -57,6 +57,7 @@ import {
   CheckCircle2,
   XCircle,
   FileText,
+  Building2,
 } from "lucide-react";
 import { useRef } from "react";
 import {
@@ -77,6 +78,39 @@ const CERT_LABELS: Record<string, string> = {
   stop_the_bleed: "Stop the Bleed",
   cpr_aed_first_aid_stop_the_bleed: "CPR+STB",
 };
+
+// ─── Business unit helpers ────────────────────────────────────────────────────
+
+/** Extract the "Business Unit: …" value from a notes string. */
+function parseBusinessUnit(notes: string): string {
+  const m = notes.match(/^Business Unit:\s*(.+)$/m);
+  return m?.[1]?.trim() ?? "";
+}
+
+/** Return the notes string with the Business Unit line removed. */
+function notesBody(notes: string): string {
+  return notes.replace(/^Business Unit:.*$/m, "").replace(/\n{2,}/g, "\n").trim();
+}
+
+/** Deterministic pastel color class for a given business unit name. */
+const BU_PALETTE = [
+  "bg-sky-100 text-sky-800",
+  "bg-teal-100 text-teal-800",
+  "bg-indigo-100 text-indigo-800",
+  "bg-violet-100 text-violet-800",
+  "bg-amber-100 text-amber-800",
+  "bg-emerald-100 text-emerald-800",
+  "bg-rose-100 text-rose-800",
+  "bg-orange-100 text-orange-800",
+  "bg-cyan-100 text-cyan-800",
+  "bg-purple-100 text-purple-800",
+] as const;
+
+function buColor(name: string): string {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) | 0;
+  return BU_PALETTE[Math.abs(h) % BU_PALETTE.length]!;
+}
 
 // ─── CSV helpers ──────────────────────────────────────────────────────────────
 
@@ -732,12 +766,24 @@ function LocationCard({ loc }: { loc: LocationDetail }) {
   });
 
   const expiringCount = loc.expiringCertificates?.length ?? 0;
+  const businessUnit = parseBusinessUnit(loc.notes ?? "");
 
   return (
     <Card
       className="overflow-hidden"
       data-testid={`location-card-${loc.id}`}
     >
+      {businessUnit && (
+        <div
+          className={cn(
+            "px-4 py-1.5 text-[11px] font-semibold tracking-wide flex items-center gap-1.5 border-b border-black/5",
+            buColor(businessUnit),
+          )}
+        >
+          <Building2 className="h-3 w-3 shrink-0" />
+          {businessUnit}
+        </div>
+      )}
       <CardContent className="pt-5 pb-4">
         {/* ── Header row ── */}
         <div className="flex items-start justify-between gap-2">
@@ -892,9 +938,9 @@ function LocationCard({ loc }: { loc: LocationDetail }) {
         </div>
 
         {/* ── General notes (always visible if present) ── */}
-        {loc.notes && (
-          <p className="mt-3 text-xs text-foreground/70 bg-muted/50 rounded-lg px-3 py-2 italic">
-            {loc.notes}
+        {notesBody(loc.notes ?? "") && (
+          <p className="mt-3 text-xs text-foreground/70 bg-muted/50 rounded-lg px-3 py-2 italic whitespace-pre-wrap">
+            {notesBody(loc.notes ?? "")}
           </p>
         )}
 
@@ -1032,6 +1078,7 @@ function LocationCard({ loc }: { loc: LocationDetail }) {
 export default function Locations() {
   const qc = useQueryClient();
   const [query, setQuery] = useState("");
+  const [buFilter, setBuFilter] = useState("");
   const { data: locations = [], isLoading } = useListLocations();
 
   const create = useCreateLocation({
@@ -1045,8 +1092,19 @@ export default function Locations() {
     },
   });
 
+  // Collect all unique business units sorted alphabetically
+  const allBUs = useMemo(() => {
+    const set = new Set<string>();
+    locations.forEach((loc) => {
+      const bu = parseBusinessUnit(loc.notes ?? "");
+      if (bu) set.add(bu);
+    });
+    return [...set].sort();
+  }, [locations]);
+
   const q = query.trim().toLowerCase();
   const filtered = locations.filter((loc) => {
+    if (buFilter && parseBusinessUnit(loc.notes ?? "") !== buFilter) return false;
     if (!q) return true;
     return (
       loc.name.toLowerCase().includes(q) ||
@@ -1109,17 +1167,51 @@ export default function Locations() {
         </div>
       )}
 
-      {/* ── Search ── */}
+      {/* ── Search + Business Unit filter ── */}
       {locations.length > 0 && (
-        <div className="relative max-w-sm mb-5">
-          <Search className="h-4 w-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            className="pl-8"
-            placeholder="Filter by name, address, or contact…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            data-testid="input-locations-filter"
-          />
+        <div className="mb-5 space-y-3">
+          <div className="relative max-w-sm">
+            <Search className="h-4 w-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              className="pl-8"
+              placeholder="Filter by name, address, or contact…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              data-testid="input-locations-filter"
+            />
+          </div>
+          {allBUs.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-xs text-muted-foreground flex items-center gap-1 mr-1">
+                <Building2 className="h-3.5 w-3.5" /> Business unit:
+              </span>
+              <button
+                onClick={() => setBuFilter("")}
+                className={cn(
+                  "rounded-full px-3 py-0.5 text-xs font-medium transition-colors border",
+                  buFilter === ""
+                    ? "bg-foreground text-background border-foreground"
+                    : "bg-transparent text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground",
+                )}
+              >
+                All
+              </button>
+              {allBUs.map((bu) => (
+                <button
+                  key={bu}
+                  onClick={() => setBuFilter(buFilter === bu ? "" : bu)}
+                  className={cn(
+                    "rounded-full px-3 py-0.5 text-xs font-medium transition-colors border",
+                    buFilter === bu
+                      ? cn(buColor(bu), "border-transparent")
+                      : "bg-transparent text-muted-foreground border-border hover:border-foreground/40 hover:text-foreground",
+                  )}
+                >
+                  {bu}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
