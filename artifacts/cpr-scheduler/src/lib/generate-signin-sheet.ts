@@ -618,6 +618,16 @@ export function generateSigninSheetHtml(cls: ClassInfo, roster: RosterEntry[]): 
 </html>`;
 }
 
+export function openSigninSheet(cls: ClassInfo, roster: RosterEntry[]): void {
+  const html = generateSigninSheetHtml(cls, roster);
+  const newWin = window.open("about:blank", "_blank");
+  if (newWin) {
+    newWin.document.open();
+    newWin.document.write(html);
+    newWin.document.close();
+  }
+}
+
 export function downloadSigninSheet(cls: ClassInfo, roster: RosterEntry[]): void {
   const html = generateSigninSheetHtml(cls, roster);
   const blob = new Blob([html], { type: "text/html" });

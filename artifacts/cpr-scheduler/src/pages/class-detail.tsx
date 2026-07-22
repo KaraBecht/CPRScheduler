@@ -70,10 +70,9 @@ import {
   Link2,
   Check,
   ExternalLink,
-  FileDown,
 } from "lucide-react";
 import { UploadRosterDialog } from "@/components/UploadRosterDialog";
-import { downloadSigninSheet } from "@/lib/generate-signin-sheet";
+import { openSigninSheet } from "@/lib/generate-signin-sheet";
 import {
   certificationDuration,
   formatCertificationType,
@@ -266,10 +265,10 @@ export default function ClassDetail() {
                 size="sm"
                 data-testid="button-download-sheet"
                 onClick={() =>
-                  downloadSigninSheet(cls, rosterData?.entries ?? [])
+                  openSigninSheet(cls, rosterData?.entries ?? [])
                 }
               >
-                <FileDown className="h-4 w-4 mr-1.5" /> Download sign-in sheet
+                <ExternalLink className="h-4 w-4 mr-1.5" /> Open sign-in sheet
               </Button>
             )}
             {canManage && (
