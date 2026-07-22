@@ -412,9 +412,16 @@ export function generateSigninSheetHtml(cls: ClassInfo, roster: RosterEntry[]): 
 </div>
 
 <script>
+  var STORAGE_KEY = 'signin-sheet:' + document.title;
+
   function clearAll() {
     if (!confirm('Clear all entered data?')) return;
     document.querySelectorAll('.cell-inner').forEach(function(el) { el.textContent = ''; });
+    var sigInst = document.getElementById('sig-instructor');
+    var sigDate = document.getElementById('sig-date');
+    if (sigInst) sigInst.textContent = '';
+    if (sigDate) sigDate.textContent = '';
+    try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
   }
 
   function escHtml(s) {
@@ -488,8 +495,25 @@ export function generateSigninSheetHtml(cls: ClassInfo, roster: RosterEntry[]): 
   }
 
   function saveSheet() {
-    var filename = document.title.replace(/\s*\u2014\s*/, '-').replace(/\s+/g, '-').toLowerCase() + '.html';
-    captureAndSave(filename);
+    // Collect current values and store in localStorage (no download)
+    var trs = document.querySelectorAll('#tbody tr');
+    var rows = [];
+    trs.forEach(function(row) {
+      var cells = row.querySelectorAll('.cell-inner');
+      rows.push({
+        name:  cells[0] ? cells[0].textContent.trim() : '',
+        email: cells[1] ? cells[1].textContent.trim() : '',
+        phone: cells[2] ? cells[2].textContent.trim() : ''
+      });
+    });
+    var sigInst = document.getElementById('sig-instructor');
+    var sigDate = document.getElementById('sig-date');
+    var data = {
+      rows: rows,
+      sigInstructor: sigInst ? sigInst.textContent.trim() : '',
+      sigDate:       sigDate ? sigDate.textContent.trim() : ''
+    };
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e) {}
 
     // Flash "✓ Saved" indicator
     var indicator = document.getElementById('save-indicator');
@@ -498,6 +522,34 @@ export function generateSigninSheetHtml(cls: ClassInfo, roster: RosterEntry[]): 
       setTimeout(function() { indicator.classList.remove('show'); }, 2500);
     }
   }
+
+  function restoreSheet() {
+    var raw;
+    try { raw = localStorage.getItem(STORAGE_KEY); } catch(e) {}
+    if (!raw) return;
+    var data;
+    try { data = JSON.parse(raw); } catch(e) { return; }
+
+    // Restore table cells
+    if (data.rows) {
+      var trs = document.querySelectorAll('#tbody tr');
+      data.rows.forEach(function(rowData, i) {
+        if (!trs[i]) return;
+        var cells = trs[i].querySelectorAll('.cell-inner');
+        if (cells[0]) cells[0].textContent = rowData.name  || '';
+        if (cells[1]) cells[1].textContent = rowData.email || '';
+        if (cells[2]) cells[2].textContent = rowData.phone || '';
+      });
+    }
+
+    // Restore signature fields
+    var sigInst = document.getElementById('sig-instructor');
+    var sigDate = document.getElementById('sig-date');
+    if (sigInst && data.sigInstructor) sigInst.textContent = data.sigInstructor;
+    if (sigDate && data.sigDate)       sigDate.textContent = data.sigDate;
+  }
+
+  document.addEventListener('DOMContentLoaded', restoreSheet);
 
   function emailSheet() {
     // ── Step 1: save current state to Downloads ──
