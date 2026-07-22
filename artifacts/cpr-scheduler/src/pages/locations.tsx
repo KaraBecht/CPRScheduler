@@ -713,9 +713,11 @@ type ClassForm = {
 function ScheduleClassDialog({
   locationName,
   onCreated,
+  trigger,
 }: {
   locationName: string;
   onCreated: () => void;
+  trigger?: React.ReactNode;
 }) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -751,9 +753,11 @@ function ScheduleClassDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline" className="h-6 px-2 text-xs">
-          <CalendarPlus className="h-3 w-3 mr-1" /> Schedule class
-        </Button>
+        {trigger ?? (
+          <Button size="sm" variant="outline" className="h-6 px-2 text-xs">
+            <CalendarPlus className="h-3 w-3 mr-1" /> Schedule class
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
@@ -1124,7 +1128,15 @@ function LocationCard({ loc }: { loc: LocationDetail }) {
                 )}
               </span>
             ) : (
-              <span className="italic">No classes yet</span>
+              <ScheduleClassDialog
+                locationName={loc.name}
+                onCreated={() => {}}
+                trigger={
+                  <button className="italic hover:not-italic hover:underline underline-offset-2 cursor-pointer">
+                    No classes yet — schedule one
+                  </button>
+                }
+              />
             )}
           </div>
           <div className="flex items-center gap-1.5 text-muted-foreground">
