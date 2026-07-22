@@ -10,6 +10,7 @@ import {
   useListClasses,
   useCreateClass,
   useUpdateClass,
+  useListUsers,
   getListLocationsQueryKey,
   getListClassesQueryKey,
   type LocationDetail,
@@ -773,11 +774,11 @@ function ScheduleClassDialog({
     startTime: "09:00",
     endTime: "",
     certificationType: "cpr_aed_first_aid",
-    capacity: "20",
+    capacity: "10",
   });
 
   function handleOpen(v: boolean) {
-    if (v) setForm({ title: locationName, date: "", startTime: "09:00", endTime: "", certificationType: "cpr_aed_first_aid", capacity: "20" });
+    if (v) setForm({ title: locationName, date: "", startTime: "09:00", endTime: "", certificationType: "cpr_aed_first_aid", capacity: "10" });
     setOpen(v);
   }
 
@@ -879,7 +880,7 @@ const STATUS_OPTIONS = [
   { value: "cancelled", label: "Cancelled" },
 ];
 
-type EditClassForm = ClassForm & { status: string };
+type EditClassForm = ClassForm & { status: string; instructorId: string };
 
 function EditClassDialog({
   cls,
@@ -898,7 +899,10 @@ function EditClassDialog({
     certificationType: cls.certificationType,
     capacity: String(cls.capacity),
     status: cls.status,
+    instructorId: String(cls.instructorId ?? ""),
   });
+
+  const { data: instructors = [] } = useListUsers({ role: "instructor" });
 
   function handleOpen(v: boolean) {
     if (v) {
@@ -910,6 +914,7 @@ function EditClassDialog({
         certificationType: cls.certificationType,
         capacity: String(cls.capacity),
         status: cls.status,
+        instructorId: String(cls.instructorId ?? ""),
       });
     }
     setOpen(v);
@@ -1005,6 +1010,19 @@ function EditClassDialog({
               ))}
             </select>
           </div>
+          <div>
+            <Label>Instructor</Label>
+            <select
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              value={form.instructorId}
+              onChange={(e) => setForm({ ...form, instructorId: e.target.value })}
+            >
+              <option value="">— None —</option>
+              {instructors.map((i) => (
+                <option key={i.id} value={String(i.id)}>{i.name}</option>
+              ))}
+            </select>
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
@@ -1021,6 +1039,7 @@ function EditClassDialog({
                   certificationType: form.certificationType as ClassSession["certificationType"],
                   capacity: Number(form.capacity),
                   status: form.status as ClassSession["status"],
+                  instructorIds: form.instructorId ? [Number(form.instructorId)] : undefined,
                 },
               })
             }
