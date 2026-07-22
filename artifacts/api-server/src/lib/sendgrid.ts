@@ -147,6 +147,90 @@ export function buildRequestEmail(data: {
   };
 }
 
+export function buildSigninNotificationEmail(data: {
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  classTitle: string;
+  classDate: string;
+  startTime?: string | null;
+  location?: string | null;
+  certificationType: string;
+  capacity: number;
+  totalSignedIn: number;
+}): Pick<EmailPayload, "subject" | "text" | "html"> {
+  const certLabel: Record<string, string> = {
+    cpr_aed_first_aid: "CPR / AED / First Aid",
+    stop_the_bleed: "Stop the Bleed",
+    cpr_aed_first_aid_stop_the_bleed: "CPR + Stop the Bleed",
+  };
+  const cert = certLabel[data.certificationType] ?? data.certificationType;
+  const spotsLeft = data.capacity - data.totalSignedIn;
+
+  const text = [
+    `New student sign-in — ${data.classTitle}`,
+    ``,
+    `STUDENT`,
+    `  Name:  ${data.name}`,
+    data.email  ? `  Email: ${data.email}` : null,
+    data.phone  ? `  Phone: ${data.phone}` : null,
+    ``,
+    `CLASS`,
+    `  Title:       ${data.classTitle}`,
+    `  Date:        ${data.classDate}${data.startTime ? " @ " + data.startTime : ""}`,
+    data.location ? `  Location:    ${data.location}` : null,
+    `  Cert type:   ${cert}`,
+    `  Signed in:   ${data.totalSignedIn} / ${data.capacity} (${spotsLeft} spot${spotsLeft === 1 ? "" : "s"} remaining)`,
+    ``,
+    `— FOX Medical CPR Training Hub`,
+  ]
+    .filter((l) => l !== null)
+    .join("\n");
+
+  const row = (label: string, value: string) =>
+    `<tr><td style="padding:4px 12px 4px 0;color:#6b7280;white-space:nowrap;font-size:14px">${label}</td><td style="padding:4px 0;font-size:14px"><strong>${value}</strong></td></tr>`;
+
+  const html = `
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#111827">
+  <div style="background:#007BA7;padding:20px 24px;border-radius:8px 8px 0 0">
+    <h1 style="margin:0;color:#fff;font-size:18px">New Student Sign-In</h1>
+    <p style="margin:4px 0 0;color:#cce9f3;font-size:13px">${data.classTitle} &mdash; ${data.classDate}</p>
+  </div>
+  <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px">
+
+    <h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin:0 0 8px">Student</h2>
+    <table style="border-collapse:collapse;margin-bottom:20px">
+      ${row("Name", data.name)}
+      ${data.email ? row("Email", `<a href="mailto:${data.email}" style="color:#007BA7">${data.email}</a>`) : ""}
+      ${data.phone ? row("Phone", data.phone) : ""}
+    </table>
+
+    <h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin:0 0 8px">Class</h2>
+    <table style="border-collapse:collapse;margin-bottom:20px">
+      ${row("Title", data.classTitle)}
+      ${row("Date", data.classDate + (data.startTime ? " @ " + data.startTime : ""))}
+      ${data.location && data.location !== "TBD" ? row("Location", data.location) : ""}
+      ${row("Certification", cert)}
+    </table>
+
+    <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;padding:12px 16px;margin-bottom:4px">
+      <span style="font-size:14px;color:#0369a1">
+        <strong>${data.totalSignedIn} / ${data.capacity}</strong> signed in &nbsp;&bull;&nbsp;
+        <strong>${spotsLeft}</strong> spot${spotsLeft === 1 ? "" : "s"} remaining
+      </span>
+    </div>
+
+    <p style="margin:20px 0 0;font-size:12px;color:#9ca3af">— FOX Medical CPR Training Hub</p>
+  </div>
+</div>`;
+
+  return {
+    subject: `New sign-in: ${data.name} — ${data.classTitle} (${data.classDate})`,
+    text,
+    html,
+  };
+}
+
 export function buildScheduledEmail(data: {
   requestorName: string;
   organizationName: string;

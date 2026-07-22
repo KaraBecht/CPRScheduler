@@ -6,6 +6,7 @@ import {
   SaveClassRosterBody,
   UpdateRosterEntryBody,
 } from "@workspace/api-zod";
+import { sendEmail, buildSigninNotificationEmail } from "../lib/sendgrid";
 
 const router: IRouter = Router();
 
@@ -336,6 +337,27 @@ router.post("/public/classes/:classId/roster-signin", async (req, res) => {
     result: null,
     cardSent: false,
   });
+
+  // Fire-and-forget: send notification email to admin
+  const adminEmail =
+    process.env["NOTIFY_ADMIN_EMAIL"] ?? "cprclassesfox@gmail.com";
+  const totalSignedIn = existing.length + 1;
+  const emailContent = buildSigninNotificationEmail({
+    name: name.trim(),
+    email: email?.trim() || null,
+    phone: phone?.trim() || null,
+    classTitle: cls.title,
+    classDate: cls.date,
+    startTime: cls.startTime ?? null,
+    location: cls.location ?? null,
+    certificationType: cls.certificationType,
+    capacity: cls.capacity,
+    totalSignedIn,
+  });
+  sendEmail({ to: adminEmail, ...emailContent }, req.log).catch((err) => {
+    req.log.error({ err }, "Sign-in notification email failed");
+  });
+
   res.json({ ok: true });
 });
 
