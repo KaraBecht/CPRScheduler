@@ -3,6 +3,7 @@ import {
   useGetActivityFeed,
   useListReminders,
   useUpdateReminder,
+  type Reminder,
 } from "@workspace/api-client-react";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
@@ -44,7 +45,7 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getListRemindersQueryKey } from "@workspace/api-client-react";
 
-function ReminderCard({ reminder }: { reminder: NonNullable<ReturnType<typeof useListReminders>["data"]>[number] }) {
+function ReminderCard({ reminder }: { reminder: Reminder }) {
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
   const queryClient = useQueryClient();
