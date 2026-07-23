@@ -112,7 +112,7 @@ export function ClassCard({ session, onDelete }: ClassCardProps) {
               <div className="flex items-center justify-between text-xs mb-1.5" style={{ color: "#A9B0B3" }}>
                 <div className="flex items-center gap-1.5">
                   <Users className="h-3.5 w-3.5" />
-                  <span className={cn(full && "font-semibold")} style={full ? { color: "#D62828" } : {}}>
+                  <span className={cn(full && "font-semibold")}>
                     {session.enrolledCount}/{session.capacity}
                     {full ? " · full" : ` · ${remaining} open`}
                   </span>
@@ -122,7 +122,7 @@ export function ClassCard({ session, onDelete }: ClassCardProps) {
               <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "hsl(200 18% 90%)" }}>
                 <div
                   className="h-full rounded-full transition-all"
-                  style={{ width: `${fillPct}%`, background: full ? "#D62828" : accent }}
+                  style={{ width: `${fillPct}%`, background: accent }}
                 />
               </div>
             </div>
