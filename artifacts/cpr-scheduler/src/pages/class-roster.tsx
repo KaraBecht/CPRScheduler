@@ -43,14 +43,22 @@ type Entry = {
 
 // ─── Spreadsheet / CSV parser ─────────────────────────────────────────────────
 
-function findCol(row: Record<string, unknown>, ...keywords: string[]): string {
-  for (const key of Object.keys(row)) {
-    const k = key.toLowerCase().trim();
-    if (keywords.some((kw) => k.includes(kw))) {
-      return String(row[key] ?? "").trim();
-    }
+const NAME_HINTS = ["name", "first", "last", "student", "attendee"];
+const EMAIL_HINTS = ["email"];
+
+/**
+ * Scan the first few rows to find the real header row.
+ * Handles files where row 0 is a title/label (e.g. "CPR,,,,") and
+ * the actual column headers live in row 1 or 2.
+ */
+function detectHeaderRow(rawRows: string[][]): number {
+  for (let i = 0; i < Math.min(rawRows.length, 6); i++) {
+    const row = rawRows[i]!.map((c) => String(c).toLowerCase().trim());
+    const hasNameHint = row.some((c) => NAME_HINTS.some((h) => c.includes(h)));
+    const hasEmailHint = row.some((c) => EMAIL_HINTS.some((h) => c.includes(h)));
+    if (hasNameHint || hasEmailHint) return i;
   }
-  return "";
+  return 0; // fallback: treat row 0 as headers
 }
 
 async function parseSpreadsheet(
@@ -61,33 +69,59 @@ async function parseSpreadsheet(
   const wsName = wb.SheetNames[0];
   if (!wsName) throw new Error("Workbook has no sheets");
   const ws = wb.Sheets[wsName]!;
-  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, {
+
+  // Get every row as a plain string array first so we can detect the header row
+  const rawRows = XLSX.utils.sheet_to_json<string[]>(ws, {
+    header: 1,
     defval: "",
     raw: false,
   });
 
-  return rows
+  const headerIdx = detectHeaderRow(rawRows);
+  const headers = (rawRows[headerIdx] ?? []).map((c) => String(c).trim());
+  const dataRows = rawRows.slice(headerIdx + 1);
+
+  /**
+   * Return the first non-empty cell value whose header contains any of the
+   * provided keywords (case-insensitive substring match).
+   */
+  const get = (row: string[], ...keywords: string[]): string => {
+    for (let ci = 0; ci < headers.length; ci++) {
+      const h = (headers[ci] ?? "").toLowerCase();
+      if (keywords.some((kw) => h.includes(kw))) {
+        return String(row[ci] ?? "").trim();
+      }
+    }
+    return "";
+  };
+
+  return dataRows
     .map((row) => {
-      // Name: prefer a "name" / "full name" column; fall back to first+last
-      let name = findCol(row, "full name", "fullname", "student name", "attendee name");
-      if (!name) {
-        // try a plain "name" column that isn't "first" or "last"
-        for (const key of Object.keys(row)) {
-          const k = key.toLowerCase().trim();
-          if (k === "name" || k === "full name") {
-            name = String(row[key] ?? "").trim();
-            break;
-          }
+      // 1. Look for a combined "Full Name", "Name", "Student Name" column
+      let name = "";
+      for (let ci = 0; ci < headers.length; ci++) {
+        const h = (headers[ci] ?? "").toLowerCase().trim();
+        if (
+          h === "name" ||
+          h === "full name" ||
+          h === "fullname" ||
+          h === "student name" ||
+          h === "attendee name"
+        ) {
+          name = String(row[ci] ?? "").trim();
+          if (name) break;
         }
       }
+
+      // 2. Fall back to First Name + Last Name columns
       if (!name) {
-        const first = findCol(row, "first name", "firstname", "first");
-        const last = findCol(row, "last name", "lastname", "surname", "last");
+        const first = get(row, "first name", "firstname", "first");
+        const last = get(row, "last name", "lastname", "surname", "last");
         name = `${first} ${last}`.trim();
       }
 
-      const email = findCol(row, "email");
-      const phone = findCol(row, "phone", "mobile", "cell", "telephone");
+      const email = get(row, "email");
+      const phone = get(row, "phone", "mobile", "cell", "telephone");
 
       return { name, email, phone };
     })
