@@ -467,6 +467,41 @@ export interface LocationNoteInput {
   body: string;
 }
 
+export type ReminderStatus = typeof ReminderStatus[keyof typeof ReminderStatus];
+
+
+export const ReminderStatus = {
+  pending: 'pending',
+  sent: 'sent',
+  dismissed: 'dismissed',
+} as const;
+
+export interface Reminder {
+  id: number;
+  classId: number;
+  triggerDate: string;
+  status: ReminderStatus;
+  emailSubject: string;
+  emailBody: string;
+  createdAt: string;
+  /** @nullable */
+  sentAt: string | null;
+  class: ClassSession;
+}
+
+export type ReminderUpdateStatus = typeof ReminderUpdateStatus[keyof typeof ReminderUpdateStatus];
+
+
+export const ReminderUpdateStatus = {
+  pending: 'pending',
+  sent: 'sent',
+  dismissed: 'dismissed',
+} as const;
+
+export interface ReminderUpdate {
+  status?: ReminderUpdateStatus;
+}
+
 export type ListUsersParams = {
 role?: UserRole;
 };
@@ -493,4 +528,21 @@ requestorId?: number;
 export type ListCertificatesParams = {
 studentId?: number;
 };
+
+export type ListRemindersParams = {
+status?: ListRemindersStatus;
+/**
+ * Only return reminders where triggerDate <= today
+ */
+due?: boolean;
+};
+
+export type ListRemindersStatus = typeof ListRemindersStatus[keyof typeof ListRemindersStatus];
+
+
+export const ListRemindersStatus = {
+  pending: 'pending',
+  sent: 'sent',
+  dismissed: 'dismissed',
+} as const;
 

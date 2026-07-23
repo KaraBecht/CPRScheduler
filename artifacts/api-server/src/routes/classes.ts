@@ -16,6 +16,7 @@ import {
   ListClassesQueryParams,
 } from "@workspace/api-zod";
 import { serializeUser } from "./users";
+import { upsertClassReminder } from "../lib/classReminder";
 
 const router: IRouter = Router();
 
@@ -125,6 +126,7 @@ router.post("/classes", async (req, res) => {
       .values(instructorIds.map((userId) => ({ classId: row.id, userId })))
       .onConflictDoNothing();
   }
+  await upsertClassReminder(row);
   res.status(201).json(await serializeClass(row));
 });
 
@@ -187,6 +189,7 @@ router.patch("/classes/:classId", async (req, res) => {
         .onConflictDoNothing();
     }
   }
+  await upsertClassReminder(row);
   res.json(await serializeClass(row));
 });
 

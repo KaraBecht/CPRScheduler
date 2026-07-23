@@ -1121,3 +1121,85 @@ export const DeleteLocationNoteParams = zod.object({
 })
 
 
+/**
+ * @summary List class reminders
+ */
+export const ListRemindersQueryParams = zod.object({
+  "status": zod.enum(['pending', 'sent', 'dismissed']).optional(),
+  "due": zod.coerce.boolean().optional().describe('Only return reminders where triggerDate <= today')
+})
+
+export const ListRemindersResponseItem = zod.object({
+  "id": zod.number(),
+  "classId": zod.number(),
+  "triggerDate": zod.coerce.date(),
+  "status": zod.enum(['pending', 'sent', 'dismissed']),
+  "emailSubject": zod.string(),
+  "emailBody": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "sentAt": zod.coerce.date().nullable(),
+  "class": zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
+  "date": zod.string(),
+  "startTime": zod.string(),
+  "endTime": zod.string().nullish(),
+  "location": zod.string(),
+  "capacity": zod.number(),
+  "enrolledCount": zod.number(),
+  "status": zod.enum(['scheduled', 'completed', 'cancelled']),
+  "instructorId": zod.number().nullish(),
+  "instructorName": zod.string().nullish(),
+  "instructors": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).optional(),
+  "description": zod.string().nullish()
+})
+})
+export const ListRemindersResponse = zod.array(ListRemindersResponseItem)
+
+
+/**
+ * @summary Update reminder status
+ */
+export const UpdateReminderParams = zod.object({
+  "reminderId": zod.coerce.number()
+})
+
+export const UpdateReminderBody = zod.object({
+  "status": zod.enum(['pending', 'sent', 'dismissed']).optional()
+})
+
+export const UpdateReminderResponse = zod.object({
+  "id": zod.number(),
+  "classId": zod.number(),
+  "triggerDate": zod.coerce.date(),
+  "status": zod.enum(['pending', 'sent', 'dismissed']),
+  "emailSubject": zod.string(),
+  "emailBody": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "sentAt": zod.coerce.date().nullable(),
+  "class": zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
+  "date": zod.string(),
+  "startTime": zod.string(),
+  "endTime": zod.string().nullish(),
+  "location": zod.string(),
+  "capacity": zod.number(),
+  "enrolledCount": zod.number(),
+  "status": zod.enum(['scheduled', 'completed', 'cancelled']),
+  "instructorId": zod.number().nullish(),
+  "instructorName": zod.string().nullish(),
+  "instructors": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string()
+})).optional(),
+  "description": zod.string().nullish()
+})
+})
+
+

@@ -1,6 +1,8 @@
 import {
   useGetAdminDashboard,
   useGetActivityFeed,
+  useListReminders,
+  useUpdateReminder,
 } from "@workspace/api-client-react";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
@@ -11,6 +13,12 @@ import {
   GraduationCap,
   AlertTriangle,
   ShieldAlert,
+  Bell,
+  Mail,
+  CheckCheck,
+  X,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ClassCard } from "@/components/ClassCard";
@@ -20,6 +28,7 @@ import {
   timeAgo,
 } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
 import {
@@ -31,10 +40,117 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts";
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { getListRemindersQueryKey } from "@workspace/api-client-react";
+
+function ReminderCard({ reminder }: { reminder: NonNullable<ReturnType<typeof useListReminders>["data"]>[number] }) {
+  const [expanded, setExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const queryClient = useQueryClient();
+  const { mutate: updateReminder, isPending } = useUpdateReminder({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListRemindersQueryKey({ status: "pending" }) });
+      },
+    },
+  });
+
+  function handleCopy() {
+    const full = `Subject: ${reminder.emailSubject}\n\n${reminder.emailBody}`;
+    navigator.clipboard.writeText(full).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  const daysUntil = reminder.class
+    ? Math.round((new Date(reminder.class.date).getTime() - Date.now()) / 86_400_000)
+    : null;
+
+  return (
+    <div className="rounded-lg border border-border bg-card overflow-hidden" data-testid={`reminder-${reminder.id}`}>
+      <div
+        className="flex items-start gap-3 px-4 py-3 cursor-pointer hover:bg-muted/40 transition-colors"
+        onClick={() => setExpanded((v) => !v)}
+      >
+        <Mail className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-foreground truncate">{reminder.emailSubject}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {reminder.class ? (
+              <>
+                <span className="font-medium">{reminder.class.title}</span>
+                {" · "}
+                {formatDate(reminder.class.date)}
+                {daysUntil !== null && (
+                  <span className={daysUntil <= 0 ? "text-destructive font-semibold" : daysUntil <= 3 ? "text-yellow-600 font-semibold" : ""}>
+                    {" · "}
+                    {daysUntil <= 0 ? "today / past due" : `${daysUntil} day${daysUntil !== 1 ? "s" : ""} away`}
+                  </span>
+                )}
+              </>
+            ) : "Class removed"}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-yellow-400 text-yellow-700 bg-yellow-50 dark:bg-yellow-950/20 dark:text-yellow-400">
+            pending
+          </Badge>
+          {expanded ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
+        </div>
+      </div>
+
+      {expanded && (
+        <div className="border-t border-border px-4 py-3 bg-muted/20">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Draft Email</p>
+          <pre className="text-xs text-foreground/80 whitespace-pre-wrap font-mono leading-relaxed bg-background border border-border rounded-md px-3 py-2 max-h-64 overflow-y-auto">
+            {`Subject: ${reminder.emailSubject}\n\n${reminder.emailBody}`}
+          </pre>
+          <p className="text-[11px] text-muted-foreground mt-2 italic">
+            ✉️ Email sending will be available once SendGrid is configured. Copy the draft above to send manually.
+          </p>
+          <div className="flex items-center gap-2 mt-3">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs gap-1.5"
+              onClick={handleCopy}
+            >
+              <Mail className="h-3 w-3" />
+              {copied ? "Copied!" : "Copy draft"}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs gap-1.5 text-green-700 border-green-300 hover:bg-green-50 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-950/20"
+              disabled={isPending}
+              onClick={() => updateReminder({ reminderId: reminder.id, data: { status: "sent" } })}
+            >
+              <CheckCheck className="h-3 w-3" />
+              Mark sent
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 text-xs gap-1.5 text-muted-foreground hover:text-destructive"
+              disabled={isPending}
+              onClick={() => updateReminder({ reminderId: reminder.id, data: { status: "dismissed" } })}
+            >
+              <X className="h-3 w-3" />
+              Dismiss
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function AdminDashboardPage() {
   const { data: dash, isLoading } = useGetAdminDashboard();
   const { data: activity = [] } = useGetActivityFeed();
+  const { data: reminders = [] } = useListReminders({ status: "pending" });
 
   if (isLoading || !dash) {
     return (
@@ -56,12 +172,19 @@ export function AdminDashboardPage() {
 
   const hasLocationAlerts = dash.locationsExpiring > 0 || dash.locationsExpired > 0;
 
+  // Reminders due today or overdue (triggerDate <= today)
+  const today = new Date().toISOString().split("T")[0]!;
+  const dueReminders = reminders.filter((r) => r.triggerDate <= today);
+  const upcomingReminders = reminders.filter((r) => r.triggerDate > today);
+
   return (
     <>
       <PageHeader
         title="Dashboard"
         subtitle="Real-time view of classes, students, and incoming training requests."
       />
+
+      {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
         <StatCard
           label="Upcoming classes"
@@ -91,8 +214,9 @@ export function AdminDashboardPage() {
         />
       </div>
 
+      {/* Location cert-status alerts */}
       {hasLocationAlerts && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
           {dash.locationsExpiring > 0 && (
             <Link href="/locations" data-testid="alert-locations-expiring">
               <div className="flex items-center gap-3 rounded-lg border border-yellow-200 bg-yellow-50 dark:border-yellow-900/40 dark:bg-yellow-950/20 px-4 py-3 hover:bg-yellow-100/60 dark:hover:bg-yellow-950/30 transition-colors cursor-pointer">
@@ -126,8 +250,39 @@ export function AdminDashboardPage() {
         </div>
       )}
 
-      {!hasLocationAlerts && <div className="mb-6" />}
+      {/* Reminders panel */}
+      {reminders.length > 0 && (
+        <Card className="shadow-sm mb-6">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+              <Bell className="h-4 w-4" />
+              Class reminders
+              {dueReminders.length > 0 && (
+                <span className="ml-1 inline-flex items-center justify-center h-5 min-w-5 px-1.5 rounded-full text-[10px] font-bold bg-destructive text-destructive-foreground">
+                  {dueReminders.length}
+                </span>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {dueReminders.length > 0 && (
+              <>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-destructive mb-1">Due now</p>
+                {dueReminders.map((r) => <ReminderCard key={r.id} reminder={r} />)}
+              </>
+            )}
+            {upcomingReminders.length > 0 && (
+              <>
+                {dueReminders.length > 0 && <div className="pt-1" />}
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">Upcoming</p>
+                {upcomingReminders.map((r) => <ReminderCard key={r.id} reminder={r} />)}
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
+      {/* Charts & activity */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <Card className="lg:col-span-2 shadow-sm">
           <CardHeader>
@@ -200,6 +355,7 @@ export function AdminDashboardPage() {
         </Card>
       </div>
 
+      {/* Upcoming schedule */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-foreground">Upcoming schedule</h2>
@@ -226,6 +382,7 @@ export function AdminDashboardPage() {
         )}
       </div>
 
+      {/* Recent requests */}
       <Card className="shadow-sm">
         <CardHeader>
           <CardTitle className="text-sm font-semibold text-muted-foreground flex items-center gap-2">

@@ -9,6 +9,7 @@ import certificatesRouter from "./certificates";
 import dashboardRouter from "./dashboard";
 import placesRouter from "./places";
 import locationsRouter from "./locations";
+import remindersRouter from "./reminders";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use(certificatesRouter);
 router.use(dashboardRouter);
 router.use(placesRouter);
 router.use(locationsRouter);
+router.use(remindersRouter);
 
 export default router;

@@ -632,6 +632,55 @@ paths:
         "204": { description: Deleted }
         "404": { description: Not found }
 
+  /reminders:
+    get:
+      operationId: listReminders
+      tags: [reminders]
+      summary: List class reminders
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [pending, sent, dismissed]
+        - name: due
+          in: query
+          required: false
+          description: Only return reminders where triggerDate <= today
+          schema: { type: boolean }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Reminder" }
+
+  /reminders/{reminderId}:
+    patch:
+      operationId: updateReminder
+      tags: [reminders]
+      summary: Update reminder status
+      parameters:
+        - name: reminderId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReminderUpdate" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Reminder" }
+        "404": { description: Not found }
+
 components:
   schemas:
     HealthStatus:
@@ -1213,3 +1262,26 @@ components:
       required: [body]
       properties:
         body: { type: string, minLength: 1 }
+
+    Reminder:
+      type: object
+      required: [id, classId, triggerDate, status, emailSubject, emailBody, createdAt, sentAt, class]
+      properties:
+        id: { type: integer }
+        classId: { type: integer }
+        triggerDate: { type: string, format: date }
+        status:
+          type: string
+          enum: [pending, sent, dismissed]
+        emailSubject: { type: string }
+        emailBody: { type: string }
+        createdAt: { type: string, format: date-time }
+        sentAt: { type: ["string", "null"], format: date-time }
+        class: { $ref: "#/components/schemas/ClassSession" }
+
+    ReminderUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending, sent, dismissed]
