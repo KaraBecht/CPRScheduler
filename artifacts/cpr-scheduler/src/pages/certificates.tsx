@@ -18,6 +18,24 @@ type Cert = Certificate;
 
 type GroupBy = "none" | "location" | "expiration";
 
+/**
+ * For each unique (studentName, certificationType) pair keep only the
+ * certificate with the latest expiryDate. This prevents duplicates when
+ * a student attends a renewal class — they get one card showing their
+ * current (newest) certification.
+ */
+function deduplicateCerts(certs: Cert[]): Cert[] {
+  const map = new Map<string, Cert>();
+  for (const c of certs) {
+    const key = `${c.studentName.toLowerCase().trim()}||${c.certificationType}`;
+    const existing = map.get(key);
+    if (!existing || c.expiryDate > existing.expiryDate) {
+      map.set(key, c);
+    }
+  }
+  return Array.from(map.values());
+}
+
 const EXPIRATION_ORDER = ["Expired", "Expiring soon", "Valid"] as const;
 
 function expirationBucket(expiryDate: string): (typeof EXPIRATION_ORDER)[number] {
@@ -86,7 +104,8 @@ export default function Certificates() {
     role === "student" && userId ? { studentId: userId } : undefined,
   );
 
-  const groups = useMemo(() => groupCerts(certs, groupBy), [certs, groupBy]);
+  const dedupedCerts = useMemo(() => deduplicateCerts(certs), [certs]);
+  const groups = useMemo(() => groupCerts(dedupedCerts, groupBy), [dedupedCerts, groupBy]);
 
   return (
     <>
@@ -169,9 +188,19 @@ export default function Certificates() {
                               <span className="truncate">{c.classLocation}</span>
                             </p>
                           )}
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Issued {formatDate(c.issuedDate)} · expires{" "}
-                            {formatDate(c.expiryDate)}
+                          <p className="text-xs mt-1">
+                            <span className="text-muted-foreground">
+                              Issued {formatDate(c.issuedDate)} · expires{" "}
+                            </span>
+                            <span
+                              className={
+                                expirationBucket(c.expiryDate) === "Expired"
+                                  ? "font-semibold text-destructive"
+                                  : "text-muted-foreground"
+                              }
+                            >
+                              {formatDate(c.expiryDate)}
+                            </span>
                           </p>
                           <p className="text-xs font-mono text-muted-foreground mt-1">
                             {c.certificateNumber}
