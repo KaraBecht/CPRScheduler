@@ -110,6 +110,22 @@ function certStatusFromLastClass(lastClassDate: string | null | undefined): "exp
   return null;
 }
 
+/** Human-readable countdown to (or since) an expiry date string "YYYY-MM-DD". */
+function certCountdown(expiryDate: string): { label: string; overdue: boolean } {
+  const diffMs = new Date(expiryDate).getTime() - Date.now();
+  const diffDays = Math.round(diffMs / 86_400_000);
+  if (diffDays > 60) {
+    const months = Math.floor(diffDays / 30.44);
+    return { label: `${months} mo`, overdue: false };
+  }
+  if (diffDays > 1) return { label: `${diffDays} days`, overdue: false };
+  if (diffDays === 1) return { label: "1 day", overdue: false };
+  if (diffDays === 0) return { label: "today", overdue: true };
+  if (diffDays > -60) return { label: `${Math.abs(diffDays)} days ago`, overdue: true };
+  const months = Math.ceil(Math.abs(diffDays) / 30.44);
+  return { label: `${months} mo ago`, overdue: true };
+}
+
 /** Return notes stripped of Business Unit and Last Class Held lines (for display in comm notes). */
 function importedNotesBody(notes: string): string {
   return notes
@@ -1510,30 +1526,69 @@ function LocationCard({ loc }: { loc: LocationDetail }) {
             {/* Expiring certificates */}
             <div>
               <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-                Certificates expiring within 6 months
+                Certification status
               </h4>
-              {expiringCount === 0 ? (
+
+              {/* ── Location-level class cert expiry banner ── */}
+              {classCertStatus && loc.lastClassDate && (() => {
+                const expiryDate = new Date(new Date(loc.lastClassDate).getTime() + 730 * 86_400_000)
+                  .toISOString().slice(0, 10);
+                const { label, overdue } = certCountdown(expiryDate);
+                return (
+                  <div className={cn(
+                    "flex items-center justify-between text-xs rounded-md px-3 py-2 mb-2",
+                    classCertStatus === "expired"
+                      ? "bg-red-50 border border-red-200 text-red-700"
+                      : "bg-amber-50 border border-amber-200 text-amber-700",
+                  )}>
+                    <div className="flex items-center gap-1.5 font-medium">
+                      <AlertTriangle className="h-3 w-3 shrink-0" />
+                      {classCertStatus === "expired"
+                        ? "Class certs expired"
+                        : "Class certs expiring soon"}
+                    </div>
+                    <span className={cn(
+                      "font-semibold tabular-nums",
+                      overdue ? "text-red-600" : "text-amber-600",
+                    )}>
+                      {overdue ? `${label}` : `in ${label}`}
+                    </span>
+                  </div>
+                );
+              })()}
+
+              {/* ── Individual student certs expiring within 6 months ── */}
+              {expiringCount === 0 && !classCertStatus ? (
                 <p className="text-xs text-muted-foreground italic">
                   No certificates expiring soon at this location.
                 </p>
-              ) : (
+              ) : expiringCount > 0 ? (
                 <div className="space-y-1">
-                  {loc.expiringCertificates.map((c, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between text-xs py-1 border-b border-border last:border-0"
-                    >
-                      <span className="font-medium">{c.studentName ?? "—"}</span>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Badge variant="outline" className="text-[10px] px-1">
-                          {CERT_LABELS[c.certificationType] ?? c.certificationType}
-                        </Badge>
-                        <span>expires {formatDate(c.expiryDate)}</span>
+                  {loc.expiringCertificates.map((c, i) => {
+                    const { label, overdue } = certCountdown(c.expiryDate);
+                    return (
+                      <div
+                        key={i}
+                        className="flex items-center justify-between text-xs py-1 border-b border-border last:border-0"
+                      >
+                        <span className="font-medium">{c.studentName ?? "—"}</span>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-[10px] px-1">
+                            {CERT_LABELS[c.certificationType] ?? c.certificationType}
+                          </Badge>
+                          <span className="text-muted-foreground">{formatDate(c.expiryDate)}</span>
+                          <span className={cn(
+                            "font-semibold tabular-nums text-[10px]",
+                            overdue ? "text-red-600" : "text-amber-600",
+                          )}>
+                            {overdue ? label : `in ${label}`}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
-              )}
+              ) : null}
             </div>
 
             {/* Communication notes log */}
