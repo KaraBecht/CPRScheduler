@@ -1652,7 +1652,7 @@ function LocationCard({ loc }: { loc: LocationDetail }) {
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="absolute top-1.5 right-1.5 h-5 w-5 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
+                        className="absolute top-1.5 right-1.5 h-5 w-5 text-muted-foreground hover:text-destructive"
                         onClick={() =>
                           delNote.mutate({
                             locationId: loc.id,
