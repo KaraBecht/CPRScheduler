@@ -595,7 +595,12 @@ export const GetAdminDashboardResponse = zod.object({
   "totalInstructors": zod.number(),
   "pendingRequests": zod.number(),
   "certificatesIssued": zod.number(),
+  "activeCertificates": zod.number(),
+  "certificatesThisMonth": zod.number(),
+  "certificatesYTD": zod.number(),
   "enrollmentsThisMonth": zod.number(),
+  "locationsExpiring": zod.number(),
+  "locationsExpired": zod.number(),
   "classesByCertification": zod.array(zod.object({
   "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
   "count": zod.number()

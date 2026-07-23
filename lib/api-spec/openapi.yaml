@@ -1023,7 +1023,12 @@ components:
           totalInstructors,
           pendingRequests,
           certificatesIssued,
+          activeCertificates,
+          certificatesThisMonth,
+          certificatesYTD,
           enrollmentsThisMonth,
+          locationsExpiring,
+          locationsExpired,
           classesByCertification,
           upcomingSchedule,
           recentRequests,
@@ -1035,7 +1040,12 @@ components:
         totalInstructors: { type: integer }
         pendingRequests: { type: integer }
         certificatesIssued: { type: integer }
+        activeCertificates: { type: integer }
+        certificatesThisMonth: { type: integer }
+        certificatesYTD: { type: integer }
         enrollmentsThisMonth: { type: integer }
+        locationsExpiring: { type: integer }
+        locationsExpired: { type: integer }
         classesByCertification:
           type: array
           items: { $ref: "#/components/schemas/CertificationCount" }

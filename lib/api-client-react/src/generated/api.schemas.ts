@@ -336,7 +336,12 @@ export interface AdminDashboard {
   totalInstructors: number;
   pendingRequests: number;
   certificatesIssued: number;
+  activeCertificates: number;
+  certificatesThisMonth: number;
+  certificatesYTD: number;
   enrollmentsThisMonth: number;
+  locationsExpiring: number;
+  locationsExpired: number;
   classesByCertification: CertificationCount[];
   upcomingSchedule: ClassSession[];
   recentRequests: ClassRequest[];

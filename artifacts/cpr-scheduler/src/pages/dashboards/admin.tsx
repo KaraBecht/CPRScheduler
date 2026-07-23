@@ -6,10 +6,11 @@ import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import {
   CalendarDays,
-  Users,
   Inbox,
   Award,
   GraduationCap,
+  AlertTriangle,
+  ShieldAlert,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ClassCard } from "@/components/ClassCard";
@@ -53,13 +54,15 @@ export function AdminDashboardPage() {
     classes: c.count,
   }));
 
+  const hasLocationAlerts = dash.locationsExpiring > 0 || dash.locationsExpired > 0;
+
   return (
     <>
       <PageHeader
         title="Dashboard"
         subtitle="Real-time view of classes, students, and incoming training requests."
       />
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
         <StatCard
           label="Upcoming classes"
           value={dash.upcomingClasses}
@@ -67,19 +70,6 @@ export function AdminDashboardPage() {
           icon={CalendarDays}
           href="/classes"
           testId="stat-upcoming-classes"
-        />
-        <StatCard
-          label="Active students"
-          value={dash.totalStudents}
-          hint={
-            dash.totalStudents > 0
-              ? "in class right now"
-              : "no class in session"
-          }
-          icon={Users}
-          tone="accent"
-          href="/people?tab=student"
-          testId="stat-students"
         />
         <StatCard
           label="Pending requests"
@@ -91,15 +81,52 @@ export function AdminDashboardPage() {
           testId="stat-pending-requests"
         />
         <StatCard
-          label="Certificates issued"
-          value={dash.certificatesIssued}
-          hint={`${dash.enrollmentsThisMonth} enrollments this month`}
+          label="Active certificates"
+          value={dash.activeCertificates}
+          hint={`${dash.certificatesThisMonth} this month · ${dash.certificatesYTD} YTD`}
           icon={Award}
           tone="success"
           href="/certificates"
           testId="stat-certificates"
         />
       </div>
+
+      {hasLocationAlerts && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+          {dash.locationsExpiring > 0 && (
+            <Link href="/locations" data-testid="alert-locations-expiring">
+              <div className="flex items-center gap-3 rounded-lg border border-yellow-200 bg-yellow-50 dark:border-yellow-900/40 dark:bg-yellow-950/20 px-4 py-3 hover:bg-yellow-100/60 dark:hover:bg-yellow-950/30 transition-colors cursor-pointer">
+                <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-500 flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-300">
+                    {dash.locationsExpiring} location{dash.locationsExpiring !== 1 ? "s" : ""} expiring soon
+                  </p>
+                  <p className="text-xs text-yellow-700/70 dark:text-yellow-400/70">
+                    Last class 18–24 months ago — certifications nearing expiry
+                  </p>
+                </div>
+              </div>
+            </Link>
+          )}
+          {dash.locationsExpired > 0 && (
+            <Link href="/locations" data-testid="alert-locations-expired">
+              <div className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/20 px-4 py-3 hover:bg-red-100/60 dark:hover:bg-red-950/30 transition-colors cursor-pointer">
+                <ShieldAlert className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-red-800 dark:text-red-300">
+                    {dash.locationsExpired} location{dash.locationsExpired !== 1 ? "s" : ""} with expired certifications
+                  </p>
+                  <p className="text-xs text-red-700/70 dark:text-red-400/70">
+                    Last class over 2 years ago — recertification overdue
+                  </p>
+                </div>
+              </div>
+            </Link>
+          )}
+        </div>
+      )}
+
+      {!hasLocationAlerts && <div className="mb-6" />}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <Card className="lg:col-span-2 shadow-sm">

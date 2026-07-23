@@ -8,6 +8,7 @@ import {
   requestsTable,
   certificatesTable,
   classRosterTable,
+  locationsTable,
 } from "@workspace/db";
 import { and, eq, gte, sql, desc, asc, ne, inArray } from "drizzle-orm";
 import { autoCompletePastClasses } from "../lib/autoComplete";
@@ -68,9 +69,9 @@ const certTypes = [
 router.get("/dashboard/admin", async (_req, res) => {
   await autoCompletePastClasses();
   const today = new Date().toISOString().split("T")[0]!;
-  const startMonth = new Date();
-  startMonth.setDate(1);
-  startMonth.setHours(0, 0, 0, 0);
+  const now = new Date();
+  const startMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startYear = new Date(now.getFullYear(), 0, 1);
 
   const [
     [{ totalClasses }],
@@ -79,7 +80,12 @@ router.get("/dashboard/admin", async (_req, res) => {
     [{ totalInstructors }],
     [{ pendingRequests }],
     [{ certificatesIssued }],
+    [{ activeCertificates }],
+    [{ certificatesThisMonth }],
+    [{ certificatesYTD }],
     [{ enrollmentsThisMonth }],
+    allLocations,
+    allClassesByDate,
   ] = await Promise.all([
     db.select({ totalClasses: sql<number>`count(*)::int` }).from(classesTable),
     db
@@ -101,11 +107,46 @@ router.get("/dashboard/admin", async (_req, res) => {
       .select({ certificatesIssued: sql<number>`count(*)::int` })
       .from(certificatesTable),
     db
+      .select({ activeCertificates: sql<number>`count(*)::int` })
+      .from(certificatesTable)
+      .where(gte(certificatesTable.expiryDate, today)),
+    db
+      .select({ certificatesThisMonth: sql<number>`count(*)::int` })
+      .from(certificatesTable)
+      .where(gte(certificatesTable.issuedDate, startMonth.toISOString().split("T")[0]!)),
+    db
+      .select({ certificatesYTD: sql<number>`count(*)::int` })
+      .from(certificatesTable)
+      .where(gte(certificatesTable.issuedDate, startYear.toISOString().split("T")[0]!)),
+    db
       .select({ enrollmentsThisMonth: sql<number>`count(*)::int` })
       .from(enrollmentsTable)
       .where(gte(enrollmentsTable.enrolledAt, startMonth)),
+    db.select({ id: locationsTable.id, name: locationsTable.name }).from(locationsTable),
+    db
+      .select({ location: classesTable.location, title: classesTable.title, date: classesTable.date })
+      .from(classesTable)
+      .orderBy(desc(classesTable.date)),
   ]);
   const totalStudents = activeStudents;
+
+  // Compute location-level cert status
+  let locationsExpiring = 0;
+  let locationsExpired = 0;
+  const nowMs = now.getTime();
+  for (const loc of allLocations) {
+    const nameLower = loc.name.toLowerCase();
+    const lastClass = allClassesByDate.find(
+      (c) =>
+        c.location?.toLowerCase().includes(nameLower) ||
+        c.title?.toLowerCase().includes(nameLower),
+    );
+    if (lastClass) {
+      const days = (nowMs - new Date(lastClass.date).getTime()) / 86_400_000;
+      if (days > 730) locationsExpired++;
+      else if (days > 548) locationsExpiring++;
+    }
+  }
 
   const classesByCertification = await Promise.all(
     certTypes.map(async (t) => {
@@ -139,7 +180,12 @@ router.get("/dashboard/admin", async (_req, res) => {
     totalInstructors,
     pendingRequests,
     certificatesIssued,
+    activeCertificates,
+    certificatesThisMonth,
+    certificatesYTD,
     enrollmentsThisMonth,
+    locationsExpiring,
+    locationsExpired,
     classesByCertification,
     upcomingSchedule,
     recentRequests,
