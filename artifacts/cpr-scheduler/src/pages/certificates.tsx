@@ -48,7 +48,7 @@ function expirationBucket(expiryDate: string): (typeof EXPIRATION_ORDER)[number]
   );
   const daysUntil = (expiry.getTime() - now.getTime()) / 86_400_000;
   if (daysUntil < 0) return "Expired";
-  if (daysUntil <= 60) return "Expiring soon";
+  if (daysUntil <= 120) return "Expiring soon";
   return "Valid";
 }
 
