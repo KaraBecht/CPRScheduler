@@ -98,6 +98,7 @@ function CreateClassDialog() {
   const [slots, setSlots] = useState<ClassSlot[]>([
     { date: "", startTime: "09:00" },
   ]);
+  const [status, setStatus] = useState<string>("confirmed");
   const maxInstructors = Math.ceil(capacity / 10);
 
   const reset = () => {
@@ -108,6 +109,7 @@ function CreateClassDialog() {
     setInstructorIds([]);
     setDescription("");
     setSlots([{ date: "", startTime: "09:00" }]);
+    setStatus("confirmed");
   };
 
   const create = useCreateClass({
@@ -142,6 +144,7 @@ function CreateClassDialog() {
             capacity,
             instructorIds: instructorIds.length > 0 ? instructorIds : undefined,
             description,
+            status: status as ClassSession["status"],
           },
         });
       }
@@ -342,6 +345,19 @@ function CreateClassDialog() {
               onChange={(e) => setDescription(e.target.value)}
             />
           </div>
+          <div>
+            <Label>Status</Label>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger data-testid="select-class-status">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CLASS_STATUS_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>
@@ -370,13 +386,22 @@ const STATUS_CHIP: Record<string, string> = {
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  being_scheduled: "Being scheduled",
-  pending_schedule: "Pending schedule",
+  being_scheduled: "Scheduling",
+  pending_schedule: "Pending",
   confirmed:        "Confirmed",
   completed:        "Completed",
   cancelled:        "Cancelled",
   scheduled:        "Scheduled",
 };
+
+/** Canonical status options used in every class create/edit form across the app. */
+export const CLASS_STATUS_OPTIONS = [
+  { value: "pending_schedule", label: "Pending" },
+  { value: "being_scheduled",  label: "Scheduling" },
+  { value: "confirmed",        label: "Confirmed" },
+  { value: "completed",        label: "Completed" },
+  { value: "cancelled",        label: "Cancelled" },
+] as const;
 
 /** Statuses considered "active" (not yet done or cancelled). */
 const ACTIVE_STATUSES = new Set(["being_scheduled", "pending_schedule", "confirmed", "scheduled"]);

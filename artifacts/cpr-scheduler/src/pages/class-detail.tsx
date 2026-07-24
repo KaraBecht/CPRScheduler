@@ -444,8 +444,8 @@ export default function ClassDetail() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="being_scheduled">Being scheduled</SelectItem>
-                    <SelectItem value="pending_schedule">Pending schedule</SelectItem>
+                    <SelectItem value="pending_schedule">Pending</SelectItem>
+                    <SelectItem value="being_scheduled">Scheduling</SelectItem>
                     <SelectItem value="confirmed">Confirmed</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
                     <SelectItem value="cancelled">Cancelled</SelectItem>

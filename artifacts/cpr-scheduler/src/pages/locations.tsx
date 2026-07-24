@@ -914,13 +914,13 @@ function ScheduleClassDialog({
     certificationType: "cpr_aed_first_aid",
     capacity: "10",
     instructorId: "",
-    status: "scheduled",
+    status: "confirmed",
   });
 
   const { data: instructors = [] } = useListUsers({ role: "instructor" });
 
   function handleOpen(v: boolean) {
-    if (v) setForm({ title: locationName, date: "", startTime: "09:00", certificationType: "cpr_aed_first_aid", capacity: "10", instructorId: "", status: "scheduled" });
+    if (v) setForm({ title: locationName, date: "", startTime: "09:00", certificationType: "cpr_aed_first_aid", capacity: "10", instructorId: "", status: "confirmed" });
     setOpen(v);
   }
 
@@ -1037,9 +1037,11 @@ function ScheduleClassDialog({
 }
 
 const STATUS_OPTIONS = [
-  { value: "scheduled", label: "Scheduled" },
-  { value: "completed", label: "Completed" },
-  { value: "cancelled", label: "Cancelled" },
+  { value: "pending_schedule", label: "Pending" },
+  { value: "being_scheduled",  label: "Scheduling" },
+  { value: "confirmed",        label: "Confirmed" },
+  { value: "completed",        label: "Completed" },
+  { value: "cancelled",        label: "Cancelled" },
 ];
 
 type EditClassForm = ClassForm;
