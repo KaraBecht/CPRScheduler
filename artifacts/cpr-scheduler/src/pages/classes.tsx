@@ -570,23 +570,28 @@ export default function Classes() {
     },
   });
 
-  const today = new Date().toISOString().split("T")[0]!;
   const tabClasses =
     tab === "upcoming"
-      ? allClasses.filter((c) => c.date >= today && ACTIVE_STATUSES.has(c.status))
+      ? allClasses.filter((c) => ACTIVE_STATUSES.has(c.status))
       : tab === "completed"
         ? allClasses.filter((c) => c.status === "completed")
         : allClasses;
 
   const q = search.trim().toLowerCase();
-  const listClasses = tabClasses.filter((c) => {
-    const matchSearch =
-      !q ||
-      c.title.toLowerCase().includes(q) ||
-      (c.location ?? "").toLowerCase().includes(q);
-    const matchCert = certFilter === "all" || c.certificationType === certFilter;
-    return matchSearch && matchCert;
-  });
+  const listClasses = tabClasses
+    .filter((c) => {
+      const matchSearch =
+        !q ||
+        c.title.toLowerCase().includes(q) ||
+        (c.location ?? "").toLowerCase().includes(q);
+      const matchCert = certFilter === "all" || c.certificationType === certFilter;
+      return matchSearch && matchCert;
+    })
+    .sort((a, b) =>
+      tab === "upcoming"
+        ? a.date.localeCompare(b.date)   // oldest first for active
+        : b.date.localeCompare(a.date),  // newest first for all / completed
+    );
 
   const calendarClasses = allClasses.filter((c) => {
     const matchSearch =
