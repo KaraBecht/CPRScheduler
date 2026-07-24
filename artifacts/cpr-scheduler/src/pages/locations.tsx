@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { read as xlsxRead, utils as xlsxUtils } from "xlsx";
 import {
   useListLocations,
@@ -83,6 +83,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatDate } from "@/lib/format";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const CERT_LABELS: Record<string, string> = {
   cpr_aed_first_aid: "CPR+AED",
@@ -96,6 +103,52 @@ const CERT_LABELS: Record<string, string> = {
 function parseBusinessUnit(notes: string): string {
   const m = notes.match(/^Business Unit:\s*(.+)$/m);
   return m?.[1]?.trim() ?? "";
+}
+
+/** Remove the "Business Unit: …" line from notes (used when the BU is shown separately in the form). */
+function stripBusinessUnitLine(notes: string): string {
+  return notes.replace(/^Business Unit:.*\n?/m, "").replace(/^\n+/, "").trim();
+}
+
+/** Rebuild a notes string that leads with the BU line when a BU is set. */
+function buildNotesWithBu(bu: string, otherNotes: string): string {
+  const body = otherNotes.trim();
+  if (!bu) return body;
+  return body ? `Business Unit: ${bu}\n${body}` : `Business Unit: ${bu}`;
+}
+
+const LS_BU_KEY = "pulsepoint_custom_bus";
+const SEED_BUSINESS_UNITS = [
+  "Fox Corp",
+  "FOX Entertainment",
+  "FOX News Media",
+  "FOX Sports",
+  "FOX Studio Lot",
+  "FOX Television Stations",
+];
+
+/** Merge seed units with any custom ones saved to localStorage. Returns a sorted, deduplicated list. */
+function getStoredBusinessUnits(): string[] {
+  try {
+    const raw = localStorage.getItem(LS_BU_KEY);
+    const custom: string[] = raw ? (JSON.parse(raw) as string[]) : [];
+    return [...new Set([...SEED_BUSINESS_UNITS, ...custom])].sort();
+  } catch {
+    return [...SEED_BUSINESS_UNITS];
+  }
+}
+
+function saveCustomBusinessUnit(bu: string) {
+  try {
+    const existing = getStoredBusinessUnits();
+    if (!existing.includes(bu)) {
+      const raw = localStorage.getItem(LS_BU_KEY);
+      const custom: string[] = raw ? (JSON.parse(raw) as string[]) : [];
+      localStorage.setItem(LS_BU_KEY, JSON.stringify([...custom, bu]));
+    }
+  } catch {
+    // ignore
+  }
 }
 
 /**
@@ -662,10 +715,49 @@ function LocationFormDialog({
 }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<LocationForm>(initial ?? EMPTY_FORM);
+  // "buSelect" is the dropdown value: a known BU name, "__other__", or ""
+  const [buSelect, setBuSelect] = useState("");
+  // "customBu" holds the free-typed value when buSelect === "__other__"
+  const [customBu, setCustomBu] = useState("");
+  // Live list of known BUs (seed + localStorage custom)
+  const [knownBUs, setKnownBUs] = useState<string[]>(getStoredBusinessUnits);
 
   function handleOpen(v: boolean) {
-    if (v) setForm(initial ?? EMPTY_FORM);
+    if (v) {
+      const f = initial ?? EMPTY_FORM;
+      const bu = parseBusinessUnit(f.notes);
+      const stripped = stripBusinessUnitLine(f.notes);
+      setForm({ ...f, notes: stripped });
+      const fresh = getStoredBusinessUnits();
+      setKnownBUs(fresh);
+      if (!bu) {
+        setBuSelect("");
+        setCustomBu("");
+      } else if (fresh.includes(bu)) {
+        setBuSelect(bu);
+        setCustomBu("");
+      } else {
+        // BU was a custom value not yet in the list
+        setBuSelect("__other__");
+        setCustomBu(bu);
+      }
+    }
     setOpen(v);
+  }
+
+  // Reload knownBUs from localStorage whenever the dropdown opens
+  useEffect(() => {
+    if (open) setKnownBUs(getStoredBusinessUnits());
+  }, [open]);
+
+  function handleSave() {
+    const effectiveBu =
+      buSelect === "__other__" ? customBu.trim() : buSelect;
+    if (buSelect === "__other__" && customBu.trim()) {
+      saveCustomBusinessUnit(customBu.trim());
+    }
+    onSave({ ...form, notes: buildNotesWithBu(effectiveBu, form.notes) });
+    setOpen(false);
   }
 
   return (
@@ -693,6 +785,35 @@ function LocationFormDialog({
               onChange={(e) => setForm({ ...form, address: e.target.value })}
             />
           </div>
+
+          {/* Business unit */}
+          <div>
+            <Label>Business unit</Label>
+            <Select value={buSelect} onValueChange={setBuSelect}>
+              <SelectTrigger data-testid="select-business-unit">
+                <SelectValue placeholder="Select a business unit…" />
+              </SelectTrigger>
+              <SelectContent>
+                {knownBUs.map((bu) => (
+                  <SelectItem key={bu} value={bu}>
+                    {bu}
+                  </SelectItem>
+                ))}
+                <SelectItem value="__other__">Other…</SelectItem>
+              </SelectContent>
+            </Select>
+            {buSelect === "__other__" && (
+              <Input
+                className="mt-2"
+                placeholder="Type a new business unit name"
+                value={customBu}
+                onChange={(e) => setCustomBu(e.target.value)}
+                autoFocus
+                data-testid="input-custom-business-unit"
+              />
+            )}
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Contact name</Label>
@@ -739,11 +860,12 @@ function LocationFormDialog({
             Cancel
           </Button>
           <Button
-            disabled={!form.name.trim() || isPending}
-            onClick={() => {
-              onSave(form);
-              setOpen(false);
-            }}
+            disabled={
+              !form.name.trim() ||
+              isPending ||
+              (buSelect === "__other__" && !customBu.trim())
+            }
+            onClick={handleSave}
             data-testid="button-save-location"
           >
             {initial ? "Save changes" : "Add location"}
