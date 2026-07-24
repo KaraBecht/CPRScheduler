@@ -361,10 +361,25 @@ function CreateClassDialog() {
 }
 
 const STATUS_CHIP: Record<string, string> = {
-  scheduled: "bg-primary text-primary-foreground",
-  completed: "bg-muted text-muted-foreground",
-  cancelled: "bg-destructive/15 text-destructive",
+  being_scheduled: "bg-amber-100 text-amber-800",
+  pending_schedule: "bg-orange-100 text-orange-800",
+  confirmed:        "bg-emerald-100 text-emerald-800",
+  completed:        "bg-muted text-muted-foreground",
+  cancelled:        "bg-destructive/15 text-destructive",
+  scheduled:        "bg-primary text-primary-foreground", // legacy
 };
+
+const STATUS_LABEL: Record<string, string> = {
+  being_scheduled: "Being scheduled",
+  pending_schedule: "Pending schedule",
+  confirmed:        "Confirmed",
+  completed:        "Completed",
+  cancelled:        "Cancelled",
+  scheduled:        "Scheduled",
+};
+
+/** Statuses considered "active" (not yet done or cancelled). */
+const ACTIVE_STATUSES = new Set(["being_scheduled", "pending_schedule", "confirmed", "scheduled"]);
 
 function CalendarView({ classes }: { classes: ClassSession[] }) {
   const [month, setMonth] = useState(() => new Date());
@@ -472,7 +487,7 @@ function CalendarView({ classes }: { classes: ClassSession[] }) {
                   <div
                     className={cn(
                       "rounded px-1.5 py-0.5 text-[11px] font-medium leading-tight truncate cursor-pointer transition-opacity hover:opacity-80",
-                      STATUS_CHIP[cls.status] ?? STATUS_CHIP.scheduled,
+                      STATUS_CHIP[cls.status] ?? STATUS_CHIP.confirmed,
                     )}
                     title={`${cls.title} — ${cls.startTime} @ ${cls.location}`}
                   >
@@ -492,9 +507,11 @@ function CalendarView({ classes }: { classes: ClassSession[] }) {
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-4 px-5 py-3 border-t border-border bg-muted/20">
+      <div className="flex items-center gap-4 px-5 py-3 border-t border-border bg-muted/20 flex-wrap">
         {[
-          { label: "Scheduled", cls: "bg-primary" },
+          { label: "Being scheduled", cls: "bg-amber-400" },
+          { label: "Pending schedule", cls: "bg-orange-400" },
+          { label: "Confirmed", cls: "bg-emerald-500" },
           { label: "Completed", cls: "bg-muted-foreground/40" },
           { label: "Cancelled", cls: "bg-destructive/50" },
         ].map(({ label, cls }) => (
@@ -531,7 +548,7 @@ export default function Classes() {
   const today = new Date().toISOString().split("T")[0]!;
   const tabClasses =
     tab === "upcoming"
-      ? allClasses.filter((c) => c.date >= today && c.status === "scheduled")
+      ? allClasses.filter((c) => c.date >= today && ACTIVE_STATUSES.has(c.status))
       : tab === "completed"
         ? allClasses.filter((c) => c.status === "completed")
         : allClasses;

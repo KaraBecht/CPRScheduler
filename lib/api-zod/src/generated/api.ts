@@ -66,7 +66,7 @@ export const GetUserResponse = zod.object({
 
 
 export const ListClassesQueryParams = zod.object({
-  "status": zod.enum(['scheduled', 'completed', 'cancelled']).optional(),
+  "status": zod.enum(['being_scheduled', 'pending_schedule', 'confirmed', 'completed', 'cancelled', 'scheduled']).optional(),
   "instructorId": zod.coerce.number().optional(),
   "upcoming": zod.coerce.boolean().optional(),
   "location": zod.coerce.string().optional().describe('Filter classes whose location contains this string (case-insensitive)')
@@ -82,7 +82,7 @@ export const ListClassesResponseItem = zod.object({
   "location": zod.string(),
   "capacity": zod.number(),
   "enrolledCount": zod.number(),
-  "status": zod.enum(['scheduled', 'completed', 'cancelled']),
+  "status": zod.enum(['being_scheduled', 'pending_schedule', 'confirmed', 'completed', 'cancelled', 'scheduled']),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
   "instructors": zod.array(zod.object({
@@ -107,7 +107,7 @@ export const CreateClassBody = zod.object({
   "location": zod.string(),
   "capacity": zod.number().min(1),
   "instructorIds": zod.array(zod.number()).optional(),
-  "status": zod.enum(['scheduled', 'completed', 'cancelled']).optional(),
+  "status": zod.enum(['being_scheduled', 'pending_schedule', 'confirmed', 'completed', 'cancelled', 'scheduled']).optional(),
   "description": zod.string().optional()
 })
 
@@ -126,7 +126,7 @@ export const GetClassResponse = zod.object({
   "location": zod.string(),
   "capacity": zod.number(),
   "enrolledCount": zod.number(),
-  "status": zod.enum(['scheduled', 'completed', 'cancelled']),
+  "status": zod.enum(['being_scheduled', 'pending_schedule', 'confirmed', 'completed', 'cancelled', 'scheduled']),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
   "instructors": zod.array(zod.object({
@@ -162,7 +162,7 @@ export const UpdateClassBody = zod.object({
   "capacity": zod.number().optional(),
   "instructorIds": zod.array(zod.number()).optional(),
   "description": zod.string().optional(),
-  "status": zod.enum(['scheduled', 'completed', 'cancelled']).optional()
+  "status": zod.enum(['being_scheduled', 'pending_schedule', 'confirmed', 'completed', 'cancelled', 'scheduled']).optional()
 })
 
 export const UpdateClassResponse = zod.object({
@@ -175,7 +175,7 @@ export const UpdateClassResponse = zod.object({
   "location": zod.string(),
   "capacity": zod.number(),
   "enrolledCount": zod.number(),
-  "status": zod.enum(['scheduled', 'completed', 'cancelled']),
+  "status": zod.enum(['being_scheduled', 'pending_schedule', 'confirmed', 'completed', 'cancelled', 'scheduled']),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
   "instructors": zod.array(zod.object({
@@ -264,7 +264,7 @@ export const ListEnrollmentsResponseItem = zod.object({
   "location": zod.string(),
   "capacity": zod.number(),
   "enrolledCount": zod.number(),
-  "status": zod.enum(['scheduled', 'completed', 'cancelled']),
+  "status": zod.enum(['being_scheduled', 'pending_schedule', 'confirmed', 'completed', 'cancelled', 'scheduled']),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
   "instructors": zod.array(zod.object({
@@ -396,7 +396,7 @@ export const ListRequestsResponseItem = zod.object({
   "location": zod.string(),
   "capacity": zod.number(),
   "enrolledCount": zod.number(),
-  "status": zod.enum(['scheduled', 'completed', 'cancelled']),
+  "status": zod.enum(['being_scheduled', 'pending_schedule', 'confirmed', 'completed', 'cancelled', 'scheduled']),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
   "instructors": zod.array(zod.object({
@@ -497,7 +497,7 @@ export const GetRequestResponse = zod.object({
   "location": zod.string(),
   "capacity": zod.number(),
   "enrolledCount": zod.number(),
-  "status": zod.enum(['scheduled', 'completed', 'cancelled']),
+  "status": zod.enum(['being_scheduled', 'pending_schedule', 'confirmed', 'completed', 'cancelled', 'scheduled']),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
   "instructors": zod.array(zod.object({
@@ -550,7 +550,7 @@ export const UpdateRequestResponse = zod.object({
   "location": zod.string(),
   "capacity": zod.number(),
   "enrolledCount": zod.number(),
-  "status": zod.enum(['scheduled', 'completed', 'cancelled']),
+  "status": zod.enum(['being_scheduled', 'pending_schedule', 'confirmed', 'completed', 'cancelled', 'scheduled']),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
   "instructors": zod.array(zod.object({
@@ -615,7 +615,7 @@ export const GetAdminDashboardResponse = zod.object({
   "location": zod.string(),
   "capacity": zod.number(),
   "enrolledCount": zod.number(),
-  "status": zod.enum(['scheduled', 'completed', 'cancelled']),
+  "status": zod.enum(['being_scheduled', 'pending_schedule', 'confirmed', 'completed', 'cancelled', 'scheduled']),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
   "instructors": zod.array(zod.object({
@@ -655,7 +655,7 @@ export const GetAdminDashboardResponse = zod.object({
   "location": zod.string(),
   "capacity": zod.number(),
   "enrolledCount": zod.number(),
-  "status": zod.enum(['scheduled', 'completed', 'cancelled']),
+  "status": zod.enum(['being_scheduled', 'pending_schedule', 'confirmed', 'completed', 'cancelled', 'scheduled']),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
   "instructors": zod.array(zod.object({
@@ -694,7 +694,7 @@ export const GetInstructorDashboardResponse = zod.object({
   "location": zod.string(),
   "capacity": zod.number(),
   "enrolledCount": zod.number(),
-  "status": zod.enum(['scheduled', 'completed', 'cancelled']),
+  "status": zod.enum(['being_scheduled', 'pending_schedule', 'confirmed', 'completed', 'cancelled', 'scheduled']),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
   "instructors": zod.array(zod.object({
@@ -713,7 +713,7 @@ export const GetInstructorDashboardResponse = zod.object({
   "location": zod.string(),
   "capacity": zod.number(),
   "enrolledCount": zod.number(),
-  "status": zod.enum(['scheduled', 'completed', 'cancelled']),
+  "status": zod.enum(['being_scheduled', 'pending_schedule', 'confirmed', 'completed', 'cancelled', 'scheduled']),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
   "instructors": zod.array(zod.object({
@@ -734,7 +734,7 @@ export const GetInstructorDashboardResponse = zod.object({
   "location": zod.string(),
   "capacity": zod.number(),
   "enrolledCount": zod.number(),
-  "status": zod.enum(['scheduled', 'completed', 'cancelled']),
+  "status": zod.enum(['being_scheduled', 'pending_schedule', 'confirmed', 'completed', 'cancelled', 'scheduled']),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
   "instructors": zod.array(zod.object({
@@ -779,7 +779,7 @@ export const GetStudentDashboardResponse = zod.object({
   "location": zod.string(),
   "capacity": zod.number(),
   "enrolledCount": zod.number(),
-  "status": zod.enum(['scheduled', 'completed', 'cancelled']),
+  "status": zod.enum(['being_scheduled', 'pending_schedule', 'confirmed', 'completed', 'cancelled', 'scheduled']),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
   "instructors": zod.array(zod.object({
@@ -806,7 +806,7 @@ export const GetStudentDashboardResponse = zod.object({
   "location": zod.string(),
   "capacity": zod.number(),
   "enrolledCount": zod.number(),
-  "status": zod.enum(['scheduled', 'completed', 'cancelled']),
+  "status": zod.enum(['being_scheduled', 'pending_schedule', 'confirmed', 'completed', 'cancelled', 'scheduled']),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
   "instructors": zod.array(zod.object({
@@ -838,7 +838,7 @@ export const GetStudentDashboardResponse = zod.object({
   "location": zod.string(),
   "capacity": zod.number(),
   "enrolledCount": zod.number(),
-  "status": zod.enum(['scheduled', 'completed', 'cancelled']),
+  "status": zod.enum(['being_scheduled', 'pending_schedule', 'confirmed', 'completed', 'cancelled', 'scheduled']),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
   "instructors": zod.array(zod.object({
@@ -897,7 +897,7 @@ export const GetRequestorDashboardResponse = zod.object({
   "location": zod.string(),
   "capacity": zod.number(),
   "enrolledCount": zod.number(),
-  "status": zod.enum(['scheduled', 'completed', 'cancelled']),
+  "status": zod.enum(['being_scheduled', 'pending_schedule', 'confirmed', 'completed', 'cancelled', 'scheduled']),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
   "instructors": zod.array(zod.object({
@@ -917,7 +917,7 @@ export const GetRequestorDashboardResponse = zod.object({
   "location": zod.string(),
   "capacity": zod.number(),
   "enrolledCount": zod.number(),
-  "status": zod.enum(['scheduled', 'completed', 'cancelled']),
+  "status": zod.enum(['being_scheduled', 'pending_schedule', 'confirmed', 'completed', 'cancelled', 'scheduled']),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
   "instructors": zod.array(zod.object({
@@ -1148,7 +1148,7 @@ export const ListRemindersResponseItem = zod.object({
   "location": zod.string(),
   "capacity": zod.number(),
   "enrolledCount": zod.number(),
-  "status": zod.enum(['scheduled', 'completed', 'cancelled']),
+  "status": zod.enum(['being_scheduled', 'pending_schedule', 'confirmed', 'completed', 'cancelled', 'scheduled']),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
   "instructors": zod.array(zod.object({
@@ -1191,7 +1191,7 @@ export const UpdateReminderResponse = zod.object({
   "location": zod.string(),
   "capacity": zod.number(),
   "enrolledCount": zod.number(),
-  "status": zod.enum(['scheduled', 'completed', 'cancelled']),
+  "status": zod.enum(['being_scheduled', 'pending_schedule', 'confirmed', 'completed', 'cancelled', 'scheduled']),
   "instructorId": zod.number().nullish(),
   "instructorName": zod.string().nullish(),
   "instructors": zod.array(zod.object({

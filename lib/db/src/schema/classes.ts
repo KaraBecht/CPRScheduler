@@ -17,9 +17,12 @@ export const certificationTypeEnum = pgEnum("certification_type", [
 ]);
 
 export const classStatusEnum = pgEnum("class_status", [
-  "scheduled",
+  "being_scheduled",
+  "pending_schedule",
+  "confirmed",
   "completed",
   "cancelled",
+  "scheduled", // legacy — kept for backward compat, not shown in UI
 ]);
 
 export const classesTable = pgTable("classes", {

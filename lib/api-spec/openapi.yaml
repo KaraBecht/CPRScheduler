@@ -699,7 +699,7 @@ components:
 
     ClassStatus:
       type: string
-      enum: [scheduled, completed, cancelled]
+      enum: [being_scheduled, pending_schedule, confirmed, completed, cancelled, scheduled]
 
     RequestStatus:
       type: string

@@ -32,9 +32,12 @@ export type ClassStatus = typeof ClassStatus[keyof typeof ClassStatus];
 
 
 export const ClassStatus = {
-  scheduled: 'scheduled',
+  being_scheduled: 'being_scheduled',
+  pending_schedule: 'pending_schedule',
+  confirmed: 'confirmed',
   completed: 'completed',
   cancelled: 'cancelled',
+  scheduled: 'scheduled',
 } as const;
 
 export type RequestStatus = typeof RequestStatus[keyof typeof RequestStatus];

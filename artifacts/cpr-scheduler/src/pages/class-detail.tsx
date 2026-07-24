@@ -127,7 +127,7 @@ export default function ClassDetail() {
     capacity: 10,
     instructorIds: [] as number[],
     description: "",
-    status: "scheduled" as "scheduled" | "completed" | "cancelled",
+    status: "confirmed" as "being_scheduled" | "pending_schedule" | "confirmed" | "completed" | "cancelled" | "scheduled",
   });
   const signInUrl = useMemo(() => {
     const base = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -202,7 +202,7 @@ export default function ClassDetail() {
       capacity: cls.capacity,
       instructorIds: ids,
       description: cls.description ?? "",
-      status: cls.status as "scheduled" | "completed" | "cancelled",
+      status: cls.status as "being_scheduled" | "pending_schedule" | "confirmed" | "completed" | "cancelled" | "scheduled",
     });
     setEditOpen(true);
   }
@@ -350,14 +350,23 @@ export default function ClassDetail() {
             </Badge>
             <Badge
               variant={
-                cls.status === "scheduled"
+                cls.status === "confirmed" || cls.status === "scheduled"
                   ? "default"
                   : cls.status === "completed"
                     ? "secondary"
-                    : "destructive"
+                    : cls.status === "cancelled"
+                      ? "destructive"
+                      : "outline"
               }
             >
-              {cls.status}
+              {{
+                being_scheduled: "Being scheduled",
+                pending_schedule: "Pending schedule",
+                confirmed: "Confirmed",
+                completed: "Completed",
+                cancelled: "Cancelled",
+                scheduled: "Scheduled",
+              }[cls.status] ?? cls.status}
             </Badge>
           </div>
         }
@@ -435,7 +444,9 @@ export default function ClassDetail() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="scheduled">Scheduled</SelectItem>
+                    <SelectItem value="being_scheduled">Being scheduled</SelectItem>
+                    <SelectItem value="pending_schedule">Pending schedule</SelectItem>
+                    <SelectItem value="confirmed">Confirmed</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
                     <SelectItem value="cancelled">Cancelled</SelectItem>
                   </SelectContent>
@@ -645,7 +656,7 @@ export default function ClassDetail() {
                 {remaining > 0 ? ` · ${remaining} seats open` : " · full"}
               </span>
             </div>
-            {role === "student" && cls.status === "scheduled" && (
+            {role === "student" && (cls.status === "confirmed" || cls.status === "scheduled") && (
               <Button
                 className="w-full"
                 disabled={
