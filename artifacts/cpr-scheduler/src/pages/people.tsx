@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   useListUsers,
   useCreateUser,
+  useUpdateUser,
   useListRosterAttendees,
   useUpdateRosterEntry,
   getListUsersQueryKey,
@@ -39,6 +40,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Plus,
   Mail,
@@ -180,6 +182,42 @@ function NewUserDialog() {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function InstructorActiveToggle({ userId, isActive }: { userId: number; isActive: boolean }) {
+  const qc = useQueryClient();
+  const update = useUpdateUser({
+    mutation: {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: getListUsersQueryKey() });
+        toast({ title: isActive ? "Instructor marked inactive" : "Instructor marked active" });
+      },
+      onError: () => toast({ title: "Failed to update", variant: "destructive" }),
+    },
+  });
+  return (
+    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
+      <Checkbox
+        id={`active-${userId}`}
+        checked={isActive}
+        disabled={update.isPending}
+        onCheckedChange={(checked) =>
+          update.mutate({ userId, data: { isActive: checked === true } })
+        }
+      />
+      <label
+        htmlFor={`active-${userId}`}
+        className="text-xs cursor-pointer select-none text-muted-foreground"
+      >
+        Active instructor
+      </label>
+      {!isActive && (
+        <Badge variant="destructive" className="ml-auto text-[10px]">
+          Inactive
+        </Badge>
+      )}
+    </div>
   );
 }
 
@@ -458,6 +496,14 @@ export default function People() {
                       <p className="text-xs text-foreground/70 mt-3 line-clamp-2">
                         {u.bio}
                       </p>
+                    )}
+                    {tab === "instructor" && role === "administrator" && (
+                      <InstructorActiveToggle userId={u.id} isActive={u.isActive} />
+                    )}
+                    {tab === "instructor" && role !== "administrator" && !u.isActive && (
+                      <div className="mt-3 pt-3 border-t border-border">
+                        <Badge variant="destructive" className="text-[10px]">Inactive</Badge>
+                      </div>
                     )}
                   </CardContent>
                 </Card>

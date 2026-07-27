@@ -577,7 +577,7 @@ export default function ClassDetail() {
                             </SelectItem>
                             {instructors
                               .filter(
-                                (i) => !editForm.instructorIds.includes(i.id),
+                                (i) => i.isActive && !editForm.instructorIds.includes(i.id),
                               )
                               .map((i) => (
                                 <SelectItem key={i.id} value={i.id.toString()}>

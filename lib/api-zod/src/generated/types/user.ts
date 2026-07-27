@@ -20,5 +20,6 @@ export interface User {
   bio?: string | null;
   /** @nullable */
   avatarUrl?: string | null;
+  isActive: boolean;
   createdAt: string;
 }

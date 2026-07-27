@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, pgEnum, boolean } from "drizzle-orm/pg-core";
 
 export const userRoleEnum = pgEnum("user_role", [
   "administrator",
@@ -16,6 +16,7 @@ export const usersTable = pgTable("users", {
   organization: text("organization"),
   bio: text("bio"),
   avatarUrl: text("avatar_url"),
+  isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

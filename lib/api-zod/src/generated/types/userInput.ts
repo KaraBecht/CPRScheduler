@@ -16,4 +16,5 @@ export interface UserInput {
   organization?: string;
   bio?: string;
   avatarUrl?: string;
+  isActive?: boolean;
 }

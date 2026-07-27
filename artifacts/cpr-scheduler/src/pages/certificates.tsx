@@ -3,7 +3,7 @@ import { useListCertificates, type Certificate } from "@workspace/api-client-rea
 import { useAuth } from "@/lib/auth-context";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
-import { Award, MapPin, BookOpen, LayoutGrid, List, LayoutList } from "lucide-react";
+import { Award, MapPin, BookOpen, Building2, LayoutGrid, List, LayoutList } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatCertificationType, formatDate } from "@/lib/format";
 import {
@@ -20,6 +20,7 @@ type Cert = Certificate;
 type GroupBy = "none" | "location" | "expiration";
 type ActiveFilter = "all" | "active";
 type ViewMode = "card" | "list";
+const ALL_BU = "__all__";
 
 /**
  * For each unique (studentName, certificationType) pair keep only the
@@ -196,6 +197,7 @@ export default function Certificates() {
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
   const [activeFilter, setActiveFilter] = useState<ActiveFilter>("active");
   const [view, setView] = useState<ViewMode>("card");
+  const [buFilter, setBuFilter] = useState<string>(ALL_BU);
 
   const { data: certs = [] } = useListCertificates(
     role === "student" && userId ? { studentId: userId } : undefined,
@@ -203,13 +205,24 @@ export default function Certificates() {
 
   const dedupedCerts = useMemo(() => deduplicateCerts(certs), [certs]);
 
-  const filteredCerts = useMemo(
-    () =>
-      activeFilter === "active"
-        ? dedupedCerts.filter((c) => expirationBucket(c.expiryDate) !== "Expired")
-        : dedupedCerts,
-    [dedupedCerts, activeFilter],
-  );
+  // Sorted list of unique non-empty business units (organizations)
+  const businessUnits = useMemo(() => {
+    const set = new Set<string>();
+    for (const c of dedupedCerts) {
+      if (c.studentOrganization?.trim()) set.add(c.studentOrganization.trim());
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [dedupedCerts]);
+
+  const filteredCerts = useMemo(() => {
+    let list = activeFilter === "active"
+      ? dedupedCerts.filter((c) => expirationBucket(c.expiryDate) !== "Expired")
+      : dedupedCerts;
+    if (buFilter !== ALL_BU) {
+      list = list.filter((c) => (c.studentOrganization?.trim() || "") === buFilter);
+    }
+    return list;
+  }, [dedupedCerts, activeFilter, buFilter]);
 
   const groups = useMemo(
     () => groupCerts(filteredCerts, groupBy),
@@ -241,6 +254,22 @@ export default function Certificates() {
               <SelectItem value="all">All certificates</SelectItem>
             </SelectContent>
           </Select>
+
+          {/* Business unit filter */}
+          {businessUnits.length > 0 && (
+            <Select value={buFilter} onValueChange={setBuFilter}>
+              <SelectTrigger className="w-48" data-testid="select-bu-filter">
+                <Building2 className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                <SelectValue placeholder="All business units" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_BU}>All business units</SelectItem>
+                {businessUnits.map((bu) => (
+                  <SelectItem key={bu} value={bu}>{bu}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
 
           {/* Group by */}
           <div className="flex items-center gap-2">

@@ -991,7 +991,7 @@ function ScheduleClassDialog({
               onChange={(e) => setForm({ ...form, instructorId: e.target.value })}
             >
               <option value="">— None —</option>
-              {instructors.map((i) => (
+              {instructors.filter((i) => i.isActive).map((i) => (
                 <option key={i.id} value={String(i.id)}>{i.name}</option>
               ))}
             </select>
@@ -1180,7 +1180,7 @@ function EditClassDialog({
               onChange={(e) => setForm({ ...form, instructorId: e.target.value })}
             >
               <option value="">— None —</option>
-              {instructors.map((i) => (
+              {instructors.filter((i) => i.isActive).map((i) => (
                 <option key={i.id} value={String(i.id)}>{i.name}</option>
               ))}
             </select>

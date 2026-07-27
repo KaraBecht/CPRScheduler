@@ -73,6 +73,7 @@ export interface User {
   bio?: string | null;
   /** @nullable */
   avatarUrl?: string | null;
+  isActive: boolean;
   createdAt: string;
 }
 
@@ -85,6 +86,19 @@ export interface UserInput {
   organization?: string;
   bio?: string;
   avatarUrl?: string;
+  isActive?: boolean;
+}
+
+export interface UserUpdate {
+  /** @minLength 1 */
+  name?: string;
+  email?: string;
+  role?: UserRole;
+  phone?: string;
+  organization?: string;
+  bio?: string;
+  avatarUrl?: string;
+  isActive?: boolean;
 }
 
 export type ClassSessionInstructorsItem = {
@@ -309,6 +323,8 @@ export interface Certificate {
   id: number;
   studentId: number;
   studentName: string;
+  /** @nullable */
+  studentOrganization?: string | null;
   /** @nullable */
   classId?: number | null;
   /** @nullable */

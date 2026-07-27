@@ -62,3 +62,4 @@ export * from './trainingRequestInputSessionsItem';
 export * from './user';
 export * from './userInput';
 export * from './userRole';
+export * from './userUpdate';

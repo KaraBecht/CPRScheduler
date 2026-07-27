@@ -77,6 +77,25 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/User" }
+    patch:
+      operationId: updateUser
+      tags: [users]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UserUpdate" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
 
   /classes:
     get:
@@ -711,7 +730,7 @@ components:
 
     User:
       type: object
-      required: [id, name, email, role, createdAt]
+      required: [id, name, email, role, isActive, createdAt]
       properties:
         id: { type: integer }
         name: { type: string }
@@ -721,6 +740,7 @@ components:
         organization: { type: ["string", "null"] }
         bio: { type: ["string", "null"] }
         avatarUrl: { type: ["string", "null"] }
+        isActive: { type: boolean }
         createdAt: { type: string }
 
     UserInput:
@@ -734,6 +754,19 @@ components:
         organization: { type: string }
         bio: { type: string }
         avatarUrl: { type: string }
+        isActive: { type: boolean }
+
+    UserUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        email: { type: string }
+        role: { $ref: "#/components/schemas/UserRole" }
+        phone: { type: string }
+        organization: { type: string }
+        bio: { type: string }
+        avatarUrl: { type: string }
+        isActive: { type: boolean }
 
     ClassSession:
       type: object
@@ -1039,6 +1072,7 @@ components:
         id: { type: integer }
         studentId: { type: integer }
         studentName: { type: string }
+        studentOrganization: { type: ["string", "null"] }
         classId: { type: ["integer", "null"] }
         classTitle: { type: ["string", "null"] }
         classLocation: { type: ["string", "null"] }

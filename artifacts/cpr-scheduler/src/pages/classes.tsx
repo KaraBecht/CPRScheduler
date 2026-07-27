@@ -286,7 +286,7 @@ function CreateClassDialog() {
                         : "— add instructor —"}
                     </SelectItem>
                     {instructors
-                      .filter((i) => !instructorIds.includes(i.id))
+                      .filter((i) => i.isActive && !instructorIds.includes(i.id))
                       .map((i) => (
                         <SelectItem key={i.id} value={i.id.toString()}>
                           {i.name}

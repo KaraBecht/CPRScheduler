@@ -29,6 +29,7 @@ export const ListUsersResponseItem = zod.object({
   "organization": zod.string().nullish(),
   "bio": zod.string().nullish(),
   "avatarUrl": zod.string().nullish(),
+  "isActive": zod.boolean(),
   "createdAt": zod.string()
 })
 export const ListUsersResponse = zod.array(ListUsersResponseItem)
@@ -44,7 +45,8 @@ export const CreateUserBody = zod.object({
   "phone": zod.string().optional(),
   "organization": zod.string().optional(),
   "bio": zod.string().optional(),
-  "avatarUrl": zod.string().optional()
+  "avatarUrl": zod.string().optional(),
+  "isActive": zod.boolean().optional()
 })
 
 
@@ -61,6 +63,39 @@ export const GetUserResponse = zod.object({
   "organization": zod.string().nullish(),
   "bio": zod.string().nullish(),
   "avatarUrl": zod.string().nullish(),
+  "isActive": zod.boolean(),
+  "createdAt": zod.string()
+})
+
+
+export const UpdateUserParams = zod.object({
+  "userId": zod.coerce.number()
+})
+
+
+
+
+export const UpdateUserBody = zod.object({
+  "name": zod.string().min(1).optional(),
+  "email": zod.string().optional(),
+  "role": zod.enum(['administrator', 'instructor', 'student', 'requestor']).optional(),
+  "phone": zod.string().optional(),
+  "organization": zod.string().optional(),
+  "bio": zod.string().optional(),
+  "avatarUrl": zod.string().optional(),
+  "isActive": zod.boolean().optional()
+})
+
+export const UpdateUserResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "role": zod.enum(['administrator', 'instructor', 'student', 'requestor']),
+  "phone": zod.string().nullish(),
+  "organization": zod.string().nullish(),
+  "bio": zod.string().nullish(),
+  "avatarUrl": zod.string().nullish(),
+  "isActive": zod.boolean(),
   "createdAt": zod.string()
 })
 
@@ -570,6 +605,7 @@ export const ListCertificatesResponseItem = zod.object({
   "id": zod.number(),
   "studentId": zod.number(),
   "studentName": zod.string(),
+  "studentOrganization": zod.string().nullish(),
   "classId": zod.number().nullish(),
   "classTitle": zod.string().nullish(),
   "classLocation": zod.string().nullish(),
@@ -682,6 +718,7 @@ export const GetInstructorDashboardResponse = zod.object({
   "organization": zod.string().nullish(),
   "bio": zod.string().nullish(),
   "avatarUrl": zod.string().nullish(),
+  "isActive": zod.boolean(),
   "createdAt": zod.string()
 }),
   "upcomingClasses": zod.array(zod.object({
@@ -760,6 +797,7 @@ export const GetStudentDashboardResponse = zod.object({
   "organization": zod.string().nullish(),
   "bio": zod.string().nullish(),
   "avatarUrl": zod.string().nullish(),
+  "isActive": zod.boolean(),
   "createdAt": zod.string()
 }),
   "upcomingEnrollments": zod.array(zod.object({
@@ -820,6 +858,7 @@ export const GetStudentDashboardResponse = zod.object({
   "id": zod.number(),
   "studentId": zod.number(),
   "studentName": zod.string(),
+  "studentOrganization": zod.string().nullish(),
   "classId": zod.number().nullish(),
   "classTitle": zod.string().nullish(),
   "classLocation": zod.string().nullish(),
@@ -864,6 +903,7 @@ export const GetRequestorDashboardResponse = zod.object({
   "organization": zod.string().nullish(),
   "bio": zod.string().nullish(),
   "avatarUrl": zod.string().nullish(),
+  "isActive": zod.boolean(),
   "createdAt": zod.string()
 }),
   "requests": zod.array(zod.object({
@@ -967,6 +1007,7 @@ export const ListLocationsResponseItem = zod.object({
   "id": zod.number(),
   "studentId": zod.number(),
   "studentName": zod.string(),
+  "studentOrganization": zod.string().nullish(),
   "classId": zod.number().nullish(),
   "classTitle": zod.string().nullish(),
   "classLocation": zod.string().nullish(),
@@ -1025,6 +1066,7 @@ export const GetLocationResponse = zod.object({
   "id": zod.number(),
   "studentId": zod.number(),
   "studentName": zod.string(),
+  "studentOrganization": zod.string().nullish(),
   "classId": zod.number().nullish(),
   "classTitle": zod.string().nullish(),
   "classLocation": zod.string().nullish(),
@@ -1078,6 +1120,7 @@ export const UpdateLocationResponse = zod.object({
   "id": zod.number(),
   "studentId": zod.number(),
   "studentName": zod.string(),
+  "studentOrganization": zod.string().nullish(),
   "classId": zod.number().nullish(),
   "classTitle": zod.string().nullish(),
   "classLocation": zod.string().nullish(),

@@ -59,7 +59,8 @@ import type {
   StudentDashboard,
   TrainingRequestInput,
   User,
-  UserInput
+  UserInput,
+  UserUpdate
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -364,6 +365,72 @@ export function useGetUser<TData = Awaited<ReturnType<typeof getUser>>, TError =
 
 
 
+
+export const getUpdateUserUrl = (userId: number,) => {
+
+
+
+
+  return `/api/users/${userId}`
+}
+
+export const updateUser = async (userId: number,
+    userUpdate: UserUpdate, options?: RequestInit): Promise<User> => {
+
+  return customFetch<User>(getUpdateUserUrl(userId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      userUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateUserMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateUser>>, TError,{userId: number;data: BodyType<UserUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateUser>>, TError,{userId: number;data: BodyType<UserUpdate>}, TContext> => {
+
+const mutationKey = ['updateUser'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateUser>>, {userId: number;data: BodyType<UserUpdate>}> = (props) => {
+          const {userId,data} = props ?? {};
+
+          return  updateUser(userId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateUserMutationResult = NonNullable<Awaited<ReturnType<typeof updateUser>>>
+    export type UpdateUserMutationBody = BodyType<UserUpdate>
+    export type UpdateUserMutationError = ErrorType<unknown>
+
+    export const useUpdateUser = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateUser>>, TError,{userId: number;data: BodyType<UserUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateUser>>,
+        TError,
+        {userId: number;data: BodyType<UserUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateUserMutationOptions(options));
+    }
 
 export const getListClassesUrl = (params?: ListClassesParams,) => {
   const normalizedParams = new URLSearchParams();

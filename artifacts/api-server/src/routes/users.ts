@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { parseId } from "../lib/errors";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { CreateUserBody, ListUsersQueryParams } from "@workspace/api-zod";
+import { CreateUserBody, ListUsersQueryParams, UpdateUserBody } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
@@ -27,6 +27,14 @@ router.get("/users/:userId", async (req, res) => {
   res.json(serializeUser(row));
 });
 
+router.patch("/users/:userId", async (req, res) => {
+  const userId = parseId(req.params.userId, "userId");
+  const body = UpdateUserBody.parse(req.body);
+  const [row] = await db.update(usersTable).set(body).where(eq(usersTable.id, userId)).returning();
+  if (!row) { res.status(404).json({ error: "User not found" }); return; }
+  res.json(serializeUser(row));
+});
+
 export function serializeUser(row: typeof usersTable.$inferSelect) {
   return {
     id: row.id,
@@ -37,6 +45,7 @@ export function serializeUser(row: typeof usersTable.$inferSelect) {
     organization: row.organization,
     bio: row.bio,
     avatarUrl: row.avatarUrl,
+    isActive: row.isActive,
     createdAt: row.createdAt.toISOString(),
   };
 }

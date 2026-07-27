@@ -12,6 +12,8 @@ export interface Certificate {
   studentId: number;
   studentName: string;
   /** @nullable */
+  studentOrganization?: string | null;
+  /** @nullable */
   classId?: number | null;
   /** @nullable */
   classTitle?: string | null;
