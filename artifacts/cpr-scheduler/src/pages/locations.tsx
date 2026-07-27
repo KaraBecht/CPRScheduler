@@ -1802,6 +1802,134 @@ function LocationCard({ loc }: { loc: LocationDetail }) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+const LOC_EXPORT_ALL = "__all__";
+
+function LocationsExportDialog({ locations }: { locations: LocationDetail[] }) {
+  const [open, setOpen] = useState(false);
+  const [yearFilter, setYearFilter] = useState(LOC_EXPORT_ALL);
+  const [buFilter, setBuFilter] = useState(LOC_EXPORT_ALL);
+  const [certStatusFilter, setCertStatusFilter] = useState(LOC_EXPORT_ALL);
+
+  const years = useMemo(() => {
+    const set = new Set<string>();
+    for (const loc of locations) {
+      const y = loc.lastClassDate?.slice(0, 4);
+      if (y) set.add(y);
+    }
+    return Array.from(set).sort((a, b) => b.localeCompare(a));
+  }, [locations]);
+
+  const allBUsForExport = useMemo(() => {
+    const set = new Set<string>();
+    for (const loc of locations) {
+      const bu = parseBusinessUnit(loc.notes ?? "");
+      if (bu) set.add(bu);
+    }
+    return Array.from(set).sort();
+  }, [locations]);
+
+  const preview = useMemo(() => {
+    return locations.filter((loc) => {
+      if (yearFilter !== LOC_EXPORT_ALL && loc.lastClassDate?.slice(0, 4) !== yearFilter) return false;
+      if (buFilter !== LOC_EXPORT_ALL && parseBusinessUnit(loc.notes ?? "") !== buFilter) return false;
+      if (certStatusFilter !== LOC_EXPORT_ALL) {
+        const status = certStatusFromLastClass(loc.lastClassDate);
+        if (certStatusFilter === "expiring" && status !== "expiring") return false;
+        if (certStatusFilter === "expired" && status !== "expired") return false;
+      }
+      return true;
+    });
+  }, [locations, yearFilter, buFilter, certStatusFilter]);
+
+  function doExport() {
+    const today = new Date().toISOString().slice(0, 10);
+    downloadCsv(
+      `locations_${today}.csv`,
+      ["Name", "Address", "Business Unit", "Contact Name", "Contact Email", "Contact Phone", "Last Class Date", "Cert Status"],
+      preview.map((loc) => [
+        loc.name,
+        loc.address ?? "",
+        parseBusinessUnit(loc.notes ?? ""),
+        loc.contactName ?? "",
+        loc.contactEmail ?? "",
+        loc.contactPhone ?? "",
+        isoToDate(loc.lastClassDate),
+        certStatusFromLastClass(loc.lastClassDate) ?? "OK",
+      ]),
+    );
+    setOpen(false);
+  }
+
+  function handleOpenChange(v: boolean) {
+    if (v) {
+      setYearFilter(LOC_EXPORT_ALL);
+      setBuFilter(LOC_EXPORT_ALL);
+      setCertStatusFilter(LOC_EXPORT_ALL);
+    }
+    setOpen(v);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="gap-1.5" disabled={locations.length === 0}>
+          <Download className="h-4 w-4" />
+          Export CSV
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Export locations</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 py-1">
+          <div className="grid grid-cols-[130px_1fr] items-center gap-3">
+            <Label className="text-sm text-right">Year (last class)</Label>
+            <Select value={yearFilter} onValueChange={setYearFilter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={LOC_EXPORT_ALL}>All years</SelectItem>
+                {years.map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-[130px_1fr] items-center gap-3">
+            <Label className="text-sm text-right">Business unit</Label>
+            <Select value={buFilter} onValueChange={setBuFilter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={LOC_EXPORT_ALL}>All business units</SelectItem>
+                {allBUsForExport.map((bu) => <SelectItem key={bu} value={bu}>{bu}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-[130px_1fr] items-center gap-3">
+            <Label className="text-sm text-right">Cert status</Label>
+            <Select value={certStatusFilter} onValueChange={setCertStatusFilter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={LOC_EXPORT_ALL}>All statuses</SelectItem>
+                <SelectItem value="expiring">Expiring soon</SelectItem>
+                <SelectItem value="expired">Expired</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <p className="text-sm text-muted-foreground pt-2 border-t border-border">
+            <span className="font-medium text-foreground">{preview.length}</span>{" "}
+            location{preview.length !== 1 ? "s" : ""} will be exported
+          </p>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button onClick={doExport} disabled={preview.length === 0}>
+            <Download className="h-3.5 w-3.5 mr-1.5" />
+            Export CSV
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function Locations() {
   const qc = useQueryClient();
   const [query, setQuery] = useState("");
@@ -1829,27 +1957,6 @@ export default function Locations() {
     });
     return [...set].sort();
   }, [locations]);
-
-  function exportCsv() {
-    const today = new Date().toISOString().slice(0, 10);
-    const buLabel = buFilter ? buFilter.replace(/\s+/g, "-") : "all";
-    const certLabel = certFilter || "all";
-    const filename = `locations_${buLabel}_${certLabel}_${today}.csv`;
-    downloadCsv(
-      filename,
-      ["Name", "Address", "Business Unit", "Contact Name", "Contact Email", "Contact Phone", "Last Class Date", "Cert Status"],
-      filtered.map((loc) => [
-        loc.name,
-        loc.address ?? "",
-        parseBusinessUnit(loc.notes ?? ""),
-        loc.contactName ?? "",
-        loc.contactEmail ?? "",
-        loc.contactPhone ?? "",
-        isoToDate(loc.lastClassDate),
-        certStatusFromLastClass(loc.lastClassDate) ?? "OK",
-      ]),
-    );
-  }
 
   const q = query.trim().toLowerCase();
   const filtered = locations.filter((loc) => {
@@ -1886,16 +1993,7 @@ export default function Locations() {
         subtitle="Training venues, contacts, and scheduling history."
         action={
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5"
-              onClick={exportCsv}
-              disabled={filtered.length === 0}
-            >
-              <Download className="h-4 w-4" />
-              Export CSV
-            </Button>
+            <LocationsExportDialog locations={locations} />
             <CsvImportDialog onImported={() => qc.invalidateQueries({ queryKey: getListLocationsQueryKey() })} />
             <LocationFormDialog
               trigger={

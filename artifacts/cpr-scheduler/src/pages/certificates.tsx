@@ -16,6 +16,15 @@ import {
 import { cn } from "@/lib/utils";
 import { downloadCsv, isoToDate } from "@/lib/export-csv";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 type Cert = Certificate;
 
@@ -202,6 +211,123 @@ function CertRow({ c }: { c: Cert }) {
   );
 }
 
+const EXPORT_ALL = "__all__";
+
+function CertExportDialog({ certs }: { certs: Cert[] }) {
+  const [open, setOpen] = useState(false);
+  const [yearFilter, setYearFilter] = useState(EXPORT_ALL);
+  const [buFilter, setBuFilter] = useState(EXPORT_ALL);
+  const [statusFilter, setStatusFilter] = useState(EXPORT_ALL);
+
+  const years = useMemo(() => {
+    const set = new Set<string>();
+    for (const c of certs) {
+      const y = c.issuedDate?.slice(0, 4);
+      if (y) set.add(y);
+    }
+    return Array.from(set).sort((a, b) => b.localeCompare(a));
+  }, [certs]);
+
+  const preview = useMemo(() => {
+    return certs.filter((c) => {
+      if (yearFilter !== EXPORT_ALL && c.issuedDate?.slice(0, 4) !== yearFilter) return false;
+      if (buFilter !== EXPORT_ALL && c.classBusinessUnit !== buFilter) return false;
+      if (statusFilter !== EXPORT_ALL && expirationBucket(c.expiryDate) !== statusFilter) return false;
+      return true;
+    });
+  }, [certs, yearFilter, buFilter, statusFilter]);
+
+  function doExport() {
+    const today = new Date().toISOString().slice(0, 10);
+    downloadCsv(
+      `certificates_${today}.csv`,
+      ["Student Name", "Certificate #", "Type", "Class Title", "Location", "Business Unit", "Issued Date", "Expiry Date", "Status"],
+      preview.map((c) => [
+        c.studentName,
+        c.certificateNumber,
+        c.certificationType,
+        c.classTitle ?? "",
+        c.classLocation ?? "",
+        c.classBusinessUnit ?? "",
+        isoToDate(c.issuedDate),
+        isoToDate(c.expiryDate),
+        expirationBucket(c.expiryDate),
+      ]),
+    );
+    setOpen(false);
+  }
+
+  function handleOpenChange(v: boolean) {
+    if (v) {
+      setYearFilter(EXPORT_ALL);
+      setBuFilter(EXPORT_ALL);
+      setStatusFilter(EXPORT_ALL);
+    }
+    setOpen(v);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="gap-1.5" disabled={certs.length === 0}>
+          <Download className="h-3.5 w-3.5" />
+          Export CSV
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Export certificates</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 py-1">
+          <div className="grid grid-cols-[130px_1fr] items-center gap-3">
+            <Label className="text-sm text-right">Year (issued)</Label>
+            <Select value={yearFilter} onValueChange={setYearFilter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={EXPORT_ALL}>All years</SelectItem>
+                {years.map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-[130px_1fr] items-center gap-3">
+            <Label className="text-sm text-right">Business unit</Label>
+            <Select value={buFilter} onValueChange={setBuFilter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={EXPORT_ALL}>All business units</SelectItem>
+                {BUSINESS_UNITS.map((bu) => <SelectItem key={bu} value={bu}>{bu}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-[130px_1fr] items-center gap-3">
+            <Label className="text-sm text-right">Cert status</Label>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={EXPORT_ALL}>All statuses</SelectItem>
+                <SelectItem value="Valid">Valid</SelectItem>
+                <SelectItem value="Expiring soon">Expiring soon</SelectItem>
+                <SelectItem value="Expired">Expired</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <p className="text-sm text-muted-foreground pt-2 border-t border-border">
+            <span className="font-medium text-foreground">{preview.length}</span>{" "}
+            certificate{preview.length !== 1 ? "s" : ""} will be exported
+          </p>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button onClick={doExport} disabled={preview.length === 0}>
+            <Download className="h-3.5 w-3.5 mr-1.5" />
+            Export CSV
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function Certificates() {
   const { role, userId } = useAuth();
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
@@ -232,27 +358,6 @@ export default function Certificates() {
 
   const totalShown = filteredCerts.length;
 
-  function exportCsv() {
-    const today = new Date().toISOString().slice(0, 10);
-    const buLabel = buFilter === ALL_BU ? "all" : buFilter.replace(/\s+/g, "-");
-    const activeLabel = activeFilter === "active" ? "active" : "all";
-    const filename = `certificates_${activeLabel}_${buLabel}_${today}.csv`;
-    downloadCsv(
-      filename,
-      ["Student Name", "Certificate #", "Type", "Class Title", "Location", "Business Unit", "Issued Date", "Expiry Date", "Status"],
-      filteredCerts.map((c) => [
-        c.studentName,
-        c.certificateNumber,
-        c.certificationType,
-        c.classTitle ?? "",
-        c.classLocation ?? "",
-        c.classBusinessUnit ?? "",
-        isoToDate(c.issuedDate),
-        isoToDate(c.expiryDate),
-        expirationBucket(c.expiryDate),
-      ]),
-    );
-  }
   const totalAll = dedupedCerts.length;
 
   return (
@@ -312,16 +417,9 @@ export default function Certificates() {
           </div>
 
           {/* Export */}
-          <Button
-            variant="outline"
-            size="sm"
-            className="ml-auto gap-1.5"
-            onClick={exportCsv}
-            disabled={filteredCerts.length === 0}
-          >
-            <Download className="h-3.5 w-3.5" />
-            Export CSV
-          </Button>
+          <div className="ml-auto">
+            <CertExportDialog certs={dedupedCerts} />
+          </div>
 
           {/* View toggle */}
           <div className="flex items-center rounded-md border border-border overflow-hidden">
