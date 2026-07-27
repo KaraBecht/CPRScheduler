@@ -83,6 +83,25 @@ router.get("/certificates", async (req, res) => {
       .from(classRosterTable)
       .innerJoin(classesTable, eq(classRosterTable.classId, classesTable.id))
       .where(eq(classRosterTable.cardSent, true));
+
+    // Build a BU lookup for every unique location name used in these classes
+    const uniqueLocations = [
+      ...new Set(
+        rosterRows.map(({ c }) => c.location?.trim()).filter(Boolean) as string[],
+      ),
+    ];
+    const locationBuMap = new Map<string, string | null>();
+    await Promise.all(
+      uniqueLocations.map(async (locName) => {
+        const [loc] = await db
+          .select()
+          .from(locationsTable)
+          .where(ilike(locationsTable.name, locName))
+          .limit(1);
+        locationBuMap.set(locName, parseBusinessUnit(loc?.notes ?? null));
+      }),
+    );
+
     virtuals = rosterRows
       .filter(({ r }) => r.name.trim() !== "")
       .map(({ r, c }) => {
@@ -97,7 +116,7 @@ router.get("/certificates", async (req, res) => {
           classId: c.id,
           classTitle: c.title,
           classLocation: c.location,
-          classBusinessUnit: null,
+          classBusinessUnit: locationBuMap.get(c.location?.trim() ?? "") ?? null,
           certificationType: c.certificationType,
           certificateNumber: `ROSTER-${c.id}-${r.position}`,
           issuedDate: issued,
