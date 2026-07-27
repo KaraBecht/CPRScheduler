@@ -205,11 +205,11 @@ export default function Certificates() {
 
   const dedupedCerts = useMemo(() => deduplicateCerts(certs), [certs]);
 
-  // Sorted list of unique non-empty business units (organizations)
+  // Sorted list of unique non-empty locations (used as business unit filter)
   const businessUnits = useMemo(() => {
     const set = new Set<string>();
     for (const c of dedupedCerts) {
-      if (c.studentOrganization?.trim()) set.add(c.studentOrganization.trim());
+      if (c.classLocation?.trim()) set.add(c.classLocation.trim());
     }
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [dedupedCerts]);
@@ -219,7 +219,7 @@ export default function Certificates() {
       ? dedupedCerts.filter((c) => expirationBucket(c.expiryDate) !== "Expired")
       : dedupedCerts;
     if (buFilter !== ALL_BU) {
-      list = list.filter((c) => (c.studentOrganization?.trim() || "") === buFilter);
+      list = list.filter((c) => (c.classLocation?.trim() || "") === buFilter);
     }
     return list;
   }, [dedupedCerts, activeFilter, buFilter]);
