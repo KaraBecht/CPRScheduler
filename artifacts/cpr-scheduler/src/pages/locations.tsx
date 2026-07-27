@@ -17,6 +17,7 @@ import {
   type ClassSession,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { downloadCsv, isoToDate } from "@/lib/export-csv";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -1829,6 +1830,27 @@ export default function Locations() {
     return [...set].sort();
   }, [locations]);
 
+  function exportCsv() {
+    const today = new Date().toISOString().slice(0, 10);
+    const buLabel = buFilter ? buFilter.replace(/\s+/g, "-") : "all";
+    const certLabel = certFilter || "all";
+    const filename = `locations_${buLabel}_${certLabel}_${today}.csv`;
+    downloadCsv(
+      filename,
+      ["Name", "Address", "Business Unit", "Contact Name", "Contact Email", "Contact Phone", "Last Class Date", "Cert Status"],
+      filtered.map((loc) => [
+        loc.name,
+        loc.address ?? "",
+        parseBusinessUnit(loc.notes ?? ""),
+        loc.contactName ?? "",
+        loc.contactEmail ?? "",
+        loc.contactPhone ?? "",
+        isoToDate(loc.lastClassDate),
+        certStatusFromLastClass(loc.lastClassDate) ?? "OK",
+      ]),
+    );
+  }
+
   const q = query.trim().toLowerCase();
   const filtered = locations.filter((loc) => {
     if (buFilter && parseBusinessUnit(loc.notes ?? "") !== buFilter) return false;
@@ -1864,6 +1886,16 @@ export default function Locations() {
         subtitle="Training venues, contacts, and scheduling history."
         action={
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={exportCsv}
+              disabled={filtered.length === 0}
+            >
+              <Download className="h-4 w-4" />
+              Export CSV
+            </Button>
             <CsvImportDialog onImported={() => qc.invalidateQueries({ queryKey: getListLocationsQueryKey() })} />
             <LocationFormDialog
               trigger={

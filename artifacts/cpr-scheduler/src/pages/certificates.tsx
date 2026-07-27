@@ -3,7 +3,7 @@ import { useListCertificates, type Certificate } from "@workspace/api-client-rea
 import { useAuth } from "@/lib/auth-context";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
-import { Award, MapPin, BookOpen, Building2, LayoutGrid, List, LayoutList } from "lucide-react";
+import { Award, MapPin, BookOpen, Building2, LayoutGrid, List, LayoutList, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatCertificationType, formatDate } from "@/lib/format";
 import {
@@ -14,6 +14,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { downloadCsv, isoToDate } from "@/lib/export-csv";
+import { Button } from "@/components/ui/button";
 
 type Cert = Certificate;
 
@@ -229,6 +231,28 @@ export default function Certificates() {
   );
 
   const totalShown = filteredCerts.length;
+
+  function exportCsv() {
+    const today = new Date().toISOString().slice(0, 10);
+    const buLabel = buFilter === ALL_BU ? "all" : buFilter.replace(/\s+/g, "-");
+    const activeLabel = activeFilter === "active" ? "active" : "all";
+    const filename = `certificates_${activeLabel}_${buLabel}_${today}.csv`;
+    downloadCsv(
+      filename,
+      ["Student Name", "Certificate #", "Type", "Class Title", "Location", "Business Unit", "Issued Date", "Expiry Date", "Status"],
+      filteredCerts.map((c) => [
+        c.studentName,
+        c.certificateNumber,
+        c.certificationType,
+        c.classTitle ?? "",
+        c.classLocation ?? "",
+        c.classBusinessUnit ?? "",
+        isoToDate(c.issuedDate),
+        isoToDate(c.expiryDate),
+        expirationBucket(c.expiryDate),
+      ]),
+    );
+  }
   const totalAll = dedupedCerts.length;
 
   return (
@@ -287,8 +311,20 @@ export default function Certificates() {
             </Select>
           </div>
 
+          {/* Export */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-auto gap-1.5"
+            onClick={exportCsv}
+            disabled={filteredCerts.length === 0}
+          >
+            <Download className="h-3.5 w-3.5" />
+            Export CSV
+          </Button>
+
           {/* View toggle */}
-          <div className="ml-auto flex items-center rounded-md border border-border overflow-hidden">
+          <div className="flex items-center rounded-md border border-border overflow-hidden">
             <button
               onClick={() => setView("card")}
               title="Card view"
