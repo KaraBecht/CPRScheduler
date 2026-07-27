@@ -6,14 +6,22 @@ import {
   enrollmentsTable,
   classesTable,
   classRosterTable,
+  locationsTable,
 } from "@workspace/db";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, ilike } from "drizzle-orm";
 import {
   CreateCertificateBody,
   ListCertificatesQueryParams,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
+
+/** Parse the "Business Unit: …" line from a location's notes field. */
+function parseBusinessUnit(notes: string | null): string | null {
+  if (!notes) return null;
+  const m = notes.match(/^Business Unit:\s*(.+)$/m);
+  return m?.[1]?.trim() || null;
+}
 
 async function serialize(row: typeof certificatesTable.$inferSelect) {
   const [u] = await db
@@ -22,6 +30,7 @@ async function serialize(row: typeof certificatesTable.$inferSelect) {
     .where(eq(usersTable.id, row.studentId));
   let classTitle: string | null = null;
   let classLocation: string | null = null;
+  let classBusinessUnit: string | null = null;
   if (row.classId) {
     const [c] = await db
       .select()
@@ -29,6 +38,14 @@ async function serialize(row: typeof certificatesTable.$inferSelect) {
       .where(eq(classesTable.id, row.classId));
     classTitle = c?.title ?? null;
     classLocation = c?.location ?? null;
+    if (classLocation) {
+      const [loc] = await db
+        .select()
+        .from(locationsTable)
+        .where(ilike(locationsTable.name, classLocation))
+        .limit(1);
+      classBusinessUnit = parseBusinessUnit(loc?.notes ?? null);
+    }
   }
   return {
     id: row.id,
@@ -38,6 +55,7 @@ async function serialize(row: typeof certificatesTable.$inferSelect) {
     classId: row.classId,
     classTitle,
     classLocation,
+    classBusinessUnit,
     certificationType: row.certificationType,
     certificateNumber: row.certificateNumber,
     issuedDate: row.issuedDate,
@@ -79,6 +97,7 @@ router.get("/certificates", async (req, res) => {
           classId: c.id,
           classTitle: c.title,
           classLocation: c.location,
+          classBusinessUnit: null,
           certificationType: c.certificationType,
           certificateNumber: `ROSTER-${c.id}-${r.position}`,
           issuedDate: issued,

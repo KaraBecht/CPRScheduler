@@ -22,6 +22,14 @@ type ActiveFilter = "all" | "active";
 type ViewMode = "card" | "list";
 const ALL_BU = "__all__";
 
+const BUSINESS_UNITS = [
+  "Fox Corp",
+  "FOX Entertainment",
+  "FOX News Media",
+  "FOX Sports",
+  "FOX Television Stations",
+] as const;
+
 /**
  * For each unique (studentName, certificationType) pair keep only the
  * certificate with the latest expiryDate. This prevents duplicates when
@@ -205,21 +213,12 @@ export default function Certificates() {
 
   const dedupedCerts = useMemo(() => deduplicateCerts(certs), [certs]);
 
-  // Sorted list of unique non-empty locations (used as business unit filter)
-  const businessUnits = useMemo(() => {
-    const set = new Set<string>();
-    for (const c of dedupedCerts) {
-      if (c.classLocation?.trim()) set.add(c.classLocation.trim());
-    }
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [dedupedCerts]);
-
   const filteredCerts = useMemo(() => {
     let list = activeFilter === "active"
       ? dedupedCerts.filter((c) => expirationBucket(c.expiryDate) !== "Expired")
       : dedupedCerts;
     if (buFilter !== ALL_BU) {
-      list = list.filter((c) => (c.classLocation?.trim() || "") === buFilter);
+      list = list.filter((c) => c.classBusinessUnit === buFilter);
     }
     return list;
   }, [dedupedCerts, activeFilter, buFilter]);
@@ -256,20 +255,18 @@ export default function Certificates() {
           </Select>
 
           {/* Business unit filter */}
-          {businessUnits.length > 0 && (
-            <Select value={buFilter} onValueChange={setBuFilter}>
-              <SelectTrigger className="w-48" data-testid="select-bu-filter">
-                <Building2 className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
-                <SelectValue placeholder="All business units" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_BU}>All business units</SelectItem>
-                {businessUnits.map((bu) => (
-                  <SelectItem key={bu} value={bu}>{bu}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+          <Select value={buFilter} onValueChange={setBuFilter}>
+            <SelectTrigger className="w-52" data-testid="select-bu-filter">
+              <Building2 className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+              <SelectValue placeholder="All business units" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_BU}>All business units</SelectItem>
+              {BUSINESS_UNITS.map((bu) => (
+                <SelectItem key={bu} value={bu}>{bu}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
           {/* Group by */}
           <div className="flex items-center gap-2">

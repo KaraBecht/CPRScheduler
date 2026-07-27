@@ -1076,6 +1076,7 @@ components:
         classId: { type: ["integer", "null"] }
         classTitle: { type: ["string", "null"] }
         classLocation: { type: ["string", "null"] }
+        classBusinessUnit: { type: ["string", "null"] }
         certificationType: { $ref: "#/components/schemas/CertificationType" }
         certificateNumber: { type: string }
         issuedDate: { type: string }

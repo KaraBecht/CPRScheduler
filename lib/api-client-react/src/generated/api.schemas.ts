@@ -331,6 +331,8 @@ export interface Certificate {
   classTitle?: string | null;
   /** @nullable */
   classLocation?: string | null;
+  /** @nullable */
+  classBusinessUnit?: string | null;
   certificationType: CertificationType;
   certificateNumber: string;
   issuedDate: string;
