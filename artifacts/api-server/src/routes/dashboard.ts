@@ -81,8 +81,10 @@ router.get("/dashboard/admin", async (_req, res) => {
     [{ totalLocations }],
     [{ pendingRequests }],
     [{ certificatesIssued }],
-    [{ certificatesThisMonth }],
-    [{ certificatesYTD }],
+    [{ certificatesThisMonthReal }],
+    [{ certificatesYTDReal }],
+    [{ certificatesThisMonthRoster }],
+    [{ certificatesYTDRoster }],
     [{ enrollmentsThisMonth }],
     allLocations,
     allClassesByDate,
@@ -112,14 +114,40 @@ router.get("/dashboard/admin", async (_req, res) => {
     db
       .select({ certificatesIssued: sql<number>`count(*)::int` })
       .from(certificatesTable),
+    // Real certs this month
     db
-      .select({ certificatesThisMonth: sql<number>`count(*)::int` })
+      .select({ certificatesThisMonthReal: sql<number>`count(*)::int` })
       .from(certificatesTable)
       .where(gte(certificatesTable.issuedDate, startMonth.toISOString().split("T")[0]!)),
+    // Real certs YTD
     db
-      .select({ certificatesYTD: sql<number>`count(*)::int` })
+      .select({ certificatesYTDReal: sql<number>`count(*)::int` })
       .from(certificatesTable)
       .where(gte(certificatesTable.issuedDate, startYear.toISOString().split("T")[0]!)),
+    // Roster (virtual) certs this month — class date falls in current month
+    db
+      .select({ certificatesThisMonthRoster: sql<number>`count(*)::int` })
+      .from(classRosterTable)
+      .innerJoin(classesTable, eq(classRosterTable.classId, classesTable.id))
+      .where(
+        and(
+          eq(classRosterTable.cardSent, true),
+          ne(sql`trim(${classRosterTable.name})`, ""),
+          gte(classesTable.date, startMonth.toISOString().split("T")[0]!),
+        ),
+      ),
+    // Roster (virtual) certs YTD — class date falls in current year
+    db
+      .select({ certificatesYTDRoster: sql<number>`count(*)::int` })
+      .from(classRosterTable)
+      .innerJoin(classesTable, eq(classRosterTable.classId, classesTable.id))
+      .where(
+        and(
+          eq(classRosterTable.cardSent, true),
+          ne(sql`trim(${classRosterTable.name})`, ""),
+          gte(classesTable.date, startYear.toISOString().split("T")[0]!),
+        ),
+      ),
     db
       .select({ enrollmentsThisMonth: sql<number>`count(*)::int` })
       .from(enrollmentsTable)
@@ -173,6 +201,10 @@ router.get("/dashboard/admin", async (_req, res) => {
       .from(classesTable)
       .where(gte(classesTable.date, startYear.toISOString().split("T")[0]!)),
   ]);
+
+  // Combine real + roster cert counts for this month and YTD
+  const certificatesThisMonth = certificatesThisMonthReal + certificatesThisMonthRoster;
+  const certificatesYTD = certificatesYTDReal + certificatesYTDRoster;
 
   // Combine real + virtual active cert counts per cert type
   const certTypeCountMap = new Map<string, number>();
