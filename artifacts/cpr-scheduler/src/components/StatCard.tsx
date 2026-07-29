@@ -5,18 +5,18 @@ import { cn } from "@/lib/utils";
 // Medical palette soft-fill tones
 const TONE_CONFIG = {
   primary: {
-    bg:        "#e6f4fa",
-    iconBg:    "#b3dced",
-    iconColor: "#007BA7",
-    numColor:  "#005678",
-    lblColor:  "#00698a",
+    bg:        "#ede9fe",
+    iconBg:    "#c4b5fd",
+    iconColor: "#7c3aed",
+    numColor:  "#4c1d95",
+    lblColor:  "#6d28d9",
   },
   success: {
-    bg:        "#eaf7ea",
-    iconBg:    "#b9e5bb",
-    iconColor: "#4CAF50",
-    numColor:  "#2d7a2f",
-    lblColor:  "#388e3c",
+    bg:        "#d1fae5",
+    iconBg:    "#6ee7b7",
+    iconColor: "#059669",
+    numColor:  "#064e3b",
+    lblColor:  "#047857",
   },
   warning: {
     bg:        "#fce8e8",
@@ -26,11 +26,11 @@ const TONE_CONFIG = {
     lblColor:  "#c02020",
   },
   accent: {
-    bg:        "#e0f2f2",
-    iconBg:    "#a3d9d9",
-    iconColor: "#008080",
-    numColor:  "#005555",
-    lblColor:  "#006666",
+    bg:        "#fef3c7",
+    iconBg:    "#fde68a",
+    iconColor: "#d97706",
+    numColor:  "#92400e",
+    lblColor:  "#b45309",
   },
 } as const;
 
