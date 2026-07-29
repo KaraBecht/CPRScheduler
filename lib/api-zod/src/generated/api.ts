@@ -631,6 +631,8 @@ export const CreateCertificateBody = zod.object({
 
 export const GetAdminDashboardResponse = zod.object({
   "totalClasses": zod.number(),
+  "classesThisYear": zod.number().optional(),
+  "locationsThisYear": zod.number().optional(),
   "upcomingClasses": zod.number(),
   "totalStudents": zod.number(),
   "totalInstructors": zod.number(),

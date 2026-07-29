@@ -368,6 +368,8 @@ export interface YearCount {
 
 export interface AdminDashboard {
   totalClasses: number;
+  classesThisYear?: number;
+  locationsThisYear?: number;
   upcomingClasses: number;
   totalStudents: number;
   totalInstructors: number;

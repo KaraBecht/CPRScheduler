@@ -89,6 +89,8 @@ router.get("/dashboard/admin", async (_req, res) => {
     classesByYear,
     realActiveByCert,
     rosterActiveByCert,
+    [{ classesThisYear }],
+    [{ locationsThisYear }],
   ] = await Promise.all([
     db.select({ totalClasses: sql<number>`count(*)::int` }).from(classesTable),
     db
@@ -160,6 +162,16 @@ router.get("/dashboard/admin", async (_req, res) => {
         ),
       )
       .groupBy(classesTable.certificationType),
+    // Classes taught this year
+    db
+      .select({ classesThisYear: sql<number>`count(*)::int` })
+      .from(classesTable)
+      .where(gte(classesTable.date, startYear.toISOString().split("T")[0]!)),
+    // Distinct locations active this year
+    db
+      .select({ locationsThisYear: sql<number>`count(distinct ${classesTable.location})::int` })
+      .from(classesTable)
+      .where(gte(classesTable.date, startYear.toISOString().split("T")[0]!)),
   ]);
 
   // Combine real + virtual active cert counts per cert type
@@ -218,6 +230,8 @@ router.get("/dashboard/admin", async (_req, res) => {
 
   res.json({
     totalClasses,
+    classesThisYear,
+    locationsThisYear,
     upcomingClasses,
     totalStudents,
     totalInstructors,

@@ -340,7 +340,7 @@ export function AdminDashboardPage() {
             {/* Summary stats row */}
             <div className="grid grid-cols-3 divide-x divide-border border-t border-border mt-4 pt-4">
               <div className="flex flex-col items-center gap-0.5 px-4">
-                <span className="text-2xl font-bold text-foreground">{dash.totalClasses}</span>
+                <span className="text-2xl font-bold text-foreground">{dash.classesThisYear}</span>
                 <span className="text-xs text-muted-foreground text-center">Classes taught</span>
               </div>
               <div className="flex flex-col items-center gap-0.5 px-4">
@@ -348,7 +348,7 @@ export function AdminDashboardPage() {
                 <span className="text-xs text-muted-foreground text-center">Active Certifications</span>
               </div>
               <div className="flex flex-col items-center gap-0.5 px-4">
-                <span className="text-2xl font-bold text-foreground">{dash.totalLocations}</span>
+                <span className="text-2xl font-bold text-foreground">{dash.locationsThisYear}</span>
                 <span className="text-xs text-muted-foreground text-center">Locations</span>
               </div>
             </div>

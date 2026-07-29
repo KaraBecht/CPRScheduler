@@ -1129,6 +1129,8 @@ components:
         ]
       properties:
         totalClasses: { type: integer }
+        classesThisYear: { type: integer }
+        locationsThisYear: { type: integer }
         upcomingClasses: { type: integer }
         totalStudents: { type: integer }
         totalInstructors: { type: integer }
