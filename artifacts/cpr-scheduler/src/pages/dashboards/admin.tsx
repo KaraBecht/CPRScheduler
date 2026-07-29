@@ -190,7 +190,7 @@ export function AdminDashboardPage() {
         subtitle="Real-time view of classes, students, and incoming training requests."
       />
       {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-4 items-stretch">
         <StatCard
           label="Upcoming classes"
           value={dash.upcomingClasses}
@@ -202,7 +202,7 @@ export function AdminDashboardPage() {
           label="Pending requests"
           value={dash.pendingRequests}
           icon={Inbox}
-          tone="primary"
+          tone="accent"
           href="/requests"
           testId="stat-pending-requests"
         />

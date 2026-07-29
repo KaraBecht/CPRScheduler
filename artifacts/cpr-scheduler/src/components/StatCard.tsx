@@ -57,7 +57,7 @@ export function StatCard({
     <div
       data-testid={testId}
       className={cn(
-        "rounded-2xl p-5 transition-all",
+        "rounded-2xl p-5 transition-all h-full",
         href && "cursor-pointer hover:shadow-md hover:-translate-y-0.5",
       )}
       style={{ background: bg, boxShadow: "0 1px 3px 0 rgb(0 0 0 / 0.06)" }}
@@ -83,7 +83,7 @@ export function StatCard({
   );
 
   if (href) {
-    return <Link href={href}>{card}</Link>;
+    return <Link href={href} className="block h-full">{card}</Link>;
   }
   return card;
 }
