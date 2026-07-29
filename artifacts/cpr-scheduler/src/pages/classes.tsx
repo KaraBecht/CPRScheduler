@@ -553,7 +553,7 @@ function CalendarView({ classes }: { classes: ClassSession[] }) {
 export default function Classes() {
   const { role } = useAuth();
   const [view, setView] = useState<"list" | "calendar">("list");
-  const [tab, setTab] = useState<"all" | "upcoming" | "completed">("upcoming");
+  const [tab, setTab] = useState<"all" | "upcoming" | "completed" | "scheduling" | "cancelled">("upcoming");
   const [deletingClass, setDeletingClass] = useState<ClassSession | null>(null);
   const [search, setSearch] = useState("");
   const [certFilter, setCertFilter] = useState<CertificationType | "all">("all");
@@ -575,7 +575,11 @@ export default function Classes() {
       ? allClasses.filter((c) => ACTIVE_STATUSES.has(c.status))
       : tab === "completed"
         ? allClasses.filter((c) => c.status === "completed")
-        : allClasses;
+        : tab === "scheduling"
+          ? allClasses.filter((c) => c.status === "being_scheduled" || c.status === "pending_schedule")
+          : tab === "cancelled"
+            ? allClasses.filter((c) => c.status === "cancelled")
+            : allClasses;
 
   const q = search.trim().toLowerCase();
   const listClasses = tabClasses
@@ -741,11 +745,17 @@ export default function Classes() {
             <TabsTrigger value="upcoming" data-testid="tab-upcoming">
               Upcoming
             </TabsTrigger>
-            <TabsTrigger value="all" data-testid="tab-all">
-              All
+            <TabsTrigger value="scheduling" data-testid="tab-scheduling">
+              Scheduling
             </TabsTrigger>
             <TabsTrigger value="completed" data-testid="tab-completed">
               Completed
+            </TabsTrigger>
+            <TabsTrigger value="cancelled" data-testid="tab-cancelled">
+              Cancelled
+            </TabsTrigger>
+            <TabsTrigger value="all" data-testid="tab-all">
+              All
             </TabsTrigger>
           </TabsList>
           <TabsContent value={tab} className="mt-4">
