@@ -512,7 +512,11 @@ export default function Requests() {
   const qc = useQueryClient();
   const { role, userId } = useAuth();
   const params = role === "requestor" && userId ? { requestorId: userId } : undefined;
-  const { data: requests = [] } = useListRequests(params);
+  const { data: allRequests = [] } = useListRequests(params);
+  const requests =
+    role === "administrator"
+      ? allRequests.filter((r) => r.status === "pending")
+      : allRequests;
   const update = useUpdateRequest({
     mutation: {
       onSuccess: () => {
