@@ -166,8 +166,8 @@ export function AdminDashboardPage() {
     );
   }
 
-  const chartData = dash.classesByCertification.map((c) => ({
-    name: formatCertificationType(c.certificationType).replace(" for Healthcare", ""),
+  const yearChartData = (dash.classesByYear ?? []).map((c) => ({
+    name: c.year,
     classes: c.count,
   }));
 
@@ -287,12 +287,12 @@ export function AdminDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <Card className="lg:col-span-2 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-sm font-semibold text-muted-foreground">Classes by certification</CardTitle>
+            <CardTitle className="text-sm font-semibold text-muted-foreground">Classes by year</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-56">
+            <div className="h-44">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ left: -20, right: 0 }}>
+                <BarChart data={yearChartData} margin={{ left: -20, right: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                   <XAxis
                     dataKey="name"
@@ -316,6 +316,7 @@ export function AdminDashboardPage() {
                       fontSize: 12,
                       boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                     }}
+                    formatter={(value: number) => [value, "Classes"]}
                   />
                   <Bar
                     dataKey="classes"
@@ -325,6 +326,21 @@ export function AdminDashboardPage() {
                   />
                 </BarChart>
               </ResponsiveContainer>
+            </div>
+            {/* Summary stats row */}
+            <div className="grid grid-cols-3 divide-x divide-border border-t border-border mt-4 pt-4">
+              <div className="flex flex-col items-center gap-0.5 px-4">
+                <span className="text-2xl font-bold text-foreground">{dash.totalClasses}</span>
+                <span className="text-xs text-muted-foreground text-center">Classes taught</span>
+              </div>
+              <div className="flex flex-col items-center gap-0.5 px-4">
+                <span className="text-2xl font-bold text-foreground">{dash.certificatesIssued}</span>
+                <span className="text-xs text-muted-foreground text-center">Certifications issued</span>
+              </div>
+              <div className="flex flex-col items-center gap-0.5 px-4">
+                <span className="text-2xl font-bold text-foreground">{dash.totalLocations}</span>
+                <span className="text-xs text-muted-foreground text-center">Locations</span>
+              </div>
             </div>
           </CardContent>
         </Card>

@@ -313,10 +313,16 @@ export interface ClassRequestInput {
   notes?: string;
 }
 
+export type ClassRequestUpdateSessionsItem = {
+  date: string;
+  startTime: string;
+};
+
 export interface ClassRequestUpdate {
   status?: RequestStatus;
   classId?: number;
   notes?: string;
+  sessions?: ClassRequestUpdateSessionsItem[];
 }
 
 export interface Certificate {
@@ -350,11 +356,17 @@ export interface CertificationCount {
   count: number;
 }
 
+export interface YearCount {
+  year: string;
+  count: number;
+}
+
 export interface AdminDashboard {
   totalClasses: number;
   upcomingClasses: number;
   totalStudents: number;
   totalInstructors: number;
+  totalLocations: number;
   pendingRequests: number;
   certificatesIssued: number;
   activeCertificates: number;
@@ -364,6 +376,7 @@ export interface AdminDashboard {
   locationsExpiring: number;
   locationsExpired: number;
   classesByCertification: CertificationCount[];
+  classesByYear: YearCount[];
   upcomingSchedule: ClassSession[];
   recentRequests: ClassRequest[];
 }

@@ -8,12 +8,14 @@
 import type { CertificationCount } from './certificationCount';
 import type { ClassRequest } from './classRequest';
 import type { ClassSession } from './classSession';
+import type { YearCount } from './yearCount';
 
 export interface AdminDashboard {
   totalClasses: number;
   upcomingClasses: number;
   totalStudents: number;
   totalInstructors: number;
+  totalLocations: number;
   pendingRequests: number;
   certificatesIssued: number;
   activeCertificates: number;
@@ -23,6 +25,7 @@ export interface AdminDashboard {
   locationsExpiring: number;
   locationsExpired: number;
   classesByCertification: CertificationCount[];
+  classesByYear: YearCount[];
   upcomingSchedule: ClassSession[];
   recentRequests: ClassRequest[];
 }

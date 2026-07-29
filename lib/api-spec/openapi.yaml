@@ -1063,6 +1063,14 @@ components:
         status: { $ref: "#/components/schemas/RequestStatus" }
         classId: { type: integer }
         notes: { type: string }
+        sessions:
+          type: array
+          items:
+            type: object
+            required: [date, startTime]
+            properties:
+              date: { type: string }
+              startTime: { type: string }
 
     Certificate:
       type: object
@@ -1105,6 +1113,7 @@ components:
           upcomingClasses,
           totalStudents,
           totalInstructors,
+          totalLocations,
           pendingRequests,
           certificatesIssued,
           activeCertificates,
@@ -1114,6 +1123,7 @@ components:
           locationsExpiring,
           locationsExpired,
           classesByCertification,
+          classesByYear,
           upcomingSchedule,
           recentRequests,
         ]
@@ -1122,6 +1132,7 @@ components:
         upcomingClasses: { type: integer }
         totalStudents: { type: integer }
         totalInstructors: { type: integer }
+        totalLocations: { type: integer }
         pendingRequests: { type: integer }
         certificatesIssued: { type: integer }
         activeCertificates: { type: integer }
@@ -1133,12 +1144,22 @@ components:
         classesByCertification:
           type: array
           items: { $ref: "#/components/schemas/CertificationCount" }
+        classesByYear:
+          type: array
+          items: { $ref: "#/components/schemas/YearCount" }
         upcomingSchedule:
           type: array
           items: { $ref: "#/components/schemas/ClassSession" }
         recentRequests:
           type: array
           items: { $ref: "#/components/schemas/ClassRequest" }
+
+    YearCount:
+      type: object
+      required: [year, count]
+      properties:
+        year: { type: string }
+        count: { type: integer }
 
     InstructorDashboard:
       type: object

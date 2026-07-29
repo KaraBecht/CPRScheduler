@@ -135,10 +135,14 @@ router.patch("/requests/:requestId", async (req, res) => {
       .where(eq(requestsTable.id, id));
     if (!existing) { res.status(404).json({ error: "Request not found" }); return; }
 
-    const sessions =
-      existing.sessions && existing.sessions.length > 0
-        ? existing.sessions
-        : [{ date: existing.preferredDate, startTime: "09:00" }];
+    // Use admin-provided sessions from the approval payload if present,
+    // otherwise fall back to the requestor's proposed sessions, then preferredDate.
+    const sessions: { date: string; startTime: string }[] =
+      body.sessions && body.sessions.length > 0
+        ? body.sessions
+        : existing.sessions && existing.sessions.length > 0
+          ? (existing.sessions as { date: string; startTime: string }[])
+          : [{ date: existing.preferredDate, startTime: "09:00" }];
 
     // Upsert a location record for this organization so it appears in the Locations tab
     const locationName = existing.organizationName;

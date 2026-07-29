@@ -8,6 +8,7 @@ import {
   getGetAdminDashboardQueryKey,
   getGetRequestorDashboardQueryKey,
   type CertificationType,
+  type ClassRequest,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
@@ -33,7 +34,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth-context";
-import { Plus, Check, X, Send, Share2, Copy, CheckCheck } from "lucide-react";
+import { Plus, Check, X, Send, Share2, Copy, CheckCheck, Trash2, CalendarDays } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { formatCertificationType, formatDate, timeAgo } from "@/lib/format";
 import { TrainingRequestForm } from "@/components/TrainingRequestForm";
@@ -311,6 +313,176 @@ function SendTrainingRequestDialog() {
   );
 }
 
+type SessionRow = { date: string; startTime: string; included: boolean };
+
+function ApproveRequestDialog({
+  request,
+  onApprove,
+}: {
+  request: ClassRequest;
+  onApprove: (sessions: { date: string; startTime: string }[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [rows, setRows] = useState<SessionRow[]>([]);
+
+  function handleOpenChange(v: boolean) {
+    if (v) {
+      const initial: SessionRow[] =
+        request.sessions && request.sessions.length > 0
+          ? request.sessions.map((s) => ({ date: s.date, startTime: s.startTime, included: true }))
+          : [{ date: request.preferredDate, startTime: "09:00", included: true }];
+      setRows(initial);
+    }
+    setOpen(v);
+  }
+
+  function toggle(i: number) {
+    setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, included: !r.included } : r)));
+  }
+
+  function update(i: number, field: "date" | "startTime", value: string) {
+    setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, [field]: value } : r)));
+  }
+
+  function remove(i: number) {
+    setRows((rs) => rs.filter((_, idx) => idx !== i));
+  }
+
+  function addRow() {
+    setRows((rs) => [...rs, { date: "", startTime: "09:00", included: true }]);
+  }
+
+  const approved = rows.filter((r) => r.included && r.date.trim());
+
+  function confirm() {
+    onApprove(approved.map(({ date, startTime }) => ({ date, startTime })));
+    setOpen(false);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>
+        <Button size="sm" data-testid={`button-approve-${request.id}`}>
+          <Check className="h-3 w-3 mr-1" /> Approve
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Approve training request</DialogTitle>
+        </DialogHeader>
+
+        {/* Request context */}
+        <div className="rounded-lg bg-muted/40 border border-border px-4 py-3 text-sm space-y-0.5">
+          <p className="font-semibold">{request.organizationName}</p>
+          <p className="text-muted-foreground">
+            {formatCertificationType(request.certificationType)} ·{" "}
+            {request.attendeeCount} attendees per class
+          </p>
+          {request.address && (
+            <p className="text-muted-foreground">{request.address}</p>
+          )}
+        </div>
+
+        {/* Sessions list */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+            <p className="text-sm font-medium">Sessions to schedule</p>
+          </div>
+          <p className="text-xs text-muted-foreground -mt-1">
+            Toggle to include or exclude each date. Edit dates and times as needed, or add new sessions.
+          </p>
+
+          {rows.map((row, i) => (
+            <div
+              key={i}
+              className={cn(
+                "flex items-center gap-2 rounded-lg border px-3 py-2 transition-colors",
+                row.included
+                  ? "border-primary/30 bg-primary/5"
+                  : "border-border bg-muted/30 opacity-60",
+              )}
+            >
+              {/* Include/exclude toggle */}
+              <button
+                type="button"
+                onClick={() => toggle(i)}
+                title={row.included ? "Exclude this session" : "Include this session"}
+                className={cn(
+                  "h-6 w-6 rounded-full flex items-center justify-center shrink-0 transition-colors",
+                  row.included
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground border border-border",
+                )}
+              >
+                {row.included ? (
+                  <Check className="h-3.5 w-3.5" />
+                ) : (
+                  <X className="h-3.5 w-3.5" />
+                )}
+              </button>
+
+              {/* Date */}
+              <Input
+                type="date"
+                value={row.date}
+                onChange={(e) => update(i, "date", e.target.value)}
+                className="h-8 text-sm flex-1 min-w-0"
+                disabled={!row.included}
+              />
+
+              {/* Time */}
+              <Input
+                type="time"
+                value={row.startTime}
+                onChange={(e) => update(i, "startTime", e.target.value)}
+                className="h-8 text-sm w-28 shrink-0"
+                disabled={!row.included}
+              />
+
+              {/* Remove */}
+              <button
+                type="button"
+                onClick={() => remove(i)}
+                title="Remove session"
+                className="text-muted-foreground hover:text-destructive transition-colors shrink-0"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full gap-1.5"
+            onClick={addRow}
+          >
+            <Plus className="h-3.5 w-3.5" /> Add session
+          </Button>
+        </div>
+
+        {/* Count preview */}
+        <p className="text-sm text-muted-foreground border-t border-border pt-3">
+          <span className="font-medium text-foreground">{approved.length}</span>{" "}
+          session{approved.length !== 1 ? "s" : ""} will be scheduled
+        </p>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button onClick={confirm} disabled={approved.length === 0}>
+            <Check className="h-3.5 w-3.5 mr-1.5" />
+            Approve{approved.length > 0 ? ` (${approved.length})` : ""}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function Requests() {
   const qc = useQueryClient();
   const { role, userId } = useAuth();
@@ -413,18 +585,15 @@ export default function Requests() {
                   </div>
                   {role === "administrator" && r.status === "pending" && (
                     <div className="flex flex-col gap-1">
-                      <Button
-                        size="sm"
-                        data-testid={`button-approve-${r.id}`}
-                        onClick={() =>
+                      <ApproveRequestDialog
+                        request={r}
+                        onApprove={(sessions) =>
                           update.mutate({
                             requestId: r.id,
-                            data: { status: "approved" },
+                            data: { status: "approved", sessions },
                           })
                         }
-                      >
-                        <Check className="h-3 w-3 mr-1" /> Approve
-                      </Button>
+                      />
                       <Button
                         size="sm"
                         variant="outline"

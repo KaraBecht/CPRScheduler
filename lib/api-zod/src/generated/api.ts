@@ -551,7 +551,11 @@ export const UpdateRequestParams = zod.object({
 export const UpdateRequestBody = zod.object({
   "status": zod.enum(['pending', 'approved', 'rejected', 'scheduled']).optional(),
   "classId": zod.number().optional(),
-  "notes": zod.string().optional()
+  "notes": zod.string().optional(),
+  "sessions": zod.array(zod.object({
+  "date": zod.string(),
+  "startTime": zod.string()
+})).optional()
 })
 
 export const UpdateRequestResponse = zod.object({
@@ -630,6 +634,7 @@ export const GetAdminDashboardResponse = zod.object({
   "upcomingClasses": zod.number(),
   "totalStudents": zod.number(),
   "totalInstructors": zod.number(),
+  "totalLocations": zod.number(),
   "pendingRequests": zod.number(),
   "certificatesIssued": zod.number(),
   "activeCertificates": zod.number(),
@@ -640,6 +645,10 @@ export const GetAdminDashboardResponse = zod.object({
   "locationsExpired": zod.number(),
   "classesByCertification": zod.array(zod.object({
   "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
+  "count": zod.number()
+})),
+  "classesByYear": zod.array(zod.object({
+  "year": zod.string(),
   "count": zod.number()
 })),
   "upcomingSchedule": zod.array(zod.object({

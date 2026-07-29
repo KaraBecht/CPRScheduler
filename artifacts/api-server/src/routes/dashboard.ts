@@ -78,6 +78,7 @@ router.get("/dashboard/admin", async (_req, res) => {
     [{ upcomingClasses }],
     activeStudents,
     [{ totalInstructors }],
+    [{ totalLocations }],
     [{ pendingRequests }],
     [{ certificatesIssued }],
     [{ activeCertificates }],
@@ -86,6 +87,7 @@ router.get("/dashboard/admin", async (_req, res) => {
     [{ enrollmentsThisMonth }],
     allLocations,
     allClassesByDate,
+    classesByYear,
   ] = await Promise.all([
     db.select({ totalClasses: sql<number>`count(*)::int` }).from(classesTable),
     db
@@ -99,6 +101,7 @@ router.get("/dashboard/admin", async (_req, res) => {
       .select({ totalInstructors: sql<number>`count(*)::int` })
       .from(usersTable)
       .where(eq(usersTable.role, "instructor")),
+    db.select({ totalLocations: sql<number>`count(*)::int` }).from(locationsTable),
     db
       .select({ pendingRequests: sql<number>`count(*)::int` })
       .from(requestsTable)
@@ -127,6 +130,14 @@ router.get("/dashboard/admin", async (_req, res) => {
       .select({ location: classesTable.location, title: classesTable.title, date: classesTable.date })
       .from(classesTable)
       .orderBy(desc(classesTable.date)),
+    db
+      .select({
+        year: sql<string>`extract(year from ${classesTable.date})::text`,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(classesTable)
+      .groupBy(sql`extract(year from ${classesTable.date})`)
+      .orderBy(sql`extract(year from ${classesTable.date}) asc`),
   ]);
   const totalStudents = activeStudents;
 
@@ -178,6 +189,7 @@ router.get("/dashboard/admin", async (_req, res) => {
     upcomingClasses,
     totalStudents,
     totalInstructors,
+    totalLocations,
     pendingRequests,
     certificatesIssued,
     activeCertificates,
@@ -187,6 +199,7 @@ router.get("/dashboard/admin", async (_req, res) => {
     locationsExpiring,
     locationsExpired,
     classesByCertification,
+    classesByYear,
     upcomingSchedule,
     recentRequests,
   });
