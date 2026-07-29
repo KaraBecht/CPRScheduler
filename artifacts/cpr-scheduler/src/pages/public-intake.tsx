@@ -2,6 +2,7 @@ import { useState } from "react";
 import { TrainingRequestForm } from "@/components/TrainingRequestForm";
 import { HeartPulse, CheckCircle2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 function IntakePage() {
   const [submitted, setSubmitted] = useState(false);
@@ -36,6 +37,15 @@ function IntakePage() {
                     up shortly to finalize the schedule.
                   </p>
                 </div>
+                <Button
+                  variant="outline"
+                  data-testid="button-check-status-link"
+                  onClick={() => {
+                    window.location.href = `${import.meta.env.BASE_URL}status`;
+                  }}
+                >
+                  Check request status
+                </Button>
               </CardContent>
             </Card>
           ) : (

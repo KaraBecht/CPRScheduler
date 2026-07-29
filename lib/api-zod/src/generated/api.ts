@@ -397,7 +397,8 @@ export const SaveClassRosterResponse = zod.object({
 
 export const ListRequestsQueryParams = zod.object({
   "status": zod.enum(['pending', 'approved', 'rejected', 'scheduled']).optional(),
-  "requestorId": zod.coerce.number().optional()
+  "requestorId": zod.coerce.number().optional(),
+  "email": zod.coerce.string().optional()
 })
 
 export const ListRequestsResponseItem = zod.object({

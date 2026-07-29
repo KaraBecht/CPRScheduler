@@ -10,4 +10,5 @@ import type { RequestStatus } from './requestStatus';
 export type ListRequestsParams = {
 status?: RequestStatus;
 requestorId?: number;
+email?: string;
 };

@@ -11,6 +11,7 @@ import ClassRoster from "@/pages/class-roster";
 import PublicRosterSignIn from "@/pages/public-roster-signin";
 import Requests from "@/pages/requests";
 import PublicIntake from "@/pages/public-intake";
+import StatusCheck from "@/pages/status-check";
 import Certificates from "@/pages/certificates";
 import People from "@/pages/people";
 import Locations from "@/pages/locations";
@@ -26,6 +27,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/intake" component={PublicIntake} />
+      <Route path="/status" component={StatusCheck} />
       <Route path="/roster-signin/:id" component={PublicRosterSignIn} />
       <Route path="/email-preview/renewal" component={EmailPreviewRenewal} />
       <Route path="/classes/:id/signin-sheet" component={SigninSheet} />

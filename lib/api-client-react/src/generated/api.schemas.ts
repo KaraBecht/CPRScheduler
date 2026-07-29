@@ -568,6 +568,7 @@ studentId?: number;
 export type ListRequestsParams = {
 status?: RequestStatus;
 requestorId?: number;
+email?: string;
 };
 
 export type ListCertificatesParams = {

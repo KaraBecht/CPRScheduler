@@ -54,6 +54,8 @@ router.get("/requests", async (req, res) => {
   if (params.status) conditions.push(eq(requestsTable.status, params.status));
   if (params.requestorId)
     conditions.push(eq(requestsTable.requestorId, params.requestorId));
+  if (params.email)
+    conditions.push(eq(requestsTable.contactEmail, params.email.trim().toLowerCase()));
   const rows = await db
     .select()
     .from(requestsTable)
