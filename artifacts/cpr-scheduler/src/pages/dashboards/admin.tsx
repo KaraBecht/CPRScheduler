@@ -184,7 +184,6 @@ export function AdminDashboardPage() {
         title="Dashboard"
         subtitle="Real-time view of classes, students, and incoming training requests."
       />
-
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
         <StatCard
@@ -214,7 +213,6 @@ export function AdminDashboardPage() {
           testId="stat-certificates"
         />
       </div>
-
       {/* Location cert-status alerts */}
       {hasLocationAlerts && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
@@ -250,7 +248,6 @@ export function AdminDashboardPage() {
           )}
         </div>
       )}
-
       {/* Reminders panel */}
       {reminders.length > 0 && (
         <Card className="shadow-sm mb-6">
@@ -282,7 +279,6 @@ export function AdminDashboardPage() {
           </CardContent>
         </Card>
       )}
-
       {/* Charts & activity */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <Card className="lg:col-span-2 shadow-sm">
@@ -335,7 +331,7 @@ export function AdminDashboardPage() {
               </div>
               <div className="flex flex-col items-center gap-0.5 px-4">
                 <span className="text-2xl font-bold text-foreground">{dash.activeCertificates}</span>
-                <span className="text-xs text-muted-foreground text-center">Certificates active</span>
+                <span className="text-xs text-muted-foreground text-center">Active Certifications</span>
               </div>
               <div className="flex flex-col items-center gap-0.5 px-4">
                 <span className="text-2xl font-bold text-foreground">{dash.totalLocations}</span>
@@ -371,7 +367,6 @@ export function AdminDashboardPage() {
           </CardContent>
         </Card>
       </div>
-
       {/* Upcoming schedule */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
@@ -398,7 +393,6 @@ export function AdminDashboardPage() {
           </div>
         )}
       </div>
-
       {/* Recent requests */}
       <Card className="shadow-sm">
         <CardHeader>
