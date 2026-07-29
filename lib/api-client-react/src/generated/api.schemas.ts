@@ -356,6 +356,11 @@ export interface CertificationCount {
   count: number;
 }
 
+export type AdminDashboardActiveCertsByTypeItem = {
+  certType: string;
+  count: number;
+};
+
 export interface YearCount {
   year: string;
   count: number;
@@ -370,6 +375,7 @@ export interface AdminDashboard {
   pendingRequests: number;
   certificatesIssued: number;
   activeCertificates: number;
+  activeCertsByType?: AdminDashboardActiveCertsByTypeItem[];
   certificatesThisMonth: number;
   certificatesYTD: number;
   enrollmentsThisMonth: number;

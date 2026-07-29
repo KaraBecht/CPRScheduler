@@ -5,6 +5,7 @@
  * CPR class scheduling platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { AdminDashboardActiveCertsByTypeItem } from './adminDashboardActiveCertsByTypeItem';
 import type { CertificationCount } from './certificationCount';
 import type { ClassRequest } from './classRequest';
 import type { ClassSession } from './classSession';
@@ -19,6 +20,7 @@ export interface AdminDashboard {
   pendingRequests: number;
   certificatesIssued: number;
   activeCertificates: number;
+  activeCertsByType?: AdminDashboardActiveCertsByTypeItem[];
   certificatesThisMonth: number;
   certificatesYTD: number;
   enrollmentsThisMonth: number;

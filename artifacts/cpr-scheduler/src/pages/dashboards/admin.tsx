@@ -171,6 +171,11 @@ export function AdminDashboardPage() {
     classes: c.count,
   }));
 
+  const activeCertChartData = (dash.activeCertsByType ?? []).map((c) => ({
+    name: formatCertificationType(c.certType as Parameters<typeof formatCertificationType>[0]),
+    certs: c.count,
+  }));
+
   const hasLocationAlerts = dash.locationsExpiring > 0 || dash.locationsExpired > 0;
 
   // Reminders due today or overdue (triggerDate <= today)
@@ -279,6 +284,15 @@ export function AdminDashboardPage() {
           </CardContent>
         </Card>
       )}
+      {/* Active certifications counter */}
+      <Card className="shadow-sm mb-6">
+        <CardHeader>
+          <CardTitle className="text-sm font-semibold text-muted-foreground">Active certifications</CardTitle>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center py-6">
+          <span className="text-7xl font-bold tabular-nums text-foreground">{dash.activeCertificates}</span>
+        </CardContent>
+      </Card>
       {/* Charts & activity */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <Card className="lg:col-span-2 shadow-sm">

@@ -81,13 +81,14 @@ router.get("/dashboard/admin", async (_req, res) => {
     [{ totalLocations }],
     [{ pendingRequests }],
     [{ certificatesIssued }],
-    [{ activeCertificates }],
     [{ certificatesThisMonth }],
     [{ certificatesYTD }],
     [{ enrollmentsThisMonth }],
     allLocations,
     allClassesByDate,
     classesByYear,
+    realActiveByCert,
+    rosterActiveByCert,
   ] = await Promise.all([
     db.select({ totalClasses: sql<number>`count(*)::int` }).from(classesTable),
     db
@@ -109,10 +110,6 @@ router.get("/dashboard/admin", async (_req, res) => {
     db
       .select({ certificatesIssued: sql<number>`count(*)::int` })
       .from(certificatesTable),
-    db
-      .select({ activeCertificates: sql<number>`count(*)::int` })
-      .from(certificatesTable)
-      .where(gte(certificatesTable.expiryDate, today)),
     db
       .select({ certificatesThisMonth: sql<number>`count(*)::int` })
       .from(certificatesTable)
@@ -138,7 +135,42 @@ router.get("/dashboard/admin", async (_req, res) => {
       .from(classesTable)
       .groupBy(sql`extract(year from ${classesTable.date})`)
       .orderBy(sql`extract(year from ${classesTable.date}) asc`),
+    // Active real certs grouped by cert type
+    db
+      .select({
+        certType: certificatesTable.certificationType,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(certificatesTable)
+      .where(gte(certificatesTable.expiryDate, today))
+      .groupBy(certificatesTable.certificationType),
+    // Active virtual certs from class roster (cardSent = true, expiry = class date + 2 years)
+    db
+      .select({
+        certType: classesTable.certificationType,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(classRosterTable)
+      .innerJoin(classesTable, eq(classRosterTable.classId, classesTable.id))
+      .where(
+        and(
+          eq(classRosterTable.cardSent, true),
+          ne(sql`trim(${classRosterTable.name})`, ""),
+          gte(sql`(${classesTable.date}::date + interval '2 years')::date`, today),
+        ),
+      )
+      .groupBy(classesTable.certificationType),
   ]);
+
+  // Combine real + virtual active cert counts per cert type
+  const certTypeCountMap = new Map<string, number>();
+  for (const { certType, count } of [...realActiveByCert, ...rosterActiveByCert]) {
+    certTypeCountMap.set(certType, (certTypeCountMap.get(certType) ?? 0) + count);
+  }
+  const activeCertsByType = Array.from(certTypeCountMap.entries()).map(
+    ([certType, count]) => ({ certType, count }),
+  );
+  const activeCertificates = activeCertsByType.reduce((s, r) => s + r.count, 0);
   const totalStudents = activeStudents;
 
   // Compute location-level cert status
@@ -193,6 +225,7 @@ router.get("/dashboard/admin", async (_req, res) => {
     pendingRequests,
     certificatesIssued,
     activeCertificates,
+    activeCertsByType,
     certificatesThisMonth,
     certificatesYTD,
     enrollmentsThisMonth,

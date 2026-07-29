@@ -638,6 +638,10 @@ export const GetAdminDashboardResponse = zod.object({
   "pendingRequests": zod.number(),
   "certificatesIssued": zod.number(),
   "activeCertificates": zod.number(),
+  "activeCertsByType": zod.array(zod.object({
+  "certType": zod.string(),
+  "count": zod.number()
+})).optional(),
   "certificatesThisMonth": zod.number(),
   "certificatesYTD": zod.number(),
   "enrollmentsThisMonth": zod.number(),

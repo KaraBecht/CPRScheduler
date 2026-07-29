@@ -1136,6 +1136,14 @@ components:
         pendingRequests: { type: integer }
         certificatesIssued: { type: integer }
         activeCertificates: { type: integer }
+        activeCertsByType:
+          type: array
+          items:
+            type: object
+            required: [certType, count]
+            properties:
+              certType: { type: string }
+              count: { type: integer }
         certificatesThisMonth: { type: integer }
         certificatesYTD: { type: integer }
         enrollmentsThisMonth: { type: integer }

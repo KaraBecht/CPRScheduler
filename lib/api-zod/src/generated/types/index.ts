@@ -9,6 +9,7 @@
 export * from './activityEvent';
 export * from './activityEventType';
 export * from './adminDashboard';
+export * from './adminDashboardActiveCertsByTypeItem';
 export * from './certificate';
 export * from './certificateInput';
 export * from './certificationCount';
