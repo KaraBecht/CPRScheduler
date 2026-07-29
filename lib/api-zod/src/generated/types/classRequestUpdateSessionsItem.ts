@@ -9,4 +9,5 @@
 export type ClassRequestUpdateSessionsItem = {
   date: string;
   startTime: string;
+  status?: string;
 };

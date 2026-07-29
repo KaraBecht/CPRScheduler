@@ -1071,6 +1071,7 @@ components:
             properties:
               date: { type: string }
               startTime: { type: string }
+              status: { type: string }
 
     Certificate:
       type: object

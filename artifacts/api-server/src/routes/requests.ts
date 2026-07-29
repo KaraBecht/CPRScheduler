@@ -172,6 +172,7 @@ router.patch("/requests/:requestId", async (req, res) => {
             startTime: session.startTime,
             location: locationName,
             capacity: existing.attendeeCount,
+            status: (session as { date: string; startTime: string; status?: string }).status ?? "confirmed",
           })
           .returning();
         if (cls) insertedClasses.push(cls);

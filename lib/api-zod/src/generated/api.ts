@@ -554,7 +554,8 @@ export const UpdateRequestBody = zod.object({
   "notes": zod.string().optional(),
   "sessions": zod.array(zod.object({
   "date": zod.string(),
-  "startTime": zod.string()
+  "startTime": zod.string(),
+  "status": zod.string().optional()
 })).optional()
 })
 

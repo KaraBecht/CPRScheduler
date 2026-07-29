@@ -313,14 +313,21 @@ function SendTrainingRequestDialog() {
   );
 }
 
-type SessionRow = { date: string; startTime: string; included: boolean };
+type SessionRow = { date: string; startTime: string; status: string; included: boolean };
+
+const SESSION_STATUS_OPTIONS = [
+  { value: "confirmed",       label: "Confirmed" },
+  { value: "pending_schedule", label: "Pending" },
+  { value: "being_scheduled", label: "Scheduling" },
+  { value: "completed",       label: "Completed" },
+];
 
 function ApproveRequestDialog({
   request,
   onApprove,
 }: {
   request: ClassRequest;
-  onApprove: (sessions: { date: string; startTime: string }[]) => void;
+  onApprove: (sessions: { date: string; startTime: string; status: string }[]) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [rows, setRows] = useState<SessionRow[]>([]);
@@ -329,8 +336,8 @@ function ApproveRequestDialog({
     if (v) {
       const initial: SessionRow[] =
         request.sessions && request.sessions.length > 0
-          ? request.sessions.map((s) => ({ date: s.date, startTime: s.startTime, included: true }))
-          : [{ date: request.preferredDate, startTime: "09:00", included: true }];
+          ? request.sessions.map((s) => ({ date: s.date, startTime: s.startTime, status: "confirmed", included: true }))
+          : [{ date: request.preferredDate, startTime: "09:00", status: "confirmed", included: true }];
       setRows(initial);
     }
     setOpen(v);
@@ -340,7 +347,7 @@ function ApproveRequestDialog({
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, included: !r.included } : r)));
   }
 
-  function update(i: number, field: "date" | "startTime", value: string) {
+  function update(i: number, field: "date" | "startTime" | "status", value: string) {
     setRows((rs) => rs.map((r, idx) => (idx === i ? { ...r, [field]: value } : r)));
   }
 
@@ -349,13 +356,13 @@ function ApproveRequestDialog({
   }
 
   function addRow() {
-    setRows((rs) => [...rs, { date: "", startTime: "09:00", included: true }]);
+    setRows((rs) => [...rs, { date: "", startTime: "09:00", status: "confirmed", included: true }]);
   }
 
   const approved = rows.filter((r) => r.included && r.date.trim());
 
   function confirm() {
-    onApprove(approved.map(({ date, startTime }) => ({ date, startTime })));
+    onApprove(approved.map(({ date, startTime, status }) => ({ date, startTime, status })));
     setOpen(false);
   }
 
@@ -422,23 +429,41 @@ function ApproveRequestDialog({
                 )}
               </button>
 
-              {/* Date */}
-              <Input
-                type="date"
-                value={row.date}
-                onChange={(e) => update(i, "date", e.target.value)}
-                className="h-8 text-sm flex-1 min-w-0"
-                disabled={!row.included}
-              />
+              {/* Date + Time */}
+              <div className="flex gap-2 flex-1 min-w-0">
+                <Input
+                  type="date"
+                  value={row.date}
+                  onChange={(e) => update(i, "date", e.target.value)}
+                  className="h-8 text-sm flex-1 min-w-0"
+                  disabled={!row.included}
+                />
+                <Input
+                  type="time"
+                  value={row.startTime}
+                  onChange={(e) => update(i, "startTime", e.target.value)}
+                  className="h-8 text-sm w-24 shrink-0"
+                  disabled={!row.included}
+                />
+              </div>
 
-              {/* Time */}
-              <Input
-                type="time"
-                value={row.startTime}
-                onChange={(e) => update(i, "startTime", e.target.value)}
-                className="h-8 text-sm w-28 shrink-0"
+              {/* Status */}
+              <Select
+                value={row.status}
+                onValueChange={(v) => update(i, "status", v)}
                 disabled={!row.included}
-              />
+              >
+                <SelectTrigger className="h-8 text-sm w-32 shrink-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SESSION_STATUS_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
               {/* Remove */}
               <button
