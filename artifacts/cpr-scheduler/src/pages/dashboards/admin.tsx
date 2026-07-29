@@ -194,7 +194,6 @@ export function AdminDashboardPage() {
         <StatCard
           label="Upcoming classes"
           value={dash.upcomingClasses}
-          hint={`${dash.totalClasses} total scheduled`}
           icon={CalendarDays}
           href="/classes"
           testId="stat-upcoming-classes"
