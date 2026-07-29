@@ -989,6 +989,7 @@ components:
         notes: { type: ["string", "null"] }
         status: { $ref: "#/components/schemas/RequestStatus" }
         classId: { type: ["integer", "null"] }
+        classStatus: { type: ["string", "null"] }
         createdAt: { type: string }
         createdClasses:
           type: array

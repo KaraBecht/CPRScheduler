@@ -420,6 +420,7 @@ export const ListRequestsResponseItem = zod.object({
   "notes": zod.string().nullish(),
   "status": zod.enum(['pending', 'approved', 'rejected', 'scheduled']),
   "classId": zod.number().nullish(),
+  "classStatus": zod.string().nullish(),
   "createdAt": zod.string(),
   "createdClasses": zod.array(zod.object({
   "id": zod.number(),
@@ -521,6 +522,7 @@ export const GetRequestResponse = zod.object({
   "notes": zod.string().nullish(),
   "status": zod.enum(['pending', 'approved', 'rejected', 'scheduled']),
   "classId": zod.number().nullish(),
+  "classStatus": zod.string().nullish(),
   "createdAt": zod.string(),
   "createdClasses": zod.array(zod.object({
   "id": zod.number(),
@@ -579,6 +581,7 @@ export const UpdateRequestResponse = zod.object({
   "notes": zod.string().nullish(),
   "status": zod.enum(['pending', 'approved', 'rejected', 'scheduled']),
   "classId": zod.number().nullish(),
+  "classStatus": zod.string().nullish(),
   "createdAt": zod.string(),
   "createdClasses": zod.array(zod.object({
   "id": zod.number(),
@@ -697,6 +700,7 @@ export const GetAdminDashboardResponse = zod.object({
   "notes": zod.string().nullish(),
   "status": zod.enum(['pending', 'approved', 'rejected', 'scheduled']),
   "classId": zod.number().nullish(),
+  "classStatus": zod.string().nullish(),
   "createdAt": zod.string(),
   "createdClasses": zod.array(zod.object({
   "id": zod.number(),
@@ -944,6 +948,7 @@ export const GetRequestorDashboardResponse = zod.object({
   "notes": zod.string().nullish(),
   "status": zod.enum(['pending', 'approved', 'rejected', 'scheduled']),
   "classId": zod.number().nullish(),
+  "classStatus": zod.string().nullish(),
   "createdAt": zod.string(),
   "createdClasses": zod.array(zod.object({
   "id": zod.number(),

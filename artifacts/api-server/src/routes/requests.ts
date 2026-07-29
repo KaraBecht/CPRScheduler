@@ -18,6 +18,14 @@ async function serializeRequest(row: typeof requestsTable.$inferSelect) {
     .select()
     .from(usersTable)
     .where(eq(usersTable.id, row.requestorId));
+  let classStatus: string | null = null;
+  if (row.classId) {
+    const [cls] = await db
+      .select({ status: classesTable.status })
+      .from(classesTable)
+      .where(eq(classesTable.id, row.classId));
+    classStatus = cls?.status ?? null;
+  }
   return {
     id: row.id,
     requestorId: row.requestorId,
@@ -35,6 +43,7 @@ async function serializeRequest(row: typeof requestsTable.$inferSelect) {
     notes: row.notes,
     status: row.status,
     classId: row.classId,
+    classStatus,
     createdAt: row.createdAt.toISOString(),
   };
 }

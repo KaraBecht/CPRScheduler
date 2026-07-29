@@ -32,6 +32,8 @@ export interface ClassRequest {
   status: RequestStatus;
   /** @nullable */
   classId?: number | null;
+  /** @nullable */
+  classStatus?: string | null;
   createdAt: string;
   createdClasses?: ClassSession[];
 }

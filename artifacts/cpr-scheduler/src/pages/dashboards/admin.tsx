@@ -427,7 +427,16 @@ export function AdminDashboardPage() {
                           : "secondary"
                     }
                   >
-                    {r.status}
+                    {r.classStatus
+                      ? ({
+                          confirmed: "Confirmed",
+                          completed: "Completed",
+                          cancelled: "Cancelled",
+                          being_scheduled: "Scheduling",
+                          pending_schedule: "Pending",
+                          scheduled: "Scheduled",
+                        }[r.classStatus] ?? r.classStatus)
+                      : r.status}
                   </Badge>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate">
