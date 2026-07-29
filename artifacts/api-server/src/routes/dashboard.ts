@@ -10,7 +10,7 @@ import {
   classRosterTable,
   locationsTable,
 } from "@workspace/db";
-import { and, eq, gte, sql, desc, asc, ne, inArray } from "drizzle-orm";
+import { and, or, eq, gte, sql, desc, asc, ne, inArray } from "drizzle-orm";
 import { autoCompletePastClasses } from "../lib/autoComplete";
 
 const DEFAULT_CLASS_DURATION_MIN = 180;
@@ -110,7 +110,13 @@ router.get("/dashboard/admin", async (_req, res) => {
     db
       .select({ pendingRequests: sql<number>`count(*)::int` })
       .from(requestsTable)
-      .where(eq(requestsTable.status, "pending")),
+      .leftJoin(classesTable, eq(classesTable.id, requestsTable.classId))
+      .where(
+        or(
+          eq(requestsTable.status, "pending"),
+          inArray(classesTable.status, ["pending_schedule", "being_scheduled"]),
+        ),
+      ),
     db
       .select({ certificatesIssued: sql<number>`count(*)::int` })
       .from(certificatesTable),

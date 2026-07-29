@@ -513,9 +513,14 @@ export default function Requests() {
   const { role, userId } = useAuth();
   const params = role === "requestor" && userId ? { requestorId: userId } : undefined;
   const { data: allRequests = [] } = useListRequests(params);
+  const SCHEDULING_CLASS_STATUSES = ["pending_schedule", "being_scheduled"];
   const requests =
     role === "administrator"
-      ? allRequests.filter((r) => r.status === "pending")
+      ? allRequests.filter(
+          (r) =>
+            r.status === "pending" ||
+            (r.classStatus != null && SCHEDULING_CLASS_STATUSES.includes(r.classStatus)),
+        )
       : allRequests;
   const update = useUpdateRequest({
     mutation: {
