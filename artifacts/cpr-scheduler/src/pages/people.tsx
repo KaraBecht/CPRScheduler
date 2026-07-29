@@ -60,7 +60,6 @@ const ROLES: { value: UserRole; label: string }[] = [
   { value: "administrator", label: "Administrators" },
   { value: "instructor", label: "Instructors" },
   { value: "student", label: "Students" },
-  { value: "requestor", label: "Requestors" },
 ];
 
 function NewUserDialog() {
