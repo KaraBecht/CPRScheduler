@@ -572,7 +572,7 @@ export default function Classes() {
 
   const tabClasses =
     tab === "upcoming"
-      ? allClasses.filter((c) => ACTIVE_STATUSES.has(c.status))
+      ? allClasses.filter((c) => c.status === "confirmed")
       : tab === "completed"
         ? allClasses.filter((c) => c.status === "completed")
         : tab === "scheduling"
