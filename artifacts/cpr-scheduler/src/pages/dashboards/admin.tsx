@@ -334,8 +334,8 @@ export function AdminDashboardPage() {
                 <span className="text-xs text-muted-foreground text-center">Classes taught</span>
               </div>
               <div className="flex flex-col items-center gap-0.5 px-4">
-                <span className="text-2xl font-bold text-foreground">{dash.certificatesIssued}</span>
-                <span className="text-xs text-muted-foreground text-center">Certifications issued</span>
+                <span className="text-2xl font-bold text-foreground">{dash.activeCertificates}</span>
+                <span className="text-xs text-muted-foreground text-center">Certificates active</span>
               </div>
               <div className="flex flex-col items-center gap-0.5 px-4">
                 <span className="text-2xl font-bold text-foreground">{dash.totalLocations}</span>
