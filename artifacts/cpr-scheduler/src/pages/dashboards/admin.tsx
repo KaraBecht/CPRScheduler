@@ -201,9 +201,8 @@ export function AdminDashboardPage() {
         <StatCard
           label="Pending requests"
           value={dash.pendingRequests}
-          hint="Awaiting scheduling"
           icon={Inbox}
-          tone="warning"
+          tone="primary"
           href="/requests"
           testId="stat-pending-requests"
         />

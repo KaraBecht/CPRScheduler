@@ -185,6 +185,64 @@ function NewUserDialog() {
   );
 }
 
+function EditUserDialog({ user }: { user: { id: number; name: string; email: string; phone?: string | null; organization?: string | null; bio?: string | null } }) {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ name: user.name, email: user.email, phone: user.phone ?? "", organization: user.organization ?? "", bio: user.bio ?? "" });
+  const update = useUpdateUser({
+    mutation: {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: getListUsersQueryKey() });
+        toast({ title: "Saved" });
+        setOpen(false);
+      },
+      onError: () => toast({ title: "Failed to save", variant: "destructive" }),
+    },
+  });
+  return (
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (v) setForm({ name: user.name, email: user.email, phone: user.phone ?? "", organization: user.organization ?? "", bio: user.bio ?? "" }); }}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline" className="w-full mt-3">Edit</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit administrator</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label>Name</Label>
+            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          </div>
+          <div>
+            <Label>Email</Label>
+            <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Phone</Label>
+              <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+            </div>
+            <div>
+              <Label>Organization</Label>
+              <Input value={form.organization} onChange={(e) => setForm({ ...form, organization: e.target.value })} />
+            </div>
+          </div>
+          <div>
+            <Label>Bio</Label>
+            <Textarea rows={2} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button disabled={!form.name || !form.email || update.isPending} onClick={() => update.mutate({ userId: user.id, data: { name: form.name, email: form.email, phone: form.phone || undefined, organization: form.organization || undefined, bio: form.bio || undefined } })}>
+            Save
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function InstructorActiveToggle({ userId, isActive }: { userId: number; isActive: boolean }) {
   const qc = useQueryClient();
   const update = useUpdateUser({
@@ -496,6 +554,9 @@ export default function People() {
                       <p className="text-xs text-foreground/70 mt-3 line-clamp-2">
                         {u.bio}
                       </p>
+                    )}
+                    {tab === "administrator" && role === "administrator" && (
+                      <EditUserDialog user={u} />
                     )}
                     {tab === "instructor" && role === "administrator" && (
                       <InstructorActiveToggle userId={u.id} isActive={u.isActive} />

@@ -14,11 +14,10 @@ import {
 import { useEffect, useMemo } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-const ROLE_LABELS: Record<UserRole, string> = {
+const ROLE_LABELS: Partial<Record<UserRole, string>> = {
   administrator: "Administrator",
   instructor: "Instructor",
   student: "Student",
-  requestor: "Requestor",
 };
 
 export function RoleSwitcher() {
@@ -30,7 +29,7 @@ export function RoleSwitcher() {
       administrator: [],
       instructor: [],
       student: [],
-      requestor: [],
+      requestor: [], // kept for data grouping, not shown in UI
     };
     for (const u of users) byRole[u.role].push(u);
     return byRole;
