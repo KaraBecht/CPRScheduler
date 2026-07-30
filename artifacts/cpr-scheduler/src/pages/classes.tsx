@@ -3,6 +3,7 @@ import {
   useListClasses,
   useCreateClass,
   useDeleteClass,
+  useUpdateClass,
   getListClassesQueryKey,
   type CertificationType,
   type ClassSession,
@@ -550,6 +551,67 @@ function CalendarView({ classes }: { classes: ClassSession[] }) {
   );
 }
 
+function OverdueClassesBanner({ classes }: { classes: ClassSession[] }) {
+  const qc = useQueryClient();
+  const [dismissed, setDismissed] = useState<Set<number>>(new Set());
+  const update = useUpdateClass({
+    mutation: {
+      onSuccess: (_d, vars) => {
+        qc.invalidateQueries({ queryKey: getListClassesQueryKey() });
+        toast({ title: "Class marked as completed" });
+        setDismissed((s) => new Set([...s, vars.classId]));
+      },
+      onError: () => toast({ title: "Failed to update class", variant: "destructive" }),
+    },
+  });
+
+  const today = new Date().toISOString().split("T")[0]!;
+  const overdue = classes.filter(
+    (c) => c.status === "confirmed" && c.date < today && !dismissed.has(c.id),
+  );
+
+  if (overdue.length === 0) return null;
+
+  return (
+    <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-semibold text-amber-800">
+          {overdue.length === 1
+            ? "1 class has passed — ready to mark as completed?"
+            : `${overdue.length} classes have passed — ready to mark as completed?`}
+        </p>
+        <button
+          onClick={() => setDismissed(new Set(overdue.map((c) => c.id)))}
+          className="text-amber-500 hover:text-amber-700 transition-colors"
+          aria-label="Dismiss"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+      <div className="space-y-1.5">
+        {overdue.map((c) => (
+          <div key={c.id} className="flex items-center justify-between gap-3 text-sm">
+            <span className="text-amber-900 truncate">
+              <span className="font-medium">{c.title}</span>
+              <span className="text-amber-600 ml-2 text-xs">{c.date}</span>
+              {c.location && <span className="text-amber-600 ml-1 text-xs">· {c.location}</span>}
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              className="shrink-0 border-amber-300 text-amber-800 hover:bg-amber-100 h-7 text-xs"
+              disabled={update.isPending && update.variables?.classId === c.id}
+              onClick={() => update.mutate({ classId: c.id, data: { status: "completed" } })}
+            >
+              Mark completed
+            </Button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function Classes() {
   const { role } = useAuth();
   const [view, setView] = useState<"list" | "calendar">("list");
@@ -653,6 +715,7 @@ export default function Classes() {
           </div>
         }
       />
+      <OverdueClassesBanner classes={allClasses} />
 
       {/* Search + Filter bar */}
       <div className="flex items-center gap-2 mb-4">
