@@ -615,7 +615,7 @@ function OverdueClassesBanner({ classes }: { classes: ClassSession[] }) {
 export default function Classes() {
   const { role } = useAuth();
   const [view, setView] = useState<"list" | "calendar">("list");
-  const [tab, setTab] = useState<"all" | "upcoming" | "completed" | "scheduling" | "cancelled">("upcoming");
+  const [tab, setTab] = useState<"all" | "upcoming" | "completed" | "scheduling" | "cancelled">("all");
   const [deletingClass, setDeletingClass] = useState<ClassSession | null>(null);
   const [search, setSearch] = useState("");
   const [certFilter, setCertFilter] = useState<CertificationType | "all">("all");
