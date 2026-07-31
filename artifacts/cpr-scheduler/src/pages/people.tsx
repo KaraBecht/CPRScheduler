@@ -3,6 +3,7 @@ import {
   useListUsers,
   useCreateUser,
   useUpdateUser,
+  useDeleteUser,
   useListRosterAttendees,
   useUpdateRosterEntry,
   getListUsersQueryKey,
@@ -187,6 +188,7 @@ function NewUserDialog() {
 function EditUserDialog({ user }: { user: { id: number; name: string; email: string; phone?: string | null; organization?: string | null; bio?: string | null } }) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [form, setForm] = useState({ name: user.name, email: user.email, phone: user.phone ?? "", organization: user.organization ?? "", bio: user.bio ?? "" });
   const update = useUpdateUser({
     mutation: {
@@ -198,8 +200,18 @@ function EditUserDialog({ user }: { user: { id: number; name: string; email: str
       onError: () => toast({ title: "Failed to save", variant: "destructive" }),
     },
   });
+  const remove = useDeleteUser({
+    mutation: {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: getListUsersQueryKey() });
+        toast({ title: "Administrator deleted" });
+        setOpen(false);
+      },
+      onError: () => toast({ title: "Failed to delete", variant: "destructive" }),
+    },
+  });
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (v) setForm({ name: user.name, email: user.email, phone: user.phone ?? "", organization: user.organization ?? "", bio: user.bio ?? "" }); }}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (v) { setForm({ name: user.name, email: user.email, phone: user.phone ?? "", organization: user.organization ?? "", bio: user.bio ?? "" }); setConfirmDelete(false); } }}>
       <DialogTrigger asChild>
         <Button size="sm" variant="outline" className="w-full mt-3">Edit</Button>
       </DialogTrigger>
@@ -207,36 +219,57 @@ function EditUserDialog({ user }: { user: { id: number; name: string; email: str
         <DialogHeader>
           <DialogTitle>Edit administrator</DialogTitle>
         </DialogHeader>
-        <div className="space-y-3">
-          <div>
-            <Label>Name</Label>
-            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+        {confirmDelete ? (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to delete <strong>{user.name}</strong>? This cannot be undone.
+            </p>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setConfirmDelete(false)}>Cancel</Button>
+              <Button variant="destructive" disabled={remove.isPending} onClick={() => remove.mutate({ userId: user.id })}>
+                {remove.isPending ? "Deleting…" : "Yes, delete"}
+              </Button>
+            </DialogFooter>
           </div>
-          <div>
-            <Label>Email</Label>
-            <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Phone</Label>
-              <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+        ) : (
+          <>
+            <div className="space-y-3">
+              <div>
+                <Label>Name</Label>
+                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              </div>
+              <div>
+                <Label>Email</Label>
+                <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Phone</Label>
+                  <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Organization</Label>
+                  <Input value={form.organization} onChange={(e) => setForm({ ...form, organization: e.target.value })} />
+                </div>
+              </div>
+              <div>
+                <Label>Bio</Label>
+                <Textarea rows={2} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} />
+              </div>
             </div>
-            <div>
-              <Label>Organization</Label>
-              <Input value={form.organization} onChange={(e) => setForm({ ...form, organization: e.target.value })} />
-            </div>
-          </div>
-          <div>
-            <Label>Bio</Label>
-            <Textarea rows={2} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button disabled={!form.name || !form.email || update.isPending} onClick={() => update.mutate({ userId: user.id, data: { name: form.name, email: form.email, phone: form.phone || undefined, organization: form.organization || undefined, bio: form.bio || undefined } })}>
-            Save
-          </Button>
-        </DialogFooter>
+            <DialogFooter className="sm:justify-between">
+              <Button variant="ghost" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setConfirmDelete(true)}>
+                Delete
+              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+                <Button disabled={!form.name || !form.email || update.isPending} onClick={() => update.mutate({ userId: user.id, data: { name: form.name, email: form.email, phone: form.phone || undefined, organization: form.organization || undefined, bio: form.bio || undefined } })}>
+                  Save
+                </Button>
+              </div>
+            </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

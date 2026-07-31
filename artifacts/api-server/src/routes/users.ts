@@ -35,6 +35,13 @@ router.patch("/users/:userId", async (req, res) => {
   res.json(serializeUser(row));
 });
 
+router.delete("/users/:userId", async (req, res) => {
+  const userId = parseId(req.params.userId, "userId");
+  const [row] = await db.delete(usersTable).where(eq(usersTable.id, userId)).returning();
+  if (!row) { res.status(404).json({ error: "User not found" }); return; }
+  res.status(204).send();
+});
+
 export function serializeUser(row: typeof usersTable.$inferSelect) {
   return {
     id: row.id,
