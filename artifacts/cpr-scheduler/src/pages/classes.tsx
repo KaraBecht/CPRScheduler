@@ -567,7 +567,7 @@ function OverdueClassesBanner({ classes }: { classes: ClassSession[] }) {
 
   const today = new Date().toISOString().split("T")[0]!;
   const overdue = classes.filter(
-    (c) => c.status === "confirmed" && c.date < today && !dismissed.has(c.id),
+    (c) => (c.status === "confirmed" || c.status === "scheduled") && c.date < today && !dismissed.has(c.id),
   );
 
   if (overdue.length === 0) return null;
@@ -634,7 +634,7 @@ export default function Classes() {
 
   const tabClasses =
     tab === "upcoming"
-      ? allClasses.filter((c) => c.status === "confirmed")
+      ? allClasses.filter((c) => c.status === "confirmed" || c.status === "scheduled")
       : tab === "completed"
         ? allClasses.filter((c) => c.status === "completed")
         : tab === "scheduling"

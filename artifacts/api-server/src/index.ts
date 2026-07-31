@@ -2,6 +2,8 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { autoCompletePastClasses } from "./lib/autoComplete";
 import { scheduleRenewalReminders } from "./lib/renewalReminder";
+import { db, usersTable } from "@workspace/db";
+import { eq, count } from "drizzle-orm";
 
 const rawPort = process.env["PORT"];
 
@@ -24,6 +26,29 @@ app.listen(port, async (err) => {
   }
 
   logger.info({ port }, "Server listening");
+
+  // Bootstrap: if no administrator exists, promote known admin emails to administrator role
+  try {
+    const [{ adminCount }] = await db
+      .select({ adminCount: count() })
+      .from(usersTable)
+      .where(eq(usersTable.role, "administrator"));
+    if (adminCount === 0) {
+      const knownAdmins = [
+        "sharon.anctil@fox.com",
+        "kara.becht@fox.com",
+      ];
+      for (const email of knownAdmins) {
+        await db
+          .update(usersTable)
+          .set({ role: "administrator" })
+          .where(eq(usersTable.email, email));
+      }
+      logger.info("Bootstrap: promoted known admin users to administrator role");
+    }
+  } catch (e) {
+    logger.error({ err: e }, "Failed to run admin bootstrap");
+  }
 
   try {
     await autoCompletePastClasses();

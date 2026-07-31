@@ -99,7 +99,7 @@ router.get("/dashboard/admin", async (_req, res) => {
       .select({ upcomingClasses: sql<number>`count(*)::int` })
       .from(classesTable)
       .where(
-        and(gte(classesTable.date, today), inArray(classesTable.status, ["confirmed", "pending_schedule", "being_scheduled"])),
+        and(gte(classesTable.date, today), inArray(classesTable.status, ["scheduled", "confirmed", "pending_schedule", "being_scheduled"])),
       ),
     countActiveRosterStudents(),
     db
@@ -254,7 +254,7 @@ router.get("/dashboard/admin", async (_req, res) => {
   const upcomingRows = await db
     .select()
     .from(classesTable)
-    .where(and(gte(classesTable.date, today), inArray(classesTable.status, ["confirmed", "pending_schedule", "being_scheduled"])))
+    .where(and(gte(classesTable.date, today), inArray(classesTable.status, ["scheduled", "confirmed", "pending_schedule", "being_scheduled"])))
     .orderBy(asc(classesTable.date), asc(classesTable.startTime))
     .limit(8);
   const upcomingSchedule = await Promise.all(upcomingRows.map(serializeClass));
