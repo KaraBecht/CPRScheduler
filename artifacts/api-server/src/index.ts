@@ -4,6 +4,7 @@ import { autoCompletePastClasses } from "./lib/autoComplete";
 import { scheduleRenewalReminders } from "./lib/renewalReminder";
 import { db, usersTable } from "@workspace/db";
 import { eq, count } from "drizzle-orm";
+import { seedProductionIfEmpty } from "./lib/seedProduction";
 
 const rawPort = process.env["PORT"];
 
@@ -26,6 +27,13 @@ app.listen(port, async (err) => {
   }
 
   logger.info({ port }, "Server listening");
+
+  // Seed production database if it has very little data (first deploy)
+  try {
+    await seedProductionIfEmpty();
+  } catch (e) {
+    logger.error({ err: e }, "Failed to run production data seed");
+  }
 
   // Bootstrap: if no administrator exists, promote known admin emails to administrator role
   try {
