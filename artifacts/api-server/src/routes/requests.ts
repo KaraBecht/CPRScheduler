@@ -8,7 +8,7 @@ import {
   ListRequestsQueryParams,
   SubmitTrainingRequestBody,
 } from "@workspace/api-zod";
-import { sendEmail, buildRequestEmail, buildScheduledEmail } from "../lib/sendgrid";
+import { sendEmail, buildRequestEmail, buildScheduledEmail, buildAdminScheduledEmail } from "../lib/sendgrid";
 import { serializeClass } from "./classes";
 
 const router: IRouter = Router();
@@ -212,6 +212,18 @@ router.patch("/requests/:requestId", async (req, res) => {
         req.log,
       ).catch(() => {});
     }
+
+    const adminEmailContent = buildAdminScheduledEmail({
+      requestorName: serializedRequest.requestorName,
+      requestorEmail: existing.contactEmail ?? "",
+      organizationName: existing.organizationName,
+      certificationType: existing.certificationType,
+      sessions: sessions as { date: string; startTime: string }[],
+    });
+    sendEmail(
+      { to: process.env.NOTIFY_EMAIL ?? "", ...adminEmailContent },
+      req.log,
+    ).catch(() => {});
 
     res.json({ ...serializedRequest, createdClasses: serializedClasses });
     return;
