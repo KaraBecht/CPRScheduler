@@ -1,4 +1,5 @@
 import { logger } from "./logger";
+import { ReplitConnectors } from "@replit/connectors-sdk";
 
 export interface MailMessage {
   to: string;
@@ -8,50 +9,31 @@ export interface MailMessage {
 }
 
 /**
- * Send an email via SendGrid when SENDGRID_API_KEY is set, otherwise log the
- * full message so you can see exactly what would have been sent.
+ * Send an email via Microsoft Outlook (Replit connector).
+ * Sends from the connected Outlook account; tokens are refreshed automatically.
  */
 export async function sendMail(msg: MailMessage): Promise<void> {
-  const apiKey = process.env["SENDGRID_API_KEY"];
-  const fromEmail = process.env["FROM_EMAIL"] ?? "noreply@foxmedical.com";
+  // ReplitConnectors must not be cached — tokens expire
+  const connectors = new ReplitConnectors();
 
-  if (!apiKey) {
-    logger.info(
-      {
-        mailPlaceholder: true,
-        to: msg.to,
-        subject: msg.subject,
-        body: msg.text,
-      },
-      "[MAIL PLACEHOLDER] No SENDGRID_API_KEY set — email not sent",
-    );
-    return;
-  }
-
-  const payload = {
-    personalizations: [{ to: [{ email: msg.to }] }],
-    from: { email: fromEmail },
-    subject: msg.subject,
-    content: [
-      { type: "text/plain", value: msg.text },
-      { type: "text/html", value: msg.html },
-    ],
-  };
-
-  const res = await fetch("https://api.sendgrid.com/v3/mail/send", {
+  const res = await connectors.proxy("outlook", "/v1.0/me/sendMail", {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: {
+        subject: msg.subject,
+        body: { contentType: "HTML", content: msg.html },
+        toRecipients: [{ emailAddress: { address: msg.to } }],
+      },
+      saveToSentItems: true,
+    }),
   });
 
-  if (!res.ok) {
+  if (res.status === 202) {
+    logger.info({ to: msg.to, subject: msg.subject }, "Email sent");
+  } else {
     const body = await res.text().catch(() => "");
-    logger.error({ status: res.status, body, to: msg.to }, "SendGrid delivery failed");
-    throw new Error(`SendGrid error ${res.status}`);
+    logger.error({ status: res.status, body, to: msg.to }, "Outlook sendMail failed");
+    throw new Error(`Outlook sendMail error ${res.status}`);
   }
-
-  logger.info({ to: msg.to, subject: msg.subject }, "Email sent via SendGrid");
 }

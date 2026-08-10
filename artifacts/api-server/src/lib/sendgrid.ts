@@ -1,4 +1,5 @@
 import type { Logger } from "pino";
+import { ReplitConnectors } from "@replit/connectors-sdk";
 
 interface EmailPayload {
   to: string;
@@ -8,46 +9,36 @@ interface EmailPayload {
 }
 
 export async function sendEmail(payload: EmailPayload, log: Logger): Promise<void> {
-  const apiKey = process.env.SENDGRID_API_KEY;
-  const from = process.env.NOTIFY_FROM_EMAIL ?? "noreply@pulsepoint.app";
-
-  if (!apiKey) {
-    log.warn("SENDGRID_API_KEY not set — skipping email notification");
-    return;
-  }
-
   if (!payload.to) {
     log.warn("No recipient address provided — skipping email notification");
     return;
   }
 
-  const body = {
-    personalizations: [{ to: [{ email: payload.to }] }],
-    from: { email: from, name: "PulsePoint CPR Hub" },
-    subject: payload.subject,
-    content: [
-      { type: "text/plain", value: payload.text },
-      { type: "text/html", value: payload.html },
-    ],
-  };
+  // ReplitConnectors must not be cached — tokens expire
+  const connectors = new ReplitConnectors();
 
   try {
-    const res = await fetch("https://api.sendgrid.com/v3/mail/send", {
+    const res = await connectors.proxy("outlook", "/v1.0/me/sendMail", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: {
+          subject: payload.subject,
+          body: { contentType: "HTML", content: payload.html },
+          toRecipients: [{ emailAddress: { address: payload.to } }],
+        },
+        saveToSentItems: true,
+      }),
     });
-    if (!res.ok) {
-      const detail = await res.text().catch(() => "");
-      log.error({ status: res.status, detail }, "SendGrid error");
-    } else {
+
+    if (res.status === 202) {
       log.info({ to: payload.to }, "Email sent");
+    } else {
+      const detail = await res.text().catch(() => "");
+      log.error({ status: res.status, detail }, "Outlook sendMail error");
     }
   } catch (err) {
-    log.error({ err }, "Failed to send email via SendGrid");
+    log.error({ err }, "Failed to send email via Outlook");
   }
 }
 
