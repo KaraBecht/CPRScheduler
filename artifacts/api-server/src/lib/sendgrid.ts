@@ -112,6 +112,15 @@ export function buildRequestorConfirmationEmail(data: {
   return { subject, text, html };
 }
 
+function appBaseUrl(): string {
+  const domains = process.env["REPLIT_DOMAINS"];
+  if (domains) {
+    const first = domains.split(",")[0]?.trim();
+    if (first) return `https://${first}`;
+  }
+  return "http://localhost";
+}
+
 export function buildRequestEmail(data: {
   recipientName: string;
   requestorName: string;
@@ -125,6 +134,7 @@ export function buildRequestEmail(data: {
   sessions: { date: string; startTime: string }[];
   notes?: string | null;
 }): Pick<EmailPayload, "subject" | "text" | "html"> {
+  const schedulerUrl = `${appBaseUrl()}/requests`;
   const certLabel: Record<string, string> = {
     cpr_aed_first_aid: "CPR / AED / First Aid",
     stop_the_bleed: "Stop the Bleed",
@@ -156,6 +166,8 @@ export function buildRequestEmail(data: {
     "SUGGESTED DATES & TIMES",
     sessionLines,
     data.notes ? `\nNOTES\n  ${data.notes}` : null,
+    "",
+    `Open the scheduler to review and approve: ${schedulerUrl}`,
   ]
     .filter((l) => l !== null)
     .join("\n");
@@ -198,9 +210,11 @@ export function buildRequestEmail(data: {
     ${
       data.notes
         ? `<h2 style="font-size:14px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin:0 0 8px">Notes</h2>
-    <p style="margin:0;font-style:italic;border-left:3px solid #e5e7eb;padding-left:12px;color:#374151">${data.notes}</p>`
+    <p style="margin:0 0 20px;font-style:italic;border-left:3px solid #e5e7eb;padding-left:12px;color:#374151">${data.notes}</p>`
         : ""
     }
+
+    <a href="${schedulerUrl}" style="display:inline-block;padding:12px 24px;background:#1d4ed8;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;font-size:14px">Review &amp; Approve Request →</a>
   </div>
 </div>`;
 
