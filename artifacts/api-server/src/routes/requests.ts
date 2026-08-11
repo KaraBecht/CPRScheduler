@@ -8,7 +8,8 @@ import {
   ListRequestsQueryParams,
   SubmitTrainingRequestBody,
 } from "@workspace/api-zod";
-import { sendEmail, buildRequestEmail, buildScheduledEmail, buildAdminScheduledEmail } from "../lib/sendgrid";
+import { sendEmail, buildRequestEmail } from "../lib/sendgrid";
+import { sendClassNotifications, type ClassInfo, type RequestorInfo } from "../lib/classNotifications";
 import { serializeClass } from "./classes";
 
 const router: IRouter = Router();
@@ -200,30 +201,27 @@ router.patch("/requests/:requestId", async (req, res) => {
     const serializedRequest = await serializeRequest(updatedRequest);
     const serializedClasses = await Promise.all(createdClassRows.map(serializeClass));
 
-    if (existing.contactEmail) {
-      const scheduledEmailContent = buildScheduledEmail({
-        requestorName: serializedRequest.requestorName,
-        organizationName: existing.organizationName,
-        certificationType: existing.certificationType,
-        sessions: sessions as { date: string; startTime: string }[],
-      });
-      sendEmail(
-        { to: existing.contactEmail, ...scheduledEmailContent },
-        req.log,
-      ).catch(() => {});
+    // Send confirmation notifications — requestor + admin/coordinator/EHS by business unit
+    const firstClass = createdClassRows[0];
+    if (firstClass) {
+      const clsInfo: ClassInfo = {
+        id: firstClass.id,
+        title: firstClass.title,
+        location: firstClass.location,
+        certificationType: firstClass.certificationType,
+        date: firstClass.date,
+        startTime: firstClass.startTime,
+      };
+      const requestorInfo: RequestorInfo | null = existing.contactEmail
+        ? {
+            name: serializedRequest.requestorName,
+            email: existing.contactEmail,
+            phone: existing.contactPhone ?? null,
+            organizationName: existing.organizationName,
+          }
+        : null;
+      sendClassNotifications(clsInfo, requestorInfo, "confirmation", req.log).catch(() => {});
     }
-
-    const adminEmailContent = buildAdminScheduledEmail({
-      requestorName: serializedRequest.requestorName,
-      requestorEmail: existing.contactEmail ?? "",
-      organizationName: existing.organizationName,
-      certificationType: existing.certificationType,
-      sessions: sessions as { date: string; startTime: string }[],
-    });
-    sendEmail(
-      { to: process.env.NOTIFY_EMAIL ?? "", ...adminEmailContent },
-      req.log,
-    ).catch(() => {});
 
     res.json({ ...serializedRequest, createdClasses: serializedClasses });
     return;

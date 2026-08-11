@@ -2,6 +2,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { autoCompletePastClasses } from "./lib/autoComplete";
 import { scheduleRenewalReminders } from "./lib/renewalReminder";
+import { scheduleSevenDayReminders } from "./lib/classReminderJob";
 import { db, usersTable } from "@workspace/db";
 import { eq, count } from "drizzle-orm";
 import { seedProductionIfEmpty } from "./lib/seedProduction";
@@ -65,4 +66,5 @@ app.listen(port, async (err) => {
   }
 
   scheduleRenewalReminders();
+  scheduleSevenDayReminders();
 });
