@@ -1,8 +1,29 @@
-import { db, classesTable, usersTable } from "@workspace/db";
-import { and, eq, gte, lte, inArray } from "drizzle-orm";
+import { db, classesTable, usersTable, locationsTable } from "@workspace/db";
+import { and, eq, gte, lte, inArray, ilike } from "drizzle-orm";
 import { logger } from "./logger";
 import { sendMail } from "./mailer";
 import { formatCertificationType } from "./formatCertType";
+
+// ---------------------------------------------------------------------------
+// Business-unit helpers (mirrors classNotifications.ts)
+// ---------------------------------------------------------------------------
+
+function extractBusinessUnit(notes: string | null | undefined): string | null {
+  if (!notes) return null;
+  const m = notes.match(/Business Unit:\s*(.+)/i);
+  return m?.[1]?.trim() ?? null;
+}
+
+async function getLocationBusinessUnit(locationName: string): Promise<string | null> {
+  const [loc] = await db
+    .select({ notes: locationsTable.notes })
+    .from(locationsTable)
+    .where(ilike(locationsTable.name, locationName))
+    .limit(1);
+  return extractBusinessUnit(loc?.notes);
+}
+
+// ---------------------------------------------------------------------------
 
 /**
  * Window around the 18-month mark that triggers a reminder.
@@ -82,16 +103,14 @@ export async function sendRenewalReminders(): Promise<number> {
     return 0;
   }
 
-  // Only notify admins with the "admin" sub-role (Kara and Sharon)
-  const admins = await db
-    .select({ name: usersTable.name, email: usersTable.email })
+  // Notify admins ("admin" sub-role) and EHS users (filtered by business unit)
+  const allAdminUsers = await db
+    .select({ name: usersTable.name, email: usersTable.email, adminRole: usersTable.adminRole, organization: usersTable.organization })
     .from(usersTable)
-    .where(
-      and(
-        eq(usersTable.role, "administrator"),
-        eq(usersTable.adminRole, "admin"),
-      ),
-    );
+    .where(eq(usersTable.role, "administrator"));
+
+  const admins  = allAdminUsers.filter(u => u.adminRole === "admin");
+  const allEhs  = allAdminUsers.filter(u => u.adminRole === "ehs");
 
   if (admins.length === 0) {
     logger.warn("Renewal reminder: no admin-role administrators found to notify");
@@ -113,9 +132,24 @@ export async function sendRenewalReminders(): Promise<number> {
     const renewalBy = isoDate(addMonths(new Date(cls.date), MONTHS + 2));
     const subject = `CPR Renewal Planning: "${cls.title}" is due for renewal`;
 
-    for (const admin of admins) {
+    // Resolve EHS recipients for this class's location
+    const businessUnit = await getLocationBusinessUnit(cls.location);
+    let ehsRecipients = allEhs;
+    if (businessUnit) {
+      const buLower = businessUnit.toLowerCase();
+      const matched = allEhs.filter(u => {
+        if (!u.organization) return false;
+        const orgLower = u.organization.toLowerCase();
+        return buLower.includes(orgLower) || orgLower.includes(buLower);
+      });
+      if (matched.length > 0) ehsRecipients = matched;
+    }
+
+    const recipients = [...admins, ...ehsRecipients];
+
+    for (const recipient of recipients) {
       const text = [
-        `Hi ${admin.name},`,
+        `Hi ${recipient.name},`,
         ``,
         `This is an automated renewal planning reminder from the CPR Training Hub.`,
         ``,
@@ -123,6 +157,7 @@ export async function sendRenewalReminders(): Promise<number> {
         `Certification: ${certLabel}`,
         `Completed: ${cls.date}`,
         `Location: ${cls.location}`,
+        businessUnit ? `Business Unit: ${businessUnit}` : null,
         ``,
         `This class was completed 18 months ago. Participants whose certifications`,
         `expire every 2 years should be scheduled for renewal by ${renewalBy}.`,
@@ -130,16 +165,17 @@ export async function sendRenewalReminders(): Promise<number> {
         `Log in to the scheduler to create a renewal class or send outreach.`,
         ``,
         `— FOX Medical CPR Training Hub`,
-      ].join("\n");
+      ].filter(l => l !== null).join("\n");
 
       const html = `
-<p>Hi <strong>${admin.name}</strong>,</p>
+<p>Hi <strong>${recipient.name}</strong>,</p>
 <p>This is an automated renewal planning reminder from the <strong>CPR Training Hub</strong>.</p>
 <table style="border-collapse:collapse;font-size:14px;margin:12px 0">
   <tr><td style="padding:4px 12px 4px 0;color:#666">Class</td><td><strong>${cls.title}</strong></td></tr>
   <tr><td style="padding:4px 12px 4px 0;color:#666">Certification</td><td>${certLabel}</td></tr>
   <tr><td style="padding:4px 12px 4px 0;color:#666">Completed</td><td>${cls.date}</td></tr>
   <tr><td style="padding:4px 12px 4px 0;color:#666">Location</td><td>${cls.location}</td></tr>
+  ${businessUnit ? `<tr><td style="padding:4px 12px 4px 0;color:#666">Business Unit</td><td>${businessUnit}</td></tr>` : ""}
 </table>
 <p>This class was completed <strong>18 months ago</strong>. Participants whose certifications
 expire every 2 years should be scheduled for renewal by <strong>${renewalBy}</strong>.</p>
@@ -147,7 +183,7 @@ expire every 2 years should be scheduled for renewal by <strong>${renewalBy}</st
 <p style="color:#888;font-size:12px">— FOX Medical CPR Training Hub</p>
       `.trim();
 
-      await sendMail({ to: admin.email, subject, text, html });
+      await sendMail({ to: recipient.email, subject, text, html });
     }
   }
 
