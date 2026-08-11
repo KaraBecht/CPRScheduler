@@ -200,7 +200,7 @@ function NewUserDialog() {
           <Button
             data-testid="button-submit-user"
             disabled={!form.name || create.isPending}
-            onClick={() => create.mutate({ data: { ...form, email: form.email || null, phone: form.phone || null, organization: form.organization || null, bio: form.bio || null, adminRole: form.adminRole ?? undefined } })}
+            onClick={() => create.mutate({ data: { ...form, email: form.email || null, phone: form.phone || undefined, organization: form.organization || undefined, bio: form.bio || undefined, adminRole: form.adminRole ?? undefined } })}
           >
             Add person
           </Button>
