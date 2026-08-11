@@ -293,7 +293,7 @@ function EditUserDialog({ user }: { user: { id: number; name: string; email: str
               </Button>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-                <Button disabled={!form.name || !form.email || update.isPending} onClick={() => update.mutate({ userId: user.id, data: { name: form.name, email: form.email, adminRole: form.adminRole ?? null, phone: form.phone || undefined, organization: form.organization || undefined, bio: form.bio || undefined } })}>
+                <Button disabled={!form.name || !form.email || update.isPending} onClick={() => update.mutate({ userId: user.id, data: { name: form.name, email: form.email, adminRole: form.adminRole ?? null, phone: form.phone || null, organization: form.organization || null, bio: form.bio || null } })}>
                   Save
                 </Button>
               </div>

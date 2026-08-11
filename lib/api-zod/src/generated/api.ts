@@ -85,9 +85,9 @@ export const UpdateUserBody = zod.object({
   "email": zod.string().optional(),
   "role": zod.enum(['administrator', 'instructor', 'student', 'requestor']).optional(),
   "adminRole": AdminRole.nullish(),
-  "phone": zod.string().optional(),
-  "organization": zod.string().optional(),
-  "bio": zod.string().optional(),
+  "phone": zod.string().nullish(),
+  "organization": zod.string().nullish(),
+  "bio": zod.string().nullish(),
   "avatarUrl": zod.string().optional(),
   "isActive": zod.boolean().optional()
 })
