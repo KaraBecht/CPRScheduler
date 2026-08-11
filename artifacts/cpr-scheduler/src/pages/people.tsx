@@ -283,7 +283,7 @@ function EditUserDialog({ user }: { user: { id: number; name: string; email: str
                 </div>
               </div>
               <div>
-                <Label>Bio</Label>
+                <Label>Notes</Label>
                 <Textarea rows={2} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} />
               </div>
             </div>
