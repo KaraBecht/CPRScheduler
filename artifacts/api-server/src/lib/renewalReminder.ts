@@ -1,12 +1,15 @@
 import { db, classesTable, usersTable } from "@workspace/db";
-import { and, eq, gte, lte, sql } from "drizzle-orm";
+import { and, eq, gte, lte, inArray } from "drizzle-orm";
 import { logger } from "./logger";
 import { sendMail } from "./mailer";
 import { formatCertificationType } from "./formatCertType";
 
-/** Window around the 18-month mark that triggers a reminder (±7 days). */
+/**
+ * Window around the 18-month mark that triggers a reminder.
+ * ±15 days ensures no class is missed between monthly runs.
+ */
 const MONTHS = 18;
-const WINDOW_DAYS = 7;
+const WINDOW_DAYS = 15;
 
 function addMonths(date: Date, months: number): Date {
   const d = new Date(date);
@@ -25,15 +28,17 @@ function isoDate(d: Date): string {
 }
 
 /**
- * Finds every completed class whose date falls within ±WINDOW_DAYS of its
- * 18-month anniversary (relative to today), then emails all administrators.
+ * Finds completed classes hitting their 18-month anniversary (±15 days),
+ * skips any whose location already has a scheduled or confirmed future class,
+ * and emails only administrators with adminRole = "admin".
  *
- * Safe to call daily — the window ensures each class only triggers once per
- * 2-week period.
+ * Runs monthly — the ±15-day window ensures no class falls between runs.
  */
 export async function sendRenewalReminders(): Promise<number> {
   const today = new Date();
-  // A class completed MONTHS ago today would have date = today - 18 months.
+  const todayStr = isoDate(today);
+
+  // Classes completed ~18 months ago
   const anniversaryDate = addMonths(today, -MONTHS);
   const windowStart = isoDate(addDays(anniversaryDate, -WINDOW_DAYS));
   const windowEnd = isoDate(addDays(anniversaryDate, WINDOW_DAYS));
@@ -54,22 +59,56 @@ export async function sendRenewalReminders(): Promise<number> {
     return 0;
   }
 
+  // Fetch all future classes that are already scheduled or confirmed
+  const coveredClasses = await db
+    .select({ location: classesTable.location })
+    .from(classesTable)
+    .where(
+      and(
+        inArray(classesTable.status, ["scheduled", "confirmed"]),
+        gte(classesTable.date, todayStr),
+      ),
+    );
+  const coveredLocations = new Set(coveredClasses.map((c) => c.location));
+
+  // Filter out locations already covered by a scheduled/confirmed class
+  const needsReminder = dueClasses.filter((cls) => !coveredLocations.has(cls.location));
+
+  if (needsReminder.length === 0) {
+    logger.info(
+      { windowStart, windowEnd, skipped: dueClasses.length },
+      "Renewal reminder: all due classes already have a scheduled or confirmed class — no emails sent",
+    );
+    return 0;
+  }
+
+  // Only notify admins with the "admin" sub-role (Kara and Sharon)
   const admins = await db
-    .select({ name: usersTable.name, email: usersTable.email, adminRole: usersTable.adminRole })
+    .select({ name: usersTable.name, email: usersTable.email })
     .from(usersTable)
-    .where(eq(usersTable.role, "administrator"));
+    .where(
+      and(
+        eq(usersTable.role, "administrator"),
+        eq(usersTable.adminRole, "admin"),
+      ),
+    );
 
   if (admins.length === 0) {
-    logger.warn("Renewal reminder: no administrator accounts found to notify");
+    logger.warn("Renewal reminder: no admin-role administrators found to notify");
     return 0;
   }
 
   logger.info(
-    { count: dueClasses.length, windowStart, windowEnd },
-    "Renewal reminder: classes approaching 18-month renewal",
+    {
+      count: needsReminder.length,
+      skipped: dueClasses.length - needsReminder.length,
+      windowStart,
+      windowEnd,
+    },
+    "Renewal reminder: sending emails",
   );
 
-  for (const cls of dueClasses) {
+  for (const cls of needsReminder) {
     const certLabel = formatCertificationType(cls.certificationType);
     const renewalBy = isoDate(addMonths(new Date(cls.date), MONTHS + 2));
 
@@ -113,22 +152,33 @@ expire every 2 years should be scheduled for renewal by <strong>${renewalBy}</st
     }
   }
 
-  return dueClasses.length;
+  return needsReminder.length;
 }
 
-/** Run once immediately, then every 24 hours. */
+/**
+ * Schedule the monthly renewal reminder — does NOT fire on startup.
+ *
+ * Uses a daily tick counter to avoid exceeding Node's 32-bit setInterval
+ * limit (~24.8 days max). At 30 ticks the reminders are sent and the
+ * counter resets.
+ */
 export function scheduleRenewalReminders(): void {
-  const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
-  sendRenewalReminders().catch((err) =>
-    logger.error({ err }, "Renewal reminder job failed on startup"),
-  );
+  const MS_PER_DAY = 24 * 60 * 60 * 1000; // 86 400 000 ms — safely within int32
+  const RUN_EVERY_DAYS = 30;
+  let daysElapsed = 0;
 
   setInterval(() => {
-    sendRenewalReminders().catch((err) =>
-      logger.error({ err }, "Renewal reminder daily job failed"),
-    );
+    daysElapsed++;
+    if (daysElapsed >= RUN_EVERY_DAYS) {
+      daysElapsed = 0;
+      sendRenewalReminders().catch((err) =>
+        logger.error({ err }, "Renewal reminder monthly job failed"),
+      );
+    }
   }, MS_PER_DAY);
 
-  logger.info("Renewal reminder job scheduled (daily)");
+  logger.info(
+    { nextRunInDays: RUN_EVERY_DAYS },
+    "Renewal reminder job scheduled (monthly)",
+  );
 }
