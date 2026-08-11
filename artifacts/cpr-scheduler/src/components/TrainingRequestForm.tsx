@@ -27,6 +27,15 @@ const CERT_TYPES: CertificationType[] = [
   "cpr_aed_first_aid_stop_the_bleed",
 ];
 
+const BUSINESS_UNITS = [
+  "Fox Corp",
+  "FOX Entertainment",
+  "FOX News Media",
+  "FOX Sports",
+  "FOX Studio Lot",
+  "FOX Television Stations",
+];
+
 type Session = { date: string; startTime: string };
 
 interface TrainingRequestFormProps {
@@ -45,6 +54,7 @@ export function TrainingRequestForm({ onSuccess, onCancel }: TrainingRequestForm
     useState<CertificationType>("cpr_aed_first_aid");
   const [numberOfClasses, setNumberOfClasses] = useState(1);
   const [attendeeCount, setAttendeeCount] = useState(10);
+  const [businessUnit, setBusinessUnit] = useState("");
   const [notes, setNotes] = useState("");
   const [sessions, setSessions] = useState<Session[]>([
     { date: "", startTime: "09:00" },
@@ -58,6 +68,7 @@ export function TrainingRequestForm({ onSuccess, onCancel }: TrainingRequestForm
     setRequestorPhone("");
     setCertificationType("cpr_aed_first_aid");
     setNumberOfClasses(1);
+    setBusinessUnit("");
     setNotes("");
     setSessions([{ date: "", startTime: "09:00" }]);
   };
@@ -275,6 +286,26 @@ export function TrainingRequestForm({ onSuccess, onCancel }: TrainingRequestForm
         </div>
       </section>
 
+      <section className="space-y-3">
+        <h3 className="text-sm font-semibold tracking-wide uppercase text-muted-foreground">
+          Business unit
+        </h3>
+        <Select
+          value={businessUnit || "none"}
+          onValueChange={(v) => setBusinessUnit(v === "none" ? "" : v)}
+        >
+          <SelectTrigger data-testid="select-business-unit">
+            <SelectValue placeholder="Select a business unit…" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">— None —</SelectItem>
+            {BUSINESS_UNITS.map((bu) => (
+              <SelectItem key={bu} value={bu}>{bu}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </section>
+
       <section className="space-y-2">
         <Label>Notes (optional)</Label>
         <Textarea
@@ -307,7 +338,9 @@ export function TrainingRequestForm({ onSuccess, onCancel }: TrainingRequestForm
                 numberOfClasses,
                 attendeeCount,
                 sessions,
-                notes: notes || undefined,
+                notes: businessUnit
+                  ? [`Business Unit: ${businessUnit}`, notes].filter(Boolean).join("\n")
+                  : notes || undefined,
               },
             })
           }

@@ -76,6 +76,15 @@ const ADMIN_ROLE_COLORS: Record<AdminRole, string> = {
   ehs: "bg-green-100 text-green-800 border-green-200",
 };
 
+const BUSINESS_UNITS = [
+  "Fox Corp",
+  "FOX Entertainment",
+  "FOX News Media",
+  "FOX Sports",
+  "FOX Studio Lot",
+  "FOX Television Stations",
+];
+
 const BLANK_NEW_USER = {
   name: "",
   email: "" as string | null,
@@ -178,10 +187,20 @@ function NewUserDialog() {
             </div>
             <div>
               <Label>Business unit</Label>
-              <Input
-                value={form.organization}
-                onChange={(e) => setForm({ ...form, organization: e.target.value })}
-              />
+              <Select
+                value={form.organization || "none"}
+                onValueChange={(v) => setForm({ ...form, organization: v === "none" ? "" : v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a business unit…" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— None —</SelectItem>
+                  {BUSINESS_UNITS.map((bu) => (
+                    <SelectItem key={bu} value={bu}>{bu}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <div>
@@ -291,7 +310,20 @@ function EditUserDialog({ user }: { user: { id: number; name: string; email: str
                 </div>
                 <div>
                   <Label>Business unit</Label>
-                  <Input value={form.organization} onChange={(e) => setForm({ ...form, organization: e.target.value })} />
+                  <Select
+                    value={form.organization || "none"}
+                    onValueChange={(v) => setForm({ ...form, organization: v === "none" ? "" : v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a business unit…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— None —</SelectItem>
+                      {BUSINESS_UNITS.map((bu) => (
+                        <SelectItem key={bu} value={bu}>{bu}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div>

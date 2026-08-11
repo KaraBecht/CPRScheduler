@@ -37,6 +37,7 @@ export const classesTable = pgTable("classes", {
   status: classStatusEnum("status").notNull().default("scheduled"),
   instructorId: integer("instructor_id").references(() => usersTable.id),
   description: text("description"),
+  businessUnit: text("business_unit"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

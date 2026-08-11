@@ -83,6 +83,15 @@ const CERT_TYPES: CertificationType[] = [
   "cpr_aed_first_aid_stop_the_bleed",
 ];
 
+const BUSINESS_UNITS = [
+  "Fox Corp",
+  "FOX Entertainment",
+  "FOX News Media",
+  "FOX Sports",
+  "FOX Studio Lot",
+  "FOX Television Stations",
+];
+
 type ClassSlot = { date: string; startTime: string };
 
 function CreateClassDialog() {
@@ -96,6 +105,7 @@ function CreateClassDialog() {
   const [capacity, setCapacity] = useState(10);
   const [instructorIds, setInstructorIds] = useState<number[]>([]);
   const [description, setDescription] = useState("");
+  const [businessUnit, setBusinessUnit] = useState("");
   const [slots, setSlots] = useState<ClassSlot[]>([
     { date: "", startTime: "09:00" },
   ]);
@@ -109,6 +119,7 @@ function CreateClassDialog() {
     setCapacity(10);
     setInstructorIds([]);
     setDescription("");
+    setBusinessUnit("");
     setSlots([{ date: "", startTime: "09:00" }]);
     setStatus("confirmed");
   };
@@ -145,6 +156,7 @@ function CreateClassDialog() {
             capacity,
             instructorIds: instructorIds.length > 0 ? instructorIds : undefined,
             description,
+            businessUnit: businessUnit || undefined,
             status: status as ClassSession["status"],
           },
         });
@@ -337,6 +349,23 @@ function CreateClassDialog() {
                 </Button>
               </div>
             ))}
+          </div>
+          <div>
+            <Label>Business unit</Label>
+            <Select
+              value={businessUnit || "none"}
+              onValueChange={(v) => setBusinessUnit(v === "none" ? "" : v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a business unit…" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">— None —</SelectItem>
+                {BUSINESS_UNITS.map((bu) => (
+                  <SelectItem key={bu} value={bu}>{bu}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div>
             <Label>Description</Label>

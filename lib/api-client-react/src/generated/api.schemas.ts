@@ -140,6 +140,8 @@ export interface ClassSession {
   instructors?: ClassSessionInstructorsItem[];
   /** @nullable */
   description?: string | null;
+  /** @nullable */
+  businessUnit?: string | null;
 }
 
 export interface Enrollment {
@@ -170,6 +172,7 @@ export interface ClassInput {
   instructorIds?: number[];
   status?: ClassStatus;
   description?: string;
+  businessUnit?: string;
 }
 
 export type RosterResult = typeof RosterResult[keyof typeof RosterResult];
@@ -228,6 +231,7 @@ export interface ClassUpdate {
   capacity?: number;
   instructorIds?: number[];
   description?: string;
+  businessUnit?: string | null;
   status?: ClassStatus;
 }
 

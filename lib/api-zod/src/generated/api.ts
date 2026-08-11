@@ -150,7 +150,8 @@ export const CreateClassBody = zod.object({
   "capacity": zod.number().min(1),
   "instructorIds": zod.array(zod.number()).optional(),
   "status": zod.enum(['being_scheduled', 'pending_schedule', 'confirmed', 'completed', 'cancelled', 'scheduled']).optional(),
-  "description": zod.string().optional()
+  "description": zod.string().optional(),
+  "businessUnit": zod.string().optional()
 })
 
 
@@ -175,7 +176,8 @@ export const GetClassResponse = zod.object({
   "id": zod.number(),
   "name": zod.string()
 })).optional(),
-  "description": zod.string().nullish()
+  "description": zod.string().nullish(),
+  "businessUnit": zod.string().nullish()
 }).and(zod.object({
   "enrollments": zod.array(zod.object({
   "id": zod.number(),
@@ -204,6 +206,7 @@ export const UpdateClassBody = zod.object({
   "capacity": zod.number().optional(),
   "instructorIds": zod.array(zod.number()).optional(),
   "description": zod.string().optional(),
+  "businessUnit": zod.string().nullish(),
   "status": zod.enum(['being_scheduled', 'pending_schedule', 'confirmed', 'completed', 'cancelled', 'scheduled']).optional()
 })
 
@@ -224,7 +227,8 @@ export const UpdateClassResponse = zod.object({
   "id": zod.number(),
   "name": zod.string()
 })).optional(),
-  "description": zod.string().nullish()
+  "description": zod.string().nullish(),
+  "businessUnit": zod.string().nullish()
 })
 
 
