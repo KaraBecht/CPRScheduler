@@ -228,11 +228,11 @@ export async function sendTrainerInvitations(
     return;
   }
 
-  // All active instructors — never students
+  // Active instructors only — inactive instructors never receive emails
   const instructors = await db
     .select({ id: usersTable.id, name: usersTable.name, email: usersTable.email })
     .from(usersTable)
-    .where(eq(usersTable.role, "instructor"));
+    .where(and(eq(usersTable.role, "instructor"), eq(usersTable.isActive, true)));
 
   if (instructors.length === 0) {
     log.warn({ classId: cls.id }, "No instructors found — trainer invites not sent");
