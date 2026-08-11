@@ -1,5 +1,6 @@
 import { logger } from "./logger";
 import { ReplitConnectors } from "@replit/connectors-sdk";
+import { EMAILS_ENABLED } from "./emailConfig";
 
 export interface MailMessage {
   to: string;
@@ -13,6 +14,11 @@ export interface MailMessage {
  * Sends from the connected Outlook account; tokens are refreshed automatically.
  */
 export async function sendMail(msg: MailMessage): Promise<void> {
+  if (!EMAILS_ENABLED) {
+    logger.info({ to: msg.to, subject: msg.subject }, "[EMAIL DISABLED] Would have sent email");
+    return;
+  }
+
   // ReplitConnectors must not be cached — tokens expire
   const connectors = new ReplitConnectors();
 

@@ -1,5 +1,6 @@
 import type { Logger } from "pino";
 import { ReplitConnectors } from "@replit/connectors-sdk";
+import { EMAILS_ENABLED } from "./emailConfig";
 
 interface EmailPayload {
   to: string;
@@ -11,6 +12,11 @@ interface EmailPayload {
 export async function sendEmail(payload: EmailPayload, log: Logger): Promise<void> {
   if (!payload.to) {
     log.warn("No recipient address provided — skipping email notification");
+    return;
+  }
+
+  if (!EMAILS_ENABLED) {
+    log.info({ to: payload.to, subject: payload.subject }, "[EMAIL DISABLED] Would have sent email");
     return;
   }
 
