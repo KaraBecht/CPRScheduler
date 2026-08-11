@@ -68,7 +68,7 @@ interface Recipient {
   email: string;
 }
 
-async function getStaffRecipients(classLocation: string): Promise<{
+async function getStaffRecipients(classLocation: string, classBusinessUnit?: string | null): Promise<{
   admins: Recipient[];
   coordinators: Recipient[];
   ehsUsers: Recipient[];
@@ -82,7 +82,8 @@ async function getStaffRecipients(classLocation: string): Promise<{
     getLocationNotes(classLocation),
   ]);
 
-  const businessUnit = extractBusinessUnit(notes);
+  // Prefer the class's own business unit field; fall back to what's in the location notes
+  const businessUnit = classBusinessUnit ?? extractBusinessUnit(notes);
 
   const admins     = allAdminUsers.filter(u => u.adminRole === "admin");
   const coordinators = allAdminUsers.filter(u => u.adminRole === "coordinator");
@@ -253,9 +254,10 @@ export async function sendClassNotifications(
   requestor: RequestorInfo | null,
   variant: NotificationVariant,
   log: Logger,
+  classBusinessUnit?: string | null,
 ): Promise<void> {
   const { admins, coordinators, ehsUsers, businessUnit } =
-    await getStaffRecipients(cls.location);
+    await getStaffRecipients(cls.location, classBusinessUnit);
 
   const staffRecipients = [...admins, ...coordinators, ...ehsUsers];
 

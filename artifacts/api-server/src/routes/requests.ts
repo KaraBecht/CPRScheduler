@@ -236,7 +236,10 @@ router.patch("/requests/:requestId", async (req, res) => {
             organizationName: existing.organizationName,
           }
         : null;
-      sendClassNotifications(clsInfo, requestorInfo, "confirmation", req.log).catch(() => {});
+      // Extract business unit encoded in the request notes ("Business Unit: FOX News Media")
+      const buMatch = existing.notes?.match(/Business Unit:\s*(.+)/i);
+      const requestBusinessUnit = buMatch?.[1]?.trim() ?? null;
+      sendClassNotifications(clsInfo, requestorInfo, "confirmation", req.log, requestBusinessUnit).catch(() => {});
     }
 
     // Invite all active trainers for each created class

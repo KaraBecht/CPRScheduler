@@ -18,6 +18,7 @@ import {
 import { serializeUser } from "./users";
 import { upsertClassReminder } from "../lib/classReminder";
 import { sendTrainerInvitations } from "../lib/trainerNotifications";
+import { sendClassNotifications, type ClassInfo } from "../lib/classNotifications";
 
 const router: IRouter = Router();
 
@@ -129,6 +130,21 @@ router.post("/classes", async (req, res) => {
       .onConflictDoNothing();
   }
   await upsertClassReminder(row);
+
+  // Notify admin/coordinator/EHS staff when a class is created directly as scheduled or confirmed
+  if (row.status === "scheduled" || row.status === "confirmed") {
+    const clsInfo: ClassInfo = {
+      id: row.id, title: row.title, location: row.location,
+      certificationType: row.certificationType, date: row.date, startTime: row.startTime,
+    };
+    sendClassNotifications(clsInfo, null, "confirmation", req.log, row.businessUnit ?? null).catch(() => {});
+    sendTrainerInvitations(
+      { id: row.id, title: row.title, certificationType: row.certificationType,
+        date: row.date, startTime: row.startTime, location: row.location, capacity: row.capacity ?? null },
+      req.log,
+    ).catch(() => {});
+  }
+
   res.status(201).json(await serializeClass(row));
 });
 
@@ -167,6 +183,13 @@ router.get("/classes/:classId", async (req, res) => {
 router.patch("/classes/:classId", async (req, res) => {
   const classId = parseId(req.params.classId, "classId");
   const body = UpdateClassBody.parse(req.body);
+
+  // Capture old status before the update so we can detect status transitions
+  const [oldRow] = await db
+    .select({ status: classesTable.status })
+    .from(classesTable)
+    .where(eq(classesTable.id, classId));
+
   const { instructorIds, ...classData } = body;
   const updateData: typeof classData & { instructorId?: number | null } = {
     ...classData,
@@ -193,8 +216,14 @@ router.patch("/classes/:classId", async (req, res) => {
   }
   await upsertClassReminder(row);
 
-  // Send trainer invites when a class is newly moved to confirmed/scheduled
-  if (row.status === "confirmed" || row.status === "scheduled") {
+  // Only fire notifications when status actually changes to scheduled/confirmed
+  const statusChanged = oldRow && row.status !== oldRow.status;
+  if (statusChanged && (row.status === "confirmed" || row.status === "scheduled")) {
+    const clsInfo: ClassInfo = {
+      id: row.id, title: row.title, location: row.location,
+      certificationType: row.certificationType, date: row.date, startTime: row.startTime,
+    };
+    sendClassNotifications(clsInfo, null, "confirmation", req.log, row.businessUnit ?? null).catch(() => {});
     sendTrainerInvitations(
       {
         id: row.id,
