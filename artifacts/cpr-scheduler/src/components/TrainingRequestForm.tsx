@@ -28,6 +28,7 @@ const CERT_TYPES: CertificationType[] = [
 ];
 
 const BUSINESS_UNITS = [
+  "FOX Digital",
   "Fox Corp",
   "FOX Entertainment",
   "FOX News Media",

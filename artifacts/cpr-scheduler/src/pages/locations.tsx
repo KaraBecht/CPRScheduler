@@ -120,6 +120,7 @@ function buildNotesWithBu(bu: string, otherNotes: string): string {
 
 const LS_BU_KEY = "pulsepoint_custom_bus";
 const SEED_BUSINESS_UNITS = [
+  "FOX Digital",
   "Fox Corp",
   "FOX Entertainment",
   "FOX News Media",

@@ -77,6 +77,7 @@ const ADMIN_ROLE_COLORS: Record<AdminRole, string> = {
 };
 
 const BUSINESS_UNITS = [
+  "FOX Digital",
   "Fox Corp",
   "FOX Entertainment",
   "FOX News Media",
