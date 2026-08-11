@@ -19,6 +19,15 @@ export const UserRole = {
   requestor: 'requestor',
 } as const;
 
+export type AdminRole = typeof AdminRole[keyof typeof AdminRole];
+
+/** Sub-role for administrator accounts — used to filter email notifications. */
+export const AdminRole = {
+  admin: 'admin',
+  coordinator: 'coordinator',
+  ehs: 'ehs',
+} as const;
+
 export type CertificationType = typeof CertificationType[keyof typeof CertificationType];
 
 
@@ -66,6 +75,8 @@ export interface User {
   email: string;
   role: UserRole;
   /** @nullable */
+  adminRole?: AdminRole | null;
+  /** @nullable */
   phone?: string | null;
   /** @nullable */
   organization?: string | null;
@@ -82,6 +93,7 @@ export interface UserInput {
   name: string;
   email: string;
   role: UserRole;
+  adminRole?: AdminRole;
   phone?: string;
   organization?: string;
   bio?: string;
@@ -94,6 +106,7 @@ export interface UserUpdate {
   name?: string;
   email?: string;
   role?: UserRole;
+  adminRole?: AdminRole | null;
   phone?: string;
   organization?: string;
   bio?: string;

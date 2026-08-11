@@ -20,11 +20,14 @@ export const ListUsersQueryParams = zod.object({
   "role": zod.enum(['administrator', 'instructor', 'student', 'requestor']).optional()
 })
 
+export const AdminRole = zod.enum(['admin', 'coordinator', 'ehs'])
+
 export const ListUsersResponseItem = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "email": zod.string(),
   "role": zod.enum(['administrator', 'instructor', 'student', 'requestor']),
+  "adminRole": AdminRole.nullish(),
   "phone": zod.string().nullish(),
   "organization": zod.string().nullish(),
   "bio": zod.string().nullish(),
@@ -42,6 +45,7 @@ export const CreateUserBody = zod.object({
   "name": zod.string().min(1),
   "email": zod.string(),
   "role": zod.enum(['administrator', 'instructor', 'student', 'requestor']),
+  "adminRole": AdminRole.optional(),
   "phone": zod.string().optional(),
   "organization": zod.string().optional(),
   "bio": zod.string().optional(),
@@ -59,6 +63,7 @@ export const GetUserResponse = zod.object({
   "name": zod.string(),
   "email": zod.string(),
   "role": zod.enum(['administrator', 'instructor', 'student', 'requestor']),
+  "adminRole": AdminRole.nullish(),
   "phone": zod.string().nullish(),
   "organization": zod.string().nullish(),
   "bio": zod.string().nullish(),
@@ -79,6 +84,7 @@ export const UpdateUserBody = zod.object({
   "name": zod.string().min(1).optional(),
   "email": zod.string().optional(),
   "role": zod.enum(['administrator', 'instructor', 'student', 'requestor']).optional(),
+  "adminRole": AdminRole.nullish(),
   "phone": zod.string().optional(),
   "organization": zod.string().optional(),
   "bio": zod.string().optional(),
@@ -91,6 +97,7 @@ export const UpdateUserResponse = zod.object({
   "name": zod.string(),
   "email": zod.string(),
   "role": zod.enum(['administrator', 'instructor', 'student', 'requestor']),
+  "adminRole": AdminRole.nullish(),
   "phone": zod.string().nullish(),
   "organization": zod.string().nullish(),
   "bio": zod.string().nullish(),

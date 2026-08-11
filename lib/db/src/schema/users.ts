@@ -7,11 +7,15 @@ export const userRoleEnum = pgEnum("user_role", [
   "requestor",
 ]);
 
+/** Sub-role for administrator accounts — used to filter email notifications. */
+export const adminRoleEnum = pgEnum("admin_role", ["admin", "coordinator", "ehs"]);
+
 export const usersTable = pgTable("users", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   role: userRoleEnum("role").notNull(),
+  adminRole: adminRoleEnum("admin_role"),
   phone: text("phone"),
   organization: text("organization"),
   bio: text("bio"),

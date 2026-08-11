@@ -8,22 +8,22 @@ const SEED_STATEMENTS: string[] = [
   `TRUNCATE TABLE reminders, location_notes, class_roster_entries, class_instructors,
     class_requests, certificates, enrollments, classes, locations, users
 RESTART IDENTITY CASCADE`,
-  `INSERT INTO users (id, name, email, role, phone, organization, bio, avatar_url, created_at, is_active) VALUES
-    ('1', 'Kara Becht', 'kara.becht@fox.com', 'administrator', '3103692730', 'WorkCare', NULL, NULL, '2026-05-26 19:34:16.034031', 't'),
-    ('2', 'Sharon Anctil', 'sharon.anctil@fox.com', 'administrator', '3103692727', 'WorkCare', NULL, NULL, '2026-05-26 19:34:54.303884', 't'),
-    ('3', 'Amy Abrams', 'amy.abrams@fox.com', 'instructor', '3103692727', 'WorkCare', NULL, NULL, '2026-05-26 19:35:28.616008', 't'),
-    ('4', 'Urlynn Francois', 'urlynn.francois@workcare.com', 'instructor', '4047939073', 'WorkCare', NULL, NULL, '2026-05-26 19:36:37.036957', 't'),
-    ('5', 'Carmen Rodriguez', 'carmen.rodriguez@workcare.com', 'administrator', '5626196905', 'WorkCare', NULL, NULL, '2026-05-26 19:38:39.695018', 't'),
-    ('6', 'Chelsea Ryan', 'chelsea.ryan@fox.com', 'administrator', '8042010360', 'FOX', NULL, NULL, '2026-05-26 19:39:33.47756', 't'),
-    ('7', 'Brett Hodgson', 'brett.hodgson@fox.com', 'administrator', '6164466910', 'FOX', NULL, NULL, '2026-05-26 19:40:28.438183', 't'),
-    ('8', 'Ana Aguilar', 'ana.aguilar@fox.com', 'administrator', '2139447575', 'FOX', NULL, NULL, '2026-05-26 19:41:42.558959', 't'),
-    ('9', 'Jane Doe', 'jane@example.com', 'requestor', '555-1234', 'Bright Star Daycare', NULL, NULL, '2026-05-26 19:52:50.240473', 't'),
-    ('12', 'T', 't@test.com', 'requestor', NULL, 'Test', NULL, NULL, '2026-05-26 20:30:48.228263', 't'),
-    ('15', 'Carol Martin', 'carol.martin@workcare.com', 'instructor', NULL, 'WorkCare', NULL, NULL, '2026-07-23 23:24:53.971406', 'f'),
-    ('16', 'Sheilah Rabii', 'Sheilah.Rabii@workcare.com', 'instructor', NULL, NULL, NULL, NULL, '2026-07-23 23:25:13.477829', 'f'),
-    ('17', 'Unknown', 'Unknown', 'instructor', NULL, NULL, NULL, NULL, '2026-07-23 23:25:55.023975', 't'),
-    ('18', 'Rachel Sellek', 'rachel.sellek@workcare.com', 'instructor', NULL, NULL, 'Not active instructor since 2025', NULL, '2026-07-24 00:32:24.270376', 'f'),
-    ('19', 'Adrienne', 'adrienne.pritchett@fox.com', 'requestor', 'Pritchett', 'WTXF', NULL, NULL, '2026-07-28 22:09:14.206691', 't')`,
+  `INSERT INTO users (id, name, email, role, admin_role, phone, organization, bio, avatar_url, created_at, is_active) VALUES
+    ('1', 'Kara Becht', 'kara.becht@fox.com', 'administrator', 'admin', '3103692730', 'WorkCare', NULL, NULL, '2026-05-26 19:34:16.034031', 't'),
+    ('2', 'Sharon Anctil', 'sharon.anctil@fox.com', 'administrator', 'admin', '3103692727', 'WorkCare', NULL, NULL, '2026-05-26 19:34:54.303884', 't'),
+    ('3', 'Amy Abrams', 'amy.abrams@fox.com', 'instructor', NULL, '3103692727', 'WorkCare', NULL, NULL, '2026-05-26 19:35:28.616008', 't'),
+    ('4', 'Urlynn Francois', 'urlynn.francois@workcare.com', 'instructor', NULL, '4047939073', 'WorkCare', NULL, NULL, '2026-05-26 19:36:37.036957', 't'),
+    ('5', 'Carmen Rodriguez', 'carmen.rodriguez@workcare.com', 'administrator', 'coordinator', '5626196905', 'WorkCare', NULL, NULL, '2026-05-26 19:38:39.695018', 't'),
+    ('6', 'Chelsea Ryan', 'chelsea.ryan@fox.com', 'administrator', 'ehs', '8042010360', 'FOX', NULL, NULL, '2026-05-26 19:39:33.47756', 't'),
+    ('7', 'Brett Hodgson', 'brett.hodgson@fox.com', 'administrator', 'ehs', '6164466910', 'FOX', NULL, NULL, '2026-05-26 19:40:28.438183', 't'),
+    ('8', 'Ana Aguilar', 'ana.aguilar@fox.com', 'administrator', 'ehs', '2139447575', 'FOX', NULL, NULL, '2026-05-26 19:41:42.558959', 't'),
+    ('9', 'Jane Doe', 'jane@example.com', 'requestor', NULL, '555-1234', 'Bright Star Daycare', NULL, NULL, '2026-05-26 19:52:50.240473', 't'),
+    ('12', 'T', 't@test.com', 'requestor', NULL, NULL, 'Test', NULL, NULL, '2026-05-26 20:30:48.228263', 't'),
+    ('15', 'Carol Martin', 'carol.martin@workcare.com', 'instructor', NULL, NULL, 'WorkCare', NULL, NULL, '2026-07-23 23:24:53.971406', 'f'),
+    ('16', 'Sheilah Rabii', 'Sheilah.Rabii@workcare.com', 'instructor', NULL, NULL, NULL, NULL, NULL, '2026-07-23 23:25:13.477829', 'f'),
+    ('17', 'Unknown', 'Unknown', 'instructor', NULL, NULL, NULL, NULL, NULL, '2026-07-23 23:25:55.023975', 't'),
+    ('18', 'Rachel Sellek', 'rachel.sellek@workcare.com', 'instructor', NULL, NULL, NULL, 'Not active instructor since 2025', NULL, '2026-07-24 00:32:24.270376', 'f'),
+    ('19', 'Adrienne', 'adrienne.pritchett@fox.com', 'requestor', NULL, 'Pritchett', 'WTXF', NULL, NULL, '2026-07-28 22:09:14.206691', 't')`,
   `INSERT INTO locations (id, name, address, contact_name, contact_email, contact_phone, notes, created_at, updated_at) VALUES
     ('38', 'TUBI - LA', '10201 w pico blvd, Los Angeles, CA', 'Shana Kheradyar', NULL, NULL, 'Other Notes: Completed class in 2025 but no certification (condensed)
 Ordered: 1 AED, 1 cabinet B.100 3rd floor

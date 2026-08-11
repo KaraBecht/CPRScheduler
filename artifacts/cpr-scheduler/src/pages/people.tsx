@@ -10,6 +10,7 @@ import {
   getListRosterAttendeesQueryKey,
   getGetClassRosterQueryKey,
   type UserRole,
+  type AdminRole,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
@@ -62,6 +63,18 @@ const ROLES: { value: UserRole; label: string }[] = [
   { value: "instructor", label: "Instructors" },
   { value: "student", label: "Students" },
 ];
+
+const ADMIN_ROLE_OPTIONS: { value: AdminRole; label: string }[] = [
+  { value: "admin", label: "Admin" },
+  { value: "coordinator", label: "Coordinator" },
+  { value: "ehs", label: "EHS" },
+];
+
+const ADMIN_ROLE_COLORS: Record<AdminRole, string> = {
+  admin: "bg-blue-100 text-blue-800 border-blue-200",
+  coordinator: "bg-purple-100 text-purple-800 border-purple-200",
+  ehs: "bg-green-100 text-green-800 border-green-200",
+};
 
 function NewUserDialog() {
   const qc = useQueryClient();
@@ -185,11 +198,11 @@ function NewUserDialog() {
   );
 }
 
-function EditUserDialog({ user }: { user: { id: number; name: string; email: string; phone?: string | null; organization?: string | null; bio?: string | null } }) {
+function EditUserDialog({ user }: { user: { id: number; name: string; email: string; adminRole?: AdminRole | null; phone?: string | null; organization?: string | null; bio?: string | null } }) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [form, setForm] = useState({ name: user.name, email: user.email, phone: user.phone ?? "", organization: user.organization ?? "", bio: user.bio ?? "" });
+  const [form, setForm] = useState({ name: user.name, email: user.email, adminRole: user.adminRole ?? null as AdminRole | null, phone: user.phone ?? "", organization: user.organization ?? "", bio: user.bio ?? "" });
   const update = useUpdateUser({
     mutation: {
       onSuccess: () => {
@@ -211,7 +224,7 @@ function EditUserDialog({ user }: { user: { id: number; name: string; email: str
     },
   });
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (v) { setForm({ name: user.name, email: user.email, phone: user.phone ?? "", organization: user.organization ?? "", bio: user.bio ?? "" }); setConfirmDelete(false); } }}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (v) { setForm({ name: user.name, email: user.email, adminRole: user.adminRole ?? null, phone: user.phone ?? "", organization: user.organization ?? "", bio: user.bio ?? "" }); setConfirmDelete(false); } }}>
       <DialogTrigger asChild>
         <Button size="sm" variant="outline" className="w-full mt-3">Edit</Button>
       </DialogTrigger>
@@ -242,6 +255,23 @@ function EditUserDialog({ user }: { user: { id: number; name: string; email: str
                 <Label>Email</Label>
                 <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
               </div>
+              <div>
+                <Label>Admin role</Label>
+                <Select
+                  value={form.adminRole ?? "none"}
+                  onValueChange={(v) => setForm({ ...form, adminRole: v === "none" ? null : v as AdminRole })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select role…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— Unassigned —</SelectItem>
+                    {ADMIN_ROLE_OPTIONS.map((r) => (
+                      <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Phone</Label>
@@ -263,7 +293,7 @@ function EditUserDialog({ user }: { user: { id: number; name: string; email: str
               </Button>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-                <Button disabled={!form.name || !form.email || update.isPending} onClick={() => update.mutate({ userId: user.id, data: { name: form.name, email: form.email, phone: form.phone || undefined, organization: form.organization || undefined, bio: form.bio || undefined } })}>
+                <Button disabled={!form.name || !form.email || update.isPending} onClick={() => update.mutate({ userId: user.id, data: { name: form.name, email: form.email, adminRole: form.adminRole ?? null, phone: form.phone || undefined, organization: form.organization || undefined, bio: form.bio || undefined } })}>
                   Save
                 </Button>
               </div>
@@ -559,9 +589,15 @@ export default function People() {
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold">{u.name}</p>
-                        <Badge variant="outline" className="mt-0.5 text-[10px]">
-                          {u.role}
-                        </Badge>
+                        {u.adminRole ? (
+                          <span className={`inline-block mt-0.5 px-1.5 py-0.5 text-[10px] font-medium rounded border ${ADMIN_ROLE_COLORS[u.adminRole as AdminRole]}`}>
+                            {ADMIN_ROLE_OPTIONS.find((r) => r.value === u.adminRole)?.label ?? u.adminRole}
+                          </span>
+                        ) : (
+                          <Badge variant="outline" className="mt-0.5 text-[10px]">
+                            {u.role}
+                          </Badge>
+                        )}
                       </div>
                     </div>
                     <div className="mt-3 space-y-1 text-xs text-muted-foreground">
@@ -588,7 +624,7 @@ export default function People() {
                       </p>
                     )}
                     {tab === "administrator" && role === "administrator" && (
-                      <EditUserDialog user={u} />
+                      <EditUserDialog user={{ ...u, adminRole: (u.adminRole as AdminRole | null | undefined) }} />
                     )}
                     {tab === "instructor" && role === "administrator" && (
                       <InstructorActiveToggle userId={u.id} isActive={u.isActive} />

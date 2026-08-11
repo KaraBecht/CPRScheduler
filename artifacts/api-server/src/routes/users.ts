@@ -48,6 +48,7 @@ export function serializeUser(row: typeof usersTable.$inferSelect) {
     name: row.name,
     email: row.email,
     role: row.role,
+    adminRole: row.adminRole ?? null,
     phone: row.phone,
     organization: row.organization,
     bio: row.bio,

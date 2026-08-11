@@ -55,7 +55,7 @@ export async function sendRenewalReminders(): Promise<number> {
   }
 
   const admins = await db
-    .select({ name: usersTable.name, email: usersTable.email })
+    .select({ name: usersTable.name, email: usersTable.email, adminRole: usersTable.adminRole })
     .from(usersTable)
     .where(eq(usersTable.role, "administrator"));
 
