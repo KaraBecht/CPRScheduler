@@ -72,7 +72,8 @@ export const EnrollmentStatus = {
 export interface User {
   id: number;
   name: string;
-  email: string;
+  /** @nullable */
+  email?: string | null;
   role: UserRole;
   /** @nullable */
   adminRole?: AdminRole | null;
@@ -91,7 +92,8 @@ export interface User {
 export interface UserInput {
   /** @minLength 1 */
   name: string;
-  email: string;
+  /** @nullable */
+  email?: string | null;
   role: UserRole;
   adminRole?: AdminRole;
   phone?: string;

@@ -88,10 +88,6 @@ router.post("/training-requests", async (req, res) => {
       phone: body.requestorPhone ?? null,
       organization: body.locationName,
     })
-    .onConflictDoUpdate({
-      target: usersTable.email,
-      set: { email },
-    })
     .returning();
   const firstSession = body.sessions[0]!;
   const [row] = await db

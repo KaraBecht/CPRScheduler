@@ -25,7 +25,7 @@ export const AdminRole = zod.enum(['admin', 'coordinator', 'ehs'])
 export const ListUsersResponseItem = zod.object({
   "id": zod.number(),
   "name": zod.string(),
-  "email": zod.string(),
+  "email": zod.string().nullish(),
   "role": zod.enum(['administrator', 'instructor', 'student', 'requestor']),
   "adminRole": AdminRole.nullish(),
   "phone": zod.string().nullish(),
@@ -43,7 +43,7 @@ export const ListUsersResponse = zod.array(ListUsersResponseItem)
 
 export const CreateUserBody = zod.object({
   "name": zod.string().min(1),
-  "email": zod.string(),
+  "email": zod.string().nullish(),
   "role": zod.enum(['administrator', 'instructor', 'student', 'requestor']),
   "adminRole": AdminRole.optional(),
   "phone": zod.string().optional(),
@@ -61,7 +61,7 @@ export const GetUserParams = zod.object({
 export const GetUserResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
-  "email": zod.string(),
+  "email": zod.string().nullish(),
   "role": zod.enum(['administrator', 'instructor', 'student', 'requestor']),
   "adminRole": AdminRole.nullish(),
   "phone": zod.string().nullish(),
@@ -82,7 +82,7 @@ export const UpdateUserParams = zod.object({
 
 export const UpdateUserBody = zod.object({
   "name": zod.string().min(1).optional(),
-  "email": zod.string().optional(),
+  "email": zod.string().nullish(),
   "role": zod.enum(['administrator', 'instructor', 'student', 'requestor']).optional(),
   "adminRole": AdminRole.nullish(),
   "phone": zod.string().nullish(),
@@ -95,7 +95,7 @@ export const UpdateUserBody = zod.object({
 export const UpdateUserResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
-  "email": zod.string(),
+  "email": zod.string().nullish(),
   "role": zod.enum(['administrator', 'instructor', 'student', 'requestor']),
   "adminRole": AdminRole.nullish(),
   "phone": zod.string().nullish(),
