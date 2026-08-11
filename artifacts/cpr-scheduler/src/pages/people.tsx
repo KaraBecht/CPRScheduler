@@ -76,31 +76,27 @@ const ADMIN_ROLE_COLORS: Record<AdminRole, string> = {
   ehs: "bg-green-100 text-green-800 border-green-200",
 };
 
+const BLANK_NEW_USER = {
+  name: "",
+  email: "" as string | null,
+  role: "student" as UserRole,
+  adminRole: null as AdminRole | null,
+  phone: "",
+  organization: "",
+  bio: "",
+};
+
 function NewUserDialog() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    role: "student" as UserRole,
-    phone: "",
-    organization: "",
-    bio: "",
-  });
+  const [form, setForm] = useState(BLANK_NEW_USER);
   const create = useCreateUser({
     mutation: {
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: getListUsersQueryKey() });
         toast({ title: "User added" });
         setOpen(false);
-        setForm({
-          name: "",
-          email: "",
-          role: "student",
-          phone: "",
-          organization: "",
-          bio: "",
-        });
+        setForm(BLANK_NEW_USER);
       },
       onError: () => toast({ title: "Failed", variant: "destructive" }),
     },
@@ -129,17 +125,16 @@ function NewUserDialog() {
             <div>
               <Label>Email</Label>
               <Input
-                type="email"
                 data-testid="input-user-email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                value={form.email ?? ""}
+                onChange={(e) => setForm({ ...form, email: e.target.value || null })}
               />
             </div>
             <div>
               <Label>Role</Label>
               <Select
                 value={form.role}
-                onValueChange={(v) => setForm({ ...form, role: v as UserRole })}
+                onValueChange={(v) => setForm({ ...form, role: v as UserRole, adminRole: null })}
               >
                 <SelectTrigger data-testid="select-user-role">
                   <SelectValue />
@@ -154,6 +149,25 @@ function NewUserDialog() {
               </Select>
             </div>
           </div>
+          {form.role === "administrator" && (
+            <div>
+              <Label>Admin role</Label>
+              <Select
+                value={form.adminRole ?? "none"}
+                onValueChange={(v) => setForm({ ...form, adminRole: v === "none" ? null : v as AdminRole })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role…" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— Unassigned —</SelectItem>
+                  {ADMIN_ROLE_OPTIONS.map((r) => (
+                    <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Phone</Label>
@@ -163,17 +177,15 @@ function NewUserDialog() {
               />
             </div>
             <div>
-              <Label>Organization</Label>
+              <Label>Business unit</Label>
               <Input
                 value={form.organization}
-                onChange={(e) =>
-                  setForm({ ...form, organization: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, organization: e.target.value })}
               />
             </div>
           </div>
           <div>
-            <Label>Bio</Label>
+            <Label>Notes</Label>
             <Textarea
               rows={2}
               value={form.bio}
@@ -187,8 +199,8 @@ function NewUserDialog() {
           </Button>
           <Button
             data-testid="button-submit-user"
-            disabled={!form.name || !form.email || create.isPending}
-            onClick={() => create.mutate({ data: form })}
+            disabled={!form.name || create.isPending}
+            onClick={() => create.mutate({ data: { ...form, email: form.email || null, phone: form.phone || null, organization: form.organization || null, bio: form.bio || null, adminRole: form.adminRole ?? undefined } })}
           >
             Add person
           </Button>
