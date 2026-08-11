@@ -136,6 +136,8 @@ function buildRequestorEmail(
     ? `This is a reminder that your CPR training class is coming up in one week.`
     : `Great news — your CPR training request has been approved and your class has been confirmed!`;
 
+  const reminderNote = `Please note: classes are 3.5–4 hours long. We recommend bringing water and wearing non-restrictive clothing that allows for practice of CPR skills.`;
+
   const text = [
     `Hi ${requestor.name},`,
     ``,
@@ -147,7 +149,7 @@ function buildRequestorEmail(
     `  Date:          ${cls.date} @ ${cls.startTime}`,
     cls.location ? `  Location:      ${cls.location}` : null,
     ``,
-    isReminder ? null : `Our team will follow up shortly with the instructor and location details if not yet confirmed.`,
+    isReminder ? reminderNote : `Our team will follow up shortly with the instructor and location details if not yet confirmed.`,
     ``,
     `Thank you for choosing PulsePoint CPR Hub.`,
   ].filter(l => l !== null).join("\n");
@@ -170,7 +172,11 @@ function buildRequestorEmail(
       ${cls.location ? row("Location", cls.location) : ""}
     </table>
 
-    ${!isReminder ? `<p style="margin:0 0 8px;color:#374151">Our team will follow up shortly with the instructor and location details if not yet confirmed.</p>` : ""}
+    ${isReminder
+      ? `<div style="background:#eff6ff;border-left:4px solid #1d4ed8;padding:12px 16px;border-radius:0 4px 4px 0;margin-bottom:20px">
+      <p style="margin:0;color:#1e40af;font-size:14px"><strong>Please note:</strong> Classes are 3.5–4 hours long. We recommend bringing water and wearing non-restrictive clothing that allows for practice of CPR skills.</p>
+    </div>`
+      : `<p style="margin:0 0 8px;color:#374151">Our team will follow up shortly with the instructor and location details if not yet confirmed.</p>`}
     <p style="margin:0;color:#374151">Thank you for choosing <strong>PulsePoint CPR Hub</strong>.</p>
   </div>
 </div>`.trim();
