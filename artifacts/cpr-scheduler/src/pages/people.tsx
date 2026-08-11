@@ -253,7 +253,7 @@ function EditUserDialog({ user }: { user: { id: number; name: string; email: str
               </div>
               <div>
                 <Label>Email</Label>
-                <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+                <Input value={form.email ?? ""} onChange={(e) => setForm({ ...form, email: e.target.value || null })} />
               </div>
               <div>
                 <Label>Admin role</Label>
