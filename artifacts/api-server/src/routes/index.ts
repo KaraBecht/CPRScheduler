@@ -10,6 +10,7 @@ import dashboardRouter from "./dashboard";
 import placesRouter from "./places";
 import locationsRouter from "./locations";
 import remindersRouter from "./reminders";
+import trainerInvitesRouter from "./trainerInvites";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(dashboardRouter);
 router.use(placesRouter);
 router.use(locationsRouter);
 router.use(remindersRouter);
+router.use(trainerInvitesRouter);
 
 export default router;

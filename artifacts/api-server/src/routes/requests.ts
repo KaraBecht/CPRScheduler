@@ -8,8 +8,9 @@ import {
   ListRequestsQueryParams,
   SubmitTrainingRequestBody,
 } from "@workspace/api-zod";
-import { sendEmail, buildRequestEmail } from "../lib/sendgrid";
+import { sendEmail, buildRequestEmail, buildRequestorConfirmationEmail } from "../lib/sendgrid";
 import { sendClassNotifications, type ClassInfo, type RequestorInfo } from "../lib/classNotifications";
+import { sendTrainerInvitations } from "../lib/trainerNotifications";
 import { serializeClass } from "./classes";
 
 const router: IRouter = Router();
@@ -112,7 +113,18 @@ router.post("/training-requests", async (req, res) => {
     .returning();
   const saved = await serializeRequest(row);
 
-  const emailContent = buildRequestEmail({
+  // 1. Confirmation to requestor
+  const confirmContent = buildRequestorConfirmationEmail({
+    requestorName: body.requestorName,
+    organizationName: body.locationName,
+    certificationType: body.certificationType ?? "cpr_aed_first_aid",
+    sessions: body.sessions,
+    attendeeCount: body.attendeeCount,
+  });
+  sendEmail({ to: email, ...confirmContent }, req.log).catch(() => {});
+
+  // 2. Full request details to admin sub-role users only (no students, no NOTIFY_EMAIL)
+  const adminEmailContent = buildRequestEmail({
     requestorName: body.requestorName,
     requestorEmail: email,
     requestorPhone: body.requestorPhone,
@@ -124,7 +136,13 @@ router.post("/training-requests", async (req, res) => {
     sessions: body.sessions,
     notes: body.notes,
   });
-  sendEmail({ to: process.env.NOTIFY_EMAIL ?? "", ...emailContent }, req.log).catch(() => {});
+  const adminUsers = await db
+    .select({ email: usersTable.email })
+    .from(usersTable)
+    .where(and(eq(usersTable.role, "administrator"), eq(usersTable.adminRole, "admin")));
+  for (const admin of adminUsers) {
+    sendEmail({ to: admin.email, ...adminEmailContent }, req.log).catch(() => {});
+  }
 
   res.status(201).json(saved);
 });
@@ -221,6 +239,22 @@ router.patch("/requests/:requestId", async (req, res) => {
           }
         : null;
       sendClassNotifications(clsInfo, requestorInfo, "confirmation", req.log).catch(() => {});
+    }
+
+    // Invite all active trainers for each created class
+    for (const cls of createdClassRows) {
+      sendTrainerInvitations(
+        {
+          id: cls.id,
+          title: cls.title,
+          certificationType: cls.certificationType,
+          date: cls.date,
+          startTime: cls.startTime,
+          location: cls.location,
+          capacity: cls.capacity ?? null,
+        },
+        req.log,
+      ).catch(() => {});
     }
 
     res.json({ ...serializedRequest, createdClasses: serializedClasses });

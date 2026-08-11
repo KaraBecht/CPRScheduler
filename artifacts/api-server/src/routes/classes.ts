@@ -17,6 +17,7 @@ import {
 } from "@workspace/api-zod";
 import { serializeUser } from "./users";
 import { upsertClassReminder } from "../lib/classReminder";
+import { sendTrainerInvitations } from "../lib/trainerNotifications";
 
 const router: IRouter = Router();
 
@@ -190,6 +191,23 @@ router.patch("/classes/:classId", async (req, res) => {
     }
   }
   await upsertClassReminder(row);
+
+  // Send trainer invites when a class is newly moved to confirmed/scheduled
+  if (row.status === "confirmed" || row.status === "scheduled") {
+    sendTrainerInvitations(
+      {
+        id: row.id,
+        title: row.title,
+        certificationType: row.certificationType,
+        date: row.date,
+        startTime: row.startTime,
+        location: row.location,
+        capacity: row.capacity ?? null,
+      },
+      req.log,
+    ).catch(() => {});
+  }
+
   res.json(await serializeClass(row));
 });
 

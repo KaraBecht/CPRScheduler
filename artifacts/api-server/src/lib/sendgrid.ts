@@ -48,6 +48,70 @@ export async function sendEmail(payload: EmailPayload, log: Logger): Promise<voi
   }
 }
 
+export function buildRequestorConfirmationEmail(data: {
+  requestorName: string;
+  organizationName: string;
+  certificationType: string;
+  sessions: { date: string; startTime: string }[];
+  attendeeCount: number;
+}): Pick<EmailPayload, "subject" | "text" | "html"> {
+  const certLabels: Record<string, string> = {
+    cpr_aed: "CPR/AED",
+    cpr_aed_first_aid: "CPR/AED + First Aid",
+    first_aid: "First Aid",
+    bls: "BLS (Basic Life Support)",
+  };
+  const cert = certLabels[data.certificationType] ?? data.certificationType;
+  const sessionLines = data.sessions
+    .map(s => `  • ${s.date} @ ${s.startTime}`)
+    .join("\n");
+
+  const subject = `We've received your CPR training request — ${data.organizationName}`;
+
+  const text = [
+    `Hi ${data.requestorName},`,
+    ``,
+    `Thank you for submitting your CPR training request. We have received it and our scheduling team will review it shortly.`,
+    ``,
+    `REQUEST DETAILS`,
+    `  Organization:  ${data.organizationName}`,
+    `  Certification: ${cert}`,
+    `  Attendees:     ${data.attendeeCount}`,
+    `  Requested dates:`,
+    sessionLines,
+    ``,
+    `You will hear from us soon with next steps.`,
+    ``,
+    `— PulsePoint CPR Hub`,
+    `  Questions? Contact svc_medical@fox.com`,
+  ].join("\n");
+
+  const html = `
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#111827">
+  <div style="background:#1d4ed8;padding:20px 24px;border-radius:8px 8px 0 0">
+    <h1 style="margin:0;color:#fff;font-size:18px">Training Request Received</h1>
+    <p style="margin:4px 0 0;color:#bfdbfe;font-size:13px">PulsePoint CPR Hub</p>
+  </div>
+  <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px">
+    <p style="margin:0 0 16px">Hi <strong>${data.requestorName}</strong>,</p>
+    <p style="margin:0 0 20px">Thank you for submitting your CPR training request. We have received it and our scheduling team will review it shortly.</p>
+
+    <h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin:0 0 8px">Request Details</h2>
+    <table style="border-collapse:collapse;margin-bottom:20px">
+      <tr><td style="padding:4px 12px 4px 0;color:#6b7280;font-size:14px">Organization</td><td style="font-size:14px"><strong>${data.organizationName}</strong></td></tr>
+      <tr><td style="padding:4px 12px 4px 0;color:#6b7280;font-size:14px">Certification</td><td style="font-size:14px"><strong>${cert}</strong></td></tr>
+      <tr><td style="padding:4px 12px 4px 0;color:#6b7280;font-size:14px">Attendees</td><td style="font-size:14px"><strong>${data.attendeeCount}</strong></td></tr>
+      <tr><td style="padding:4px 12px 4px 0;color:#6b7280;font-size:14px;vertical-align:top">Requested dates</td><td style="font-size:14px"><strong>${data.sessions.map(s => `${s.date} @ ${s.startTime}`).join("<br>")}</strong></td></tr>
+    </table>
+
+    <p style="margin:0 0 8px;color:#374151">You will hear from us soon with next steps.</p>
+    <p style="margin:0;font-size:13px;color:#6b7280">Questions? Contact <a href="mailto:svc_medical@fox.com" style="color:#1d4ed8">svc_medical@fox.com</a></p>
+  </div>
+</div>`.trim();
+
+  return { subject, text, html };
+}
+
 export function buildRequestEmail(data: {
   requestorName: string;
   requestorEmail: string;
