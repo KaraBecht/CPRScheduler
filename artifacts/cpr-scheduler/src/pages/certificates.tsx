@@ -34,10 +34,12 @@ type ViewMode = "card" | "list";
 const ALL_BU = "__all__";
 
 const BUSINESS_UNITS = [
+  "FOX Digital",
   "Fox Corp",
   "FOX Entertainment",
   "FOX News Media",
   "FOX Sports",
+  "FOX Studio Lot",
   "FOX Television Stations",
 ] as const;
 
