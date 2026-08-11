@@ -132,6 +132,7 @@ function buildTrainerInviteEmail(
 }
 
 function buildTrainerResponseEmail(
+  recipientName: string,
   trainerName: string,
   trainerEmail: string,
   decision: "accepted" | "declined",
@@ -152,6 +153,8 @@ function buildTrainerResponseEmail(
   const subject = `[Trainer Response] ${trainerName} ${verb} — ${cls.title}`;
 
   const text = [
+    `Hi ${recipientName},`,
+    ``,
     `${trainerName} (${trainerEmail}) has ${verb} the class invitation.`,
     ``,
     `CLASS`,
@@ -168,6 +171,7 @@ function buildTrainerResponseEmail(
     <p style="margin:4px 0 0;color:#bfdbfe;font-size:13px">PulsePoint CPR Hub — Admin Notification</p>
   </div>
   <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px">
+    <p style="margin:0 0 16px">Hi <strong>${recipientName}</strong>,</p>
     <p style="margin:0 0 20px">
       <strong>${trainerName}</strong>
       (<a href="mailto:${trainerEmail}" style="color:#1d4ed8">${trainerEmail}</a>)
@@ -299,7 +303,7 @@ export async function recordTrainerResponse(
 
   // Notify admin sub-role users
   const admins = await db
-    .select({ email: usersTable.email })
+    .select({ email: usersTable.email, name: usersTable.name })
     .from(usersTable)
     .where(
       and(
@@ -308,13 +312,15 @@ export async function recordTrainerResponse(
       ),
     );
 
-  const emailContent = buildTrainerResponseEmail(trainer.name, trainer.email, decision, cls);
   await Promise.allSettled(
-    admins.map(admin =>
-      sendEmail({ to: admin.email, ...emailContent }, log).catch(err =>
-        log.error({ err, to: admin.email }, "Trainer response admin notification failed"),
-      ),
-    ),
+    admins
+      .filter(a => !!a.email)
+      .map(admin => {
+        const emailContent = buildTrainerResponseEmail(admin.name, trainer.name, trainer.email, decision, cls);
+        return sendEmail({ to: admin.email!, ...emailContent }, log).catch(err =>
+          log.error({ err, to: admin.email }, "Trainer response admin notification failed"),
+        );
+      }),
   );
 
   log.info(

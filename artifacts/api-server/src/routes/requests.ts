@@ -120,23 +120,25 @@ router.post("/training-requests", async (req, res) => {
   sendEmail({ to: email, ...confirmContent }, req.log).catch(() => {});
 
   // 2. Full request details to admin sub-role users only (no students, no NOTIFY_EMAIL)
-  const adminEmailContent = buildRequestEmail({
-    requestorName: body.requestorName,
-    requestorEmail: email,
-    requestorPhone: body.requestorPhone,
-    locationName: body.locationName,
-    address: body.address,
-    certificationType: body.certificationType ?? "cpr_aed_first_aid",
-    numberOfClasses: body.numberOfClasses,
-    attendeeCount: body.attendeeCount,
-    sessions: body.sessions,
-    notes: body.notes,
-  });
   const adminUsers = await db
-    .select({ email: usersTable.email })
+    .select({ email: usersTable.email, name: usersTable.name })
     .from(usersTable)
     .where(and(eq(usersTable.role, "administrator"), eq(usersTable.adminRole, "admin")));
   for (const admin of adminUsers) {
+    if (!admin.email) continue;
+    const adminEmailContent = buildRequestEmail({
+      recipientName: admin.name,
+      requestorName: body.requestorName,
+      requestorEmail: email,
+      requestorPhone: body.requestorPhone,
+      locationName: body.locationName,
+      address: body.address,
+      certificationType: body.certificationType ?? "cpr_aed_first_aid",
+      numberOfClasses: body.numberOfClasses,
+      attendeeCount: body.attendeeCount,
+      sessions: body.sessions,
+      notes: body.notes,
+    });
     sendEmail({ to: admin.email, ...adminEmailContent }, req.log).catch(() => {});
   }
 

@@ -182,6 +182,7 @@ function buildStaffEmail(
   requestor: RequestorInfo | null,
   variant: NotificationVariant,
   businessUnit: string | null,
+  recipientName: string,
 ): { subject: string; text: string; html: string } {
   const cert = formatCertificationType(cls.certificationType);
   const isReminder = variant === "reminder";
@@ -192,6 +193,8 @@ function buildStaffEmail(
     : `[Admin] Class confirmed — ${orgLabel} (${cert})`;
 
   const text = [
+    `Hi ${recipientName},`,
+    ``,
     isReminder
       ? `A CPR training class is scheduled for next week.`
       : `A training request has been approved and a class has been confirmed.`,
@@ -216,6 +219,7 @@ function buildStaffEmail(
     <p style="margin:4px 0 0;color:#bfdbfe;font-size:13px">PulsePoint CPR Hub — Staff Notification</p>
   </div>
   <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px">
+    <p style="margin:0 0 16px">Hi <strong>${recipientName}</strong>,</p>
     <p style="margin:0 0 20px">${isReminder ? "A CPR training class is scheduled for next week." : "A training request has been approved and a class has been confirmed."}</p>
 
     ${requestor ? `
@@ -253,7 +257,6 @@ export async function sendClassNotifications(
   const { admins, coordinators, ehsUsers, businessUnit } =
     await getStaffRecipients(cls.location);
 
-  const staffEmail = buildStaffEmail(cls, requestor, variant, businessUnit);
   const staffRecipients = [...admins, ...coordinators, ...ehsUsers];
 
   const sends: Promise<void>[] = [];
@@ -266,9 +269,10 @@ export async function sendClassNotifications(
     ));
   }
 
-  // Staff (admin + coordinator + EHS)
+  // Staff (admin + coordinator + EHS) — personalized per recipient
   for (const staff of staffRecipients) {
     if (!staff.email) continue;
+    const staffEmail = buildStaffEmail(cls, requestor, variant, businessUnit, staff.name);
     sends.push(sendEmail({ to: staff.email, ...staffEmail }, log).catch(err =>
       log.error({ err, to: staff.email }, "Class notification to staff failed"),
     ));

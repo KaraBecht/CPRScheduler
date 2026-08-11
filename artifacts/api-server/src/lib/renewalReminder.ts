@@ -111,29 +111,29 @@ export async function sendRenewalReminders(): Promise<number> {
   for (const cls of needsReminder) {
     const certLabel = formatCertificationType(cls.certificationType);
     const renewalBy = isoDate(addMonths(new Date(cls.date), MONTHS + 2));
-
     const subject = `CPR Renewal Planning: "${cls.title}" is due for renewal`;
 
-    const text = [
-      `Hi,`,
-      ``,
-      `This is an automated renewal planning reminder from the CPR Training Hub.`,
-      ``,
-      `Class: ${cls.title}`,
-      `Certification: ${certLabel}`,
-      `Completed: ${cls.date}`,
-      `Location: ${cls.location}`,
-      ``,
-      `This class was completed 18 months ago. Participants whose certifications`,
-      `expire every 2 years should be scheduled for renewal by ${renewalBy}.`,
-      ``,
-      `Log in to the scheduler to create a renewal class or send outreach.`,
-      ``,
-      `— FOX Medical CPR Training Hub`,
-    ].join("\n");
+    for (const admin of admins) {
+      const text = [
+        `Hi ${admin.name},`,
+        ``,
+        `This is an automated renewal planning reminder from the CPR Training Hub.`,
+        ``,
+        `Class: ${cls.title}`,
+        `Certification: ${certLabel}`,
+        `Completed: ${cls.date}`,
+        `Location: ${cls.location}`,
+        ``,
+        `This class was completed 18 months ago. Participants whose certifications`,
+        `expire every 2 years should be scheduled for renewal by ${renewalBy}.`,
+        ``,
+        `Log in to the scheduler to create a renewal class or send outreach.`,
+        ``,
+        `— FOX Medical CPR Training Hub`,
+      ].join("\n");
 
-    const html = `
-<p>Hi,</p>
+      const html = `
+<p>Hi <strong>${admin.name}</strong>,</p>
 <p>This is an automated renewal planning reminder from the <strong>CPR Training Hub</strong>.</p>
 <table style="border-collapse:collapse;font-size:14px;margin:12px 0">
   <tr><td style="padding:4px 12px 4px 0;color:#666">Class</td><td><strong>${cls.title}</strong></td></tr>
@@ -145,9 +145,8 @@ export async function sendRenewalReminders(): Promise<number> {
 expire every 2 years should be scheduled for renewal by <strong>${renewalBy}</strong>.</p>
 <p>Log in to the scheduler to create a renewal class or send outreach.</p>
 <p style="color:#888;font-size:12px">— FOX Medical CPR Training Hub</p>
-    `.trim();
+      `.trim();
 
-    for (const admin of admins) {
       await sendMail({ to: admin.email, subject, text, html });
     }
   }

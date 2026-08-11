@@ -113,6 +113,7 @@ export function buildRequestorConfirmationEmail(data: {
 }
 
 export function buildRequestEmail(data: {
+  recipientName: string;
   requestorName: string;
   requestorEmail: string;
   requestorPhone?: string | null;
@@ -134,6 +135,8 @@ export function buildRequestEmail(data: {
     .join("\n");
 
   const text = [
+    `Hi ${data.recipientName},`,
+    "",
     "A new CPR training request has been submitted via PulsePoint.",
     "",
     "CONTACT",
