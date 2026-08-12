@@ -83,6 +83,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatDate } from "@/lib/format";
 import { toast } from "@/hooks/use-toast";
+import { MapboxAddressInput } from "@/components/MapboxAddressInput";
 import { cn } from "@/lib/utils";
 import {
   Select,
@@ -781,10 +782,9 @@ function LocationFormDialog({
           </div>
           <div>
             <Label>Address</Label>
-            <Input
-              placeholder="123 Main St, City, State 12345"
+            <MapboxAddressInput
               value={form.address}
-              onChange={(e) => setForm({ ...form, address: e.target.value })}
+              onChange={(v) => setForm({ ...form, address: v })}
             />
           </div>
 
