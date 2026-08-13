@@ -230,11 +230,38 @@ function NewUserDialog() {
   );
 }
 
-function EditUserDialog({ user }: { user: { id: number; name: string; email: string; adminRole?: AdminRole | null; phone?: string | null; organization?: string | null; bio?: string | null } }) {
+function EditUserDialog({
+  user,
+  role = "administrator",
+}: {
+  user: { id: number; name: string; email: string; adminRole?: AdminRole | null; phone?: string | null; organization?: string | null; bio?: string | null };
+  role?: "administrator" | "instructor";
+}) {
+  const isInstructor = role === "instructor";
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [form, setForm] = useState({ name: user.name, email: user.email, adminRole: user.adminRole ?? null as AdminRole | null, phone: user.phone ?? "", organization: user.organization ?? "", bio: user.bio ?? "" });
+  const [form, setForm] = useState({
+    name: user.name,
+    email: user.email,
+    adminRole: user.adminRole ?? null as AdminRole | null,
+    phone: user.phone ?? "",
+    organization: user.organization ?? "",
+    bio: user.bio ?? "",
+  });
+
+  function resetForm() {
+    setForm({
+      name: user.name,
+      email: user.email,
+      adminRole: user.adminRole ?? null,
+      phone: user.phone ?? "",
+      organization: user.organization ?? "",
+      bio: user.bio ?? "",
+    });
+    setConfirmDelete(false);
+  }
+
   const update = useUpdateUser({
     mutation: {
       onSuccess: () => {
@@ -249,20 +276,21 @@ function EditUserDialog({ user }: { user: { id: number; name: string; email: str
     mutation: {
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: getListUsersQueryKey() });
-        toast({ title: "Administrator deleted" });
+        toast({ title: isInstructor ? "Instructor deleted" : "Administrator deleted" });
         setOpen(false);
       },
       onError: () => toast({ title: "Failed to delete", variant: "destructive" }),
     },
   });
+
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (v) { setForm({ name: user.name, email: user.email, adminRole: user.adminRole ?? null, phone: user.phone ?? "", organization: user.organization ?? "", bio: user.bio ?? "" }); setConfirmDelete(false); } }}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (v) resetForm(); }}>
       <DialogTrigger asChild>
         <Button size="sm" variant="outline" className="w-full mt-3">Edit</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit administrator</DialogTitle>
+          <DialogTitle>{isInstructor ? "Edit instructor" : "Edit administrator"}</DialogTitle>
         </DialogHeader>
         {confirmDelete ? (
           <div className="space-y-3">
@@ -285,29 +313,38 @@ function EditUserDialog({ user }: { user: { id: number; name: string; email: str
               </div>
               <div>
                 <Label>Email</Label>
-                <Input value={form.email ?? ""} onChange={(e) => setForm({ ...form, email: e.target.value || null })} />
+                <Input type="email" value={form.email ?? ""} onChange={(e) => setForm({ ...form, email: e.target.value || null })} />
               </div>
-              <div>
-                <Label>Admin role</Label>
-                <Select
-                  value={form.adminRole ?? "none"}
-                  onValueChange={(v) => setForm({ ...form, adminRole: v === "none" ? null : v as AdminRole })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select role…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">— Unassigned —</SelectItem>
-                    {ADMIN_ROLE_OPTIONS.map((r) => (
-                      <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+
+              {/* Admin role — only for administrators */}
+              {!isInstructor && (
+                <div>
+                  <Label>Admin role</Label>
+                  <Select
+                    value={form.adminRole ?? "none"}
+                    onValueChange={(v) => setForm({ ...form, adminRole: v === "none" ? null : v as AdminRole })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select role…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— Unassigned —</SelectItem>
+                      {ADMIN_ROLE_OPTIONS.map((r) => (
+                        <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Phone</Label>
-                  <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+                  <Input
+                    placeholder="(555) 000-0000"
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  />
                 </div>
                 <div>
                   <Label>Business unit</Label>
@@ -327,19 +364,45 @@ function EditUserDialog({ user }: { user: { id: number; name: string; email: str
                   </Select>
                 </div>
               </div>
+
               <div>
-                <Label>Notes</Label>
-                <Textarea rows={2} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} />
+                <Label>{isInstructor ? "Notes / certifications" : "Notes"}</Label>
+                <Textarea
+                  rows={2}
+                  placeholder={isInstructor ? "AHA certified, PALS instructor…" : ""}
+                  value={form.bio}
+                  onChange={(e) => setForm({ ...form, bio: e.target.value })}
+                />
               </div>
             </div>
+
             <DialogFooter className="sm:justify-between">
-              <Button variant="ghost" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setConfirmDelete(true)}>
+              <Button
+                variant="ghost"
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={() => setConfirmDelete(true)}
+              >
                 Delete
               </Button>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-                <Button disabled={!form.name || update.isPending} onClick={() => update.mutate({ userId: user.id, data: { name: form.name, email: form.email, adminRole: form.adminRole ?? null, phone: form.phone || null, organization: form.organization || null, bio: form.bio || null } })}>
-                  Save
+                <Button
+                  disabled={!form.name || update.isPending}
+                  onClick={() =>
+                    update.mutate({
+                      userId: user.id,
+                      data: {
+                        name: form.name,
+                        email: form.email,
+                        adminRole: isInstructor ? undefined : (form.adminRole ?? null),
+                        phone: form.phone || null,
+                        organization: form.organization || null,
+                        bio: form.bio || null,
+                      },
+                    })
+                  }
+                >
+                  {update.isPending ? "Saving…" : "Save"}
                 </Button>
               </div>
             </DialogFooter>
@@ -669,10 +732,13 @@ export default function People() {
                       </p>
                     )}
                     {tab === "administrator" && role === "administrator" && (
-                      <EditUserDialog user={{ ...u, adminRole: (u.adminRole as AdminRole | null | undefined) }} />
+                      <EditUserDialog user={{ ...u, adminRole: (u.adminRole as AdminRole | null | undefined) }} role="administrator" />
                     )}
                     {tab === "instructor" && role === "administrator" && (
-                      <InstructorActiveToggle userId={u.id} isActive={u.isActive} />
+                      <>
+                        <EditUserDialog user={u} role="instructor" />
+                        <InstructorActiveToggle userId={u.id} isActive={u.isActive} />
+                      </>
                     )}
                     {tab === "instructor" && role !== "administrator" && !u.isActive && (
                       <div className="mt-3 pt-3 border-t border-border">
