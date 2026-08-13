@@ -3,7 +3,7 @@ import { useListCertificates, type Certificate } from "@workspace/api-client-rea
 import { useAuth } from "@/lib/auth-context";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
-import { Award, MapPin, BookOpen, Building2, LayoutGrid, List, LayoutList, Download } from "lucide-react";
+import { Award, MapPin, BookOpen, Building2, LayoutGrid, List, LayoutList, Download, Mail, Phone, Hash } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatCertificationType, formatDate } from "@/lib/format";
 import {
@@ -122,94 +122,178 @@ function groupCerts(
   return entries;
 }
 
+function CertDetailDialog({ c, trigger }: { c: Cert; trigger: React.ReactNode }) {
+  const bucket = expirationBucket(c.expiryDate);
+  return (
+    <Dialog>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Award className="h-4 w-4 text-primary" />
+            {c.studentName}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 py-1">
+          {c.studentEmail && (
+            <div className="flex items-center gap-2 text-sm">
+              <Mail className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <a href={`mailto:${c.studentEmail}`} className="text-primary hover:underline truncate">
+                {c.studentEmail}
+              </a>
+            </div>
+          )}
+          {c.studentPhone && (
+            <div className="flex items-center gap-2 text-sm">
+              <Phone className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <a href={`tel:${c.studentPhone}`} className="hover:underline">
+                {c.studentPhone}
+              </a>
+            </div>
+          )}
+          <div className="border-t pt-3 space-y-2">
+            <div className="flex items-center gap-2 text-sm">
+              <Hash className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <span className="font-mono text-muted-foreground">{c.certificateNumber}</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <Award className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <span>{formatCertificationType(c.certificationType)}</span>
+            </div>
+            {c.classTitle && (
+              <div className="flex items-center gap-2 text-sm">
+                <BookOpen className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <span className="truncate">{c.classTitle}</span>
+              </div>
+            )}
+            {c.classLocation && (
+              <div className="flex items-center gap-2 text-sm">
+                <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <span className="truncate">{c.classLocation}</span>
+              </div>
+            )}
+          </div>
+          <div className="border-t pt-3 grid grid-cols-2 gap-2 text-sm">
+            <div>
+              <p className="text-xs text-muted-foreground mb-0.5">Issued</p>
+              <p>{formatDate(c.issuedDate)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground mb-0.5">Expires</p>
+              <p className={bucket === "Expired" ? "font-semibold text-destructive" : ""}>
+                {formatDate(c.expiryDate)}
+              </p>
+            </div>
+          </div>
+          <div className="flex justify-end pt-1">
+            <Badge variant="outline" className={cn("text-xs", expirationBadgeClasses(bucket))}>
+              {bucket}
+            </Badge>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function CertCard({ c }: { c: Cert }) {
   const bucket = expirationBucket(c.expiryDate);
   return (
-    <Card data-testid={`cert-${c.id}`}>
-      <CardContent className="pt-5">
-        <div className="flex items-start gap-4">
-          <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-primary to-fuchsia-500 text-white flex items-center justify-center flex-shrink-0">
-            <Award className="h-7 w-7" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <Badge variant="outline" className="mb-1">
-              {formatCertificationType(c.certificationType)}
-            </Badge>
-            <p className="font-semibold">{c.studentName}</p>
-            {c.classTitle && (
-              <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
-                <BookOpen className="h-3 w-3" />
-                <span className="truncate">{c.classTitle}</span>
-              </p>
-            )}
-            {c.classLocation && (
-              <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
-                <MapPin className="h-3 w-3" />
-                <span className="truncate">{c.classLocation}</span>
-              </p>
-            )}
-            <p className="text-xs mt-1">
-              <span className="text-muted-foreground">
-                Issued {formatDate(c.issuedDate)} · expires{" "}
-              </span>
-              <span
-                className={
-                  bucket === "Expired"
-                    ? "font-semibold text-destructive"
-                    : "text-muted-foreground"
-                }
-              >
-                {formatDate(c.expiryDate)}
-              </span>
-            </p>
-            <p className="text-xs font-mono text-muted-foreground mt-1">
-              {c.certificateNumber}
-            </p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <CertDetailDialog
+      c={c}
+      trigger={
+        <Card data-testid={`cert-${c.id}`} className="cursor-pointer hover:shadow-md transition-shadow">
+          <CardContent className="pt-5">
+            <div className="flex items-start gap-4">
+              <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-primary to-fuchsia-500 text-white flex items-center justify-center flex-shrink-0">
+                <Award className="h-7 w-7" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <Badge variant="outline" className="mb-1">
+                  {formatCertificationType(c.certificationType)}
+                </Badge>
+                <p className="font-semibold">{c.studentName}</p>
+                {c.studentEmail && (
+                  <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
+                    <Mail className="h-3 w-3" />
+                    <span className="truncate">{c.studentEmail}</span>
+                  </p>
+                )}
+                {c.classTitle && (
+                  <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
+                    <BookOpen className="h-3 w-3" />
+                    <span className="truncate">{c.classTitle}</span>
+                  </p>
+                )}
+                {c.classLocation && (
+                  <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
+                    <MapPin className="h-3 w-3" />
+                    <span className="truncate">{c.classLocation}</span>
+                  </p>
+                )}
+                <p className="text-xs mt-1">
+                  <span className="text-muted-foreground">
+                    Issued {formatDate(c.issuedDate)} · expires{" "}
+                  </span>
+                  <span className={bucket === "Expired" ? "font-semibold text-destructive" : "text-muted-foreground"}>
+                    {formatDate(c.expiryDate)}
+                  </span>
+                </p>
+                <p className="text-xs font-mono text-muted-foreground mt-1">
+                  {c.certificateNumber}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      }
+    />
   );
 }
 
 function CertRow({ c }: { c: Cert }) {
   const bucket = expirationBucket(c.expiryDate);
   return (
-    <tr
-      data-testid={`cert-${c.id}`}
-      className="border-b last:border-0 hover:bg-muted/40 transition-colors"
-    >
-      <td className="py-2.5 px-3">
-        <p className="font-medium text-sm">{c.studentName}</p>
-        <p className="text-xs font-mono text-muted-foreground">{c.certificateNumber}</p>
-      </td>
-      <td className="py-2.5 px-3">
-        <Badge variant="outline" className="whitespace-nowrap">
-          {formatCertificationType(c.certificationType)}
-        </Badge>
-      </td>
-      <td className="py-2.5 px-3 text-sm text-muted-foreground hidden md:table-cell">
-        {c.classLocation ?? "—"}
-      </td>
-      <td className="py-2.5 px-3 text-sm text-muted-foreground hidden sm:table-cell">
-        {formatDate(c.issuedDate)}
-      </td>
-      <td className="py-2.5 px-3 text-sm">
-        <span
-          className={bucket === "Expired" ? "font-semibold text-destructive" : "text-muted-foreground"}
+    <CertDetailDialog
+      c={c}
+      trigger={
+        <tr
+          data-testid={`cert-${c.id}`}
+          className="border-b last:border-0 hover:bg-muted/40 transition-colors cursor-pointer"
         >
-          {formatDate(c.expiryDate)}
-        </span>
-      </td>
-      <td className="py-2.5 px-3">
-        <Badge
-          variant="outline"
-          className={cn("whitespace-nowrap text-xs", expirationBadgeClasses(bucket))}
-        >
-          {bucket}
-        </Badge>
-      </td>
-    </tr>
+          <td className="py-2.5 px-3">
+            <p className="font-medium text-sm">{c.studentName}</p>
+            {c.studentEmail && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                <Mail className="h-3 w-3" />{c.studentEmail}
+              </p>
+            )}
+            <p className="text-xs font-mono text-muted-foreground">{c.certificateNumber}</p>
+          </td>
+          <td className="py-2.5 px-3">
+            <Badge variant="outline" className="whitespace-nowrap">
+              {formatCertificationType(c.certificationType)}
+            </Badge>
+          </td>
+          <td className="py-2.5 px-3 text-sm text-muted-foreground hidden md:table-cell">
+            {c.classLocation ?? "—"}
+          </td>
+          <td className="py-2.5 px-3 text-sm text-muted-foreground hidden sm:table-cell">
+            {formatDate(c.issuedDate)}
+          </td>
+          <td className="py-2.5 px-3 text-sm">
+            <span className={bucket === "Expired" ? "font-semibold text-destructive" : "text-muted-foreground"}>
+              {formatDate(c.expiryDate)}
+            </span>
+          </td>
+          <td className="py-2.5 px-3">
+            <Badge variant="outline" className={cn("whitespace-nowrap text-xs", expirationBadgeClasses(bucket))}>
+              {bucket}
+            </Badge>
+          </td>
+        </tr>
+      }
+    />
   );
 }
 

@@ -625,6 +625,8 @@ export const ListCertificatesResponseItem = zod.object({
   "id": zod.number(),
   "studentId": zod.number(),
   "studentName": zod.string(),
+  "studentEmail": zod.string().nullish(),
+  "studentPhone": zod.string().nullish(),
   "studentOrganization": zod.string().nullish(),
   "classId": zod.number().nullish(),
   "classTitle": zod.string().nullish(),

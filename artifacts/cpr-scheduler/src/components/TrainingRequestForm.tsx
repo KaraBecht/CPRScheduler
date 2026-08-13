@@ -8,6 +8,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MapboxAddressInput } from "@/components/MapboxAddressInput";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -122,11 +123,11 @@ export function TrainingRequestForm({ onSuccess, onCancel }: TrainingRequestForm
         </div>
         <div>
           <Label>Address</Label>
-          <Input
-            data-testid="input-address"
-            placeholder="Street, city, state, zip"
+          <MapboxAddressInput
             value={address}
-            onChange={(e) => setAddress(e.target.value)}
+            onChange={setAddress}
+            onSelect={(full) => setAddress(full)}
+            placeholder="Street, city, state, zip"
           />
         </div>
       </section>

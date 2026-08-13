@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearch } from "wouter";
 import {
   useListClasses,
   useCreateClass,
@@ -186,12 +187,14 @@ function CreateClassDialog() {
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label>Title</Label>
-            <Input
+            <Label>Location name</Label>
+            <LocationAutocomplete
               data-testid="input-class-title"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="CPR/AED/First Aid"
+              onChange={(v) => {
+                setTitle(v);
+                if (!location || location === title) setLocation(v);
+              }}
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -644,8 +647,13 @@ function OverdueClassesBanner({ classes }: { classes: ClassSession[] }) {
 
 export default function Classes() {
   const { role } = useAuth();
+  const qs = useSearch();
   const [view, setView] = useState<"list" | "calendar">("list");
-  const [tab, setTab] = useState<"all" | "upcoming" | "completed" | "scheduling" | "cancelled">("all");
+  const validTabs = ["all", "upcoming", "completed", "scheduling", "cancelled"] as const;
+  type TabValue = typeof validTabs[number];
+  const paramTab = new URLSearchParams(qs).get("tab");
+  const initialTab = validTabs.includes(paramTab as TabValue) ? (paramTab as TabValue) : "all";
+  const [tab, setTab] = useState<TabValue>(initialTab);
   const [deletingClass, setDeletingClass] = useState<ClassSession | null>(null);
   const [search, setSearch] = useState("");
   const [certFilter, setCertFilter] = useState<CertificationType | "all">("all");

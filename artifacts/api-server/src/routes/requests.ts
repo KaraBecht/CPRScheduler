@@ -172,20 +172,42 @@ router.patch("/requests/:requestId", async (req, res) => {
           ? (existing.sessions as { date: string; startTime: string }[])
           : [{ date: existing.preferredDate, startTime: "09:00" }];
 
-    // Upsert a location record for this organization so it appears in the Locations tab
+    // Extract business unit from request notes up front so it flows into classes + location
+    const buMatch = existing.notes?.match(/Business Unit:\s*(.+)/i);
+    const requestBusinessUnit = buMatch?.[1]?.trim() ?? null;
+
+    // Upsert a location record for this organization so it appears in the Locations tab.
+    // If a BU is present on the request, write it into the location's notes too so the
+    // location card shows the correct business unit band.
     const locationName = existing.organizationName;
     const [existingLoc] = await db
       .select()
       .from(locationsTable)
       .where(ilike(locationsTable.name, locationName))
       .limit(1);
+
     if (!existingLoc) {
+      // Brand-new location — include BU in notes if available
+      const newNotes = requestBusinessUnit ? `Business Unit: ${requestBusinessUnit}` : null;
       await db.insert(locationsTable).values({
         name: locationName,
         address: existing.address ?? null,
         contactEmail: existing.contactEmail ?? null,
         contactPhone: existing.contactPhone ?? null,
+        notes: newNotes,
       });
+    } else if (requestBusinessUnit) {
+      // Existing location — add BU if it doesn't already have one
+      const existingBuMatch = existingLoc.notes?.match(/Business Unit:\s*(.+)/i);
+      if (!existingBuMatch) {
+        const updatedNotes = existingLoc.notes
+          ? `${existingLoc.notes.trimEnd()}\nBusiness Unit: ${requestBusinessUnit}`
+          : `Business Unit: ${requestBusinessUnit}`;
+        await db
+          .update(locationsTable)
+          .set({ notes: updatedNotes })
+          .where(eq(locationsTable.id, existingLoc.id));
+      }
     }
 
     const { updatedRequest, createdClassRows } = await db.transaction(async (tx) => {
@@ -201,6 +223,7 @@ router.patch("/requests/:requestId", async (req, res) => {
             location: locationName,
             capacity: existing.attendeeCount,
             status: (session as { date: string; startTime: string; status?: string }).status ?? "confirmed",
+            businessUnit: requestBusinessUnit ?? undefined,
           })
           .returning();
         if (cls) insertedClasses.push(cls);
@@ -236,9 +259,6 @@ router.patch("/requests/:requestId", async (req, res) => {
             organizationName: existing.organizationName,
           }
         : null;
-      // Extract business unit encoded in the request notes ("Business Unit: FOX News Media")
-      const buMatch = existing.notes?.match(/Business Unit:\s*(.+)/i);
-      const requestBusinessUnit = buMatch?.[1]?.trim() ?? null;
       sendClassNotifications(clsInfo, requestorInfo, "confirmation", req.log, requestBusinessUnit).catch(() => {});
     }
 

@@ -195,7 +195,7 @@ export function AdminDashboardPage() {
           label="Upcoming classes"
           value={dash.upcomingClasses}
           icon={CalendarDays}
-          href="/classes"
+          href="/classes?tab=upcoming"
           testId="stat-upcoming-classes"
         />
         <StatCard

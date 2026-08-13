@@ -6,6 +6,7 @@ import {
   useUpdateEnrollment,
   useDeleteEnrollment,
   useCreateCertificate,
+  useCreateClass,
   useUpdateClass,
   useDeleteClass,
   useListUsers,
@@ -59,6 +60,7 @@ import {
   Clock,
   MapPin,
   Pencil,
+  Plus,
   Printer,
   Trash2,
   Upload,
@@ -81,6 +83,18 @@ import {
 } from "@/lib/format";
 import { toast } from "@/hooks/use-toast";
 import { useState, useMemo, useEffect } from "react";
+
+const BUSINESS_UNITS = [
+  "FOX Digital",
+  "Fox Corp",
+  "FOX Entertainment",
+  "FOX News Media",
+  "FOX Sports",
+  "FOX Studio Lot",
+  "FOX Television Stations",
+];
+
+type ExtraSlot = { date: string; startTime: string };
 
 export default function ClassDetail() {
   const [, params] = useRoute("/classes/:id");
@@ -127,8 +141,10 @@ export default function ClassDetail() {
     capacity: 10,
     instructorIds: [] as number[],
     description: "",
+    businessUnit: "",
     status: "confirmed" as "being_scheduled" | "pending_schedule" | "confirmed" | "completed" | "cancelled" | "scheduled",
   });
+  const [extraSlots, setExtraSlots] = useState<ExtraSlot[]>([]);
   const signInUrl = useMemo(() => {
     const base = import.meta.env.BASE_URL.replace(/\/$/, "");
     return `${window.location.origin}${base}/roster-signin/${classId}`;
@@ -171,16 +187,14 @@ export default function ClassDetail() {
       },
     },
   });
+  const createClass = useCreateClass({
+    mutation: {
+      onError: () => toast({ title: "Could not create session", variant: "destructive" }),
+    },
+  });
   const updateClass = useUpdateClass({
     mutation: {
-      onSuccess: () => {
-        toast({ title: "Class updated" });
-        invalidate();
-        qc.invalidateQueries({ queryKey: getListClassesQueryKey() });
-        setEditOpen(false);
-      },
-      onError: () =>
-        toast({ title: "Could not update class", variant: "destructive" }),
+      onError: () => toast({ title: "Could not update class", variant: "destructive" }),
     },
   });
 
@@ -202,27 +216,60 @@ export default function ClassDetail() {
       capacity: cls.capacity,
       instructorIds: ids,
       description: cls.description ?? "",
+      businessUnit: (cls as any).businessUnit ?? "",
       status: cls.status as "being_scheduled" | "pending_schedule" | "confirmed" | "completed" | "cancelled" | "scheduled",
     });
+    setExtraSlots([]);
     setEditOpen(true);
   }
 
-  function submitEdit() {
-    updateClass.mutate({
-      classId,
-      data: {
-        title: editForm.title || undefined,
-        certificationType: editForm.certificationType,
-        date: editForm.date || undefined,
-        startTime: editForm.startTime || undefined,
-        endTime: editForm.endTime || undefined,
-        location: editForm.location || "TBD",
-        capacity: editForm.capacity,
-        instructorIds: editForm.instructorIds,
-        description: editForm.description || undefined,
-        status: editForm.status,
-      },
-    });
+  async function submitEdit() {
+    const validExtra = extraSlots.filter((s) => s.date && s.startTime);
+    try {
+      await updateClass.mutateAsync({
+        classId,
+        data: {
+          title: editForm.title || undefined,
+          certificationType: editForm.certificationType,
+          date: editForm.date || undefined,
+          startTime: editForm.startTime || undefined,
+          endTime: editForm.endTime || undefined,
+          location: editForm.location || "TBD",
+          capacity: editForm.capacity,
+          instructorIds: editForm.instructorIds,
+          description: editForm.description || undefined,
+          businessUnit: editForm.businessUnit || undefined,
+          status: editForm.status,
+        },
+      });
+      for (const slot of validExtra) {
+        await createClass.mutateAsync({
+          data: {
+            title: editForm.title || "TBD",
+            certificationType: editForm.certificationType,
+            date: slot.date,
+            startTime: slot.startTime,
+            endTime: editForm.endTime || undefined,
+            location: editForm.location || "TBD",
+            capacity: editForm.capacity,
+            instructorIds: editForm.instructorIds.length > 0 ? editForm.instructorIds : undefined,
+            description: editForm.description || undefined,
+            businessUnit: editForm.businessUnit || undefined,
+            status: editForm.status,
+          },
+        });
+      }
+      invalidate();
+      qc.invalidateQueries({ queryKey: getListClassesQueryKey() });
+      setEditOpen(false);
+      toast({
+        title: validExtra.length > 0
+          ? `Saved — ${validExtra.length} additional session${validExtra.length > 1 ? "s" : ""} created`
+          : "Class updated",
+      });
+    } catch {
+      // individual mutation onError handlers show toasts
+    }
   }
 
   if (isLoading || !cls) {
@@ -401,11 +448,17 @@ export default function ClassDetail() {
           </DialogHeader>
           <div className="space-y-3">
             <div>
-              <Label>Title</Label>
-              <Input
+              <Label>Location name</Label>
+              <LocationAutocomplete
                 data-testid="input-edit-title"
                 value={editForm.title}
-                onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                onChange={(v) =>
+                  setEditForm((f) => ({
+                    ...f,
+                    title: v,
+                    location: f.location === f.title || !f.location ? v : f.location,
+                  }))
+                }
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -602,6 +655,77 @@ export default function ClassDetail() {
                 placeholder="Optional notes about this class"
               />
             </div>
+            <div>
+              <Label>Business unit</Label>
+              <Select
+                value={editForm.businessUnit || "none"}
+                onValueChange={(v) => setEditForm({ ...editForm, businessUnit: v === "none" ? "" : v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a business unit…" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— None —</SelectItem>
+                  {BUSINESS_UNITS.map((bu) => (
+                    <SelectItem key={bu} value={bu}>{bu}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Additional sessions */}
+            <div className="border-t pt-3">
+              <div className="flex items-center justify-between mb-2">
+                <Label className="text-sm font-medium text-muted-foreground">Add another session</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setExtraSlots((prev) => [...prev, { date: "", startTime: "09:00" }])}
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  Add date
+                </Button>
+              </div>
+              {extraSlots.length > 0 && (
+                <p className="text-xs text-muted-foreground mb-2">
+                  Each date creates a separate class with the same details above.
+                </p>
+              )}
+              {extraSlots.map((slot, i) => (
+                <div key={i} className="flex items-center gap-2 mb-2">
+                  <Input
+                    type="date"
+                    value={slot.date}
+                    onChange={(e) =>
+                      setExtraSlots((prev) =>
+                        prev.map((s, idx) => idx === i ? { ...s, date: e.target.value } : s)
+                      )
+                    }
+                    className="flex-1"
+                  />
+                  <Input
+                    type="time"
+                    value={slot.startTime}
+                    onChange={(e) =>
+                      setExtraSlots((prev) =>
+                        prev.map((s, idx) => idx === i ? { ...s, startTime: e.target.value } : s)
+                      )
+                    }
+                    className="w-28"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 shrink-0"
+                    onClick={() => setExtraSlots((prev) => prev.filter((_, idx) => idx !== i))}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditOpen(false)}>
@@ -613,7 +737,8 @@ export default function ClassDetail() {
                 !editForm.title ||
                 !editForm.date ||
                 !editForm.startTime ||
-                updateClass.isPending
+                updateClass.isPending ||
+                createClass.isPending
               }
               onClick={submitEdit}
             >

@@ -211,6 +211,11 @@ export interface ClassBasic {
 
 /**
  * Send trainer invitation emails for a class.
+ *
+ * If specific instructors are assigned to the class (via class_instructors or
+ * the legacy instructorId column), only those instructors receive the email.
+ * When no instructor is assigned, all active instructors are invited.
+ *
  * Skips silently if invitations have already been created for this class.
  */
 export async function sendTrainerInvitations(
@@ -228,11 +233,38 @@ export async function sendTrainerInvitations(
     return;
   }
 
-  // Active instructors only — inactive instructors never receive emails
-  const instructors = await db
+  // 1. Try class_instructors join table (preferred, multi-instructor)
+  let instructors = await db
     .select({ id: usersTable.id, name: usersTable.name, email: usersTable.email })
-    .from(usersTable)
-    .where(and(eq(usersTable.role, "instructor"), eq(usersTable.isActive, true)));
+    .from(classInstructorsTable)
+    .innerJoin(usersTable, eq(classInstructorsTable.userId, usersTable.id))
+    .where(and(
+      eq(classInstructorsTable.classId, cls.id),
+      eq(usersTable.isActive, true),
+    ));
+
+  // 2. Fall back to legacy single instructorId on the class row
+  if (instructors.length === 0) {
+    const [clsRow] = await db
+      .select({ instructorId: classesTable.instructorId })
+      .from(classesTable)
+      .where(eq(classesTable.id, cls.id));
+    if (clsRow?.instructorId) {
+      const [leg] = await db
+        .select({ id: usersTable.id, name: usersTable.name, email: usersTable.email })
+        .from(usersTable)
+        .where(and(eq(usersTable.id, clsRow.instructorId), eq(usersTable.isActive, true)));
+      if (leg) instructors = [leg];
+    }
+  }
+
+  // 3. No specific instructor assigned — invite all active instructors
+  if (instructors.length === 0) {
+    instructors = await db
+      .select({ id: usersTable.id, name: usersTable.name, email: usersTable.email })
+      .from(usersTable)
+      .where(and(eq(usersTable.role, "instructor"), eq(usersTable.isActive, true)));
+  }
 
   if (instructors.length === 0) {
     log.warn({ classId: cls.id }, "No instructors found — trainer invites not sent");
