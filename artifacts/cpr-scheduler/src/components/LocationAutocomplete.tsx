@@ -98,7 +98,7 @@ export function LocationAutocomplete({ value, onChange, placeholder, "data-testi
       {noKey && (
         <p className="text-[11px] text-amber-600 mt-1 flex items-center gap-1">
           <MapPin className="h-3 w-3" />
-          Address suggestions disabled — add a Google Maps API key to enable.
+          Address suggestions unavailable — Mapbox token not configured.
         </p>
       )}
       {open && suggestions.length > 0 && (
