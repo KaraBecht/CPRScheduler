@@ -190,6 +190,7 @@ function CreateClassDialog() {
             <Label>Location name</Label>
             <LocationAutocomplete
               data-testid="input-class-title"
+              placeholder="1211, Studio Lot, KTTV, DC Bureau…"
               value={title}
               onChange={(v) => {
                 setTitle(v);
@@ -248,7 +249,7 @@ function CreateClassDialog() {
               data-testid="input-location"
               value={location}
               onChange={setLocation}
-              placeholder="Building, address, or room"
+              placeholder="Address"
             />
           </div>
           <div>

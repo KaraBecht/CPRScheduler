@@ -451,6 +451,7 @@ export default function ClassDetail() {
               <Label>Location name</Label>
               <LocationAutocomplete
                 data-testid="input-edit-title"
+                placeholder="1211, Studio Lot, KTTV, DC Bureau…"
                 value={editForm.title}
                 onChange={(v) =>
                   setEditForm((f) => ({
@@ -553,6 +554,7 @@ export default function ClassDetail() {
               <Label>Location</Label>
               <LocationAutocomplete
                 data-testid="input-edit-location"
+                placeholder="Address"
                 value={editForm.location}
                 onChange={(v) => setEditForm({ ...editForm, location: v })}
               />
