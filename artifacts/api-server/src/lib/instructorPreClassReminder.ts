@@ -12,6 +12,7 @@ import {
   db,
   classesTable,
   classInstructorsTable,
+  trainerInvitationsTable,
   usersTable,
 } from "@workspace/db";
 import { logger } from "./logger";
@@ -180,7 +181,22 @@ function buildAdminConfirmationEmail(
 async function getClassInstructors(
   cls: typeof classesTable.$inferSelect,
 ): Promise<{ id: number; name: string; email: string }[]> {
-  // Primary: class_instructors join table
+  // 1. Prefer instructors who explicitly accepted their invitation
+  const accepted = await db
+    .select({ id: usersTable.id, name: usersTable.name, email: usersTable.email })
+    .from(trainerInvitationsTable)
+    .innerJoin(usersTable, eq(trainerInvitationsTable.userId, usersTable.id))
+    .where(
+      and(
+        eq(trainerInvitationsTable.classId, cls.id),
+        eq(trainerInvitationsTable.status, "accepted"),
+        eq(usersTable.isActive, true),
+      ),
+    );
+
+  if (accepted.length > 0) return accepted;
+
+  // 2. No one has accepted yet — fall back to all assigned instructors
   const fromJoin = await db
     .select({ id: usersTable.id, name: usersTable.name, email: usersTable.email })
     .from(classInstructorsTable)
@@ -194,7 +210,7 @@ async function getClassInstructors(
 
   if (fromJoin.length > 0) return fromJoin;
 
-  // Fallback: legacy instructorId column
+  // 3. Legacy: single instructorId column
   if (cls.instructorId) {
     const [u] = await db
       .select({ id: usersTable.id, name: usersTable.name, email: usersTable.email })
