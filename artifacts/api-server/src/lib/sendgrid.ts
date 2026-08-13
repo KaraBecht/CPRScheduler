@@ -9,6 +9,36 @@ interface EmailPayload {
   html: string;
 }
 
+const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
+
+async function sendEmailOnce(payload: EmailPayload, log: Logger): Promise<boolean> {
+  // ReplitConnectors must not be cached — tokens expire
+  const connectors = new ReplitConnectors();
+  const res = await connectors.proxy("outlook", "/v1.0/me/sendMail", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: {
+        subject: payload.subject,
+        body: { contentType: "HTML", content: payload.html },
+        toRecipients: [{ emailAddress: { address: payload.to } }],
+      },
+      saveToSentItems: true,
+    }),
+  });
+
+  if (res.status === 202) {
+    log.info({ to: payload.to }, "Email sent");
+    return true;
+  }
+  if (res.status === 429) {
+    return false; // caller will retry
+  }
+  const detail = await res.text().catch(() => "");
+  log.error({ status: res.status, detail }, "Outlook sendMail error");
+  return true; // non-retryable, stop trying
+}
+
 export async function sendEmail(payload: EmailPayload, log: Logger): Promise<void> {
   if (!payload.to) {
     log.warn("No recipient address provided — skipping email notification");
@@ -20,28 +50,13 @@ export async function sendEmail(payload: EmailPayload, log: Logger): Promise<voi
     return;
   }
 
-  // ReplitConnectors must not be cached — tokens expire
-  const connectors = new ReplitConnectors();
-
   try {
-    const res = await connectors.proxy("outlook", "/v1.0/me/sendMail", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: {
-          subject: payload.subject,
-          body: { contentType: "HTML", content: payload.html },
-          toRecipients: [{ emailAddress: { address: payload.to } }],
-        },
-        saveToSentItems: true,
-      }),
-    });
-
-    if (res.status === 202) {
-      log.info({ to: payload.to }, "Email sent");
-    } else {
-      const detail = await res.text().catch(() => "");
-      log.error({ status: res.status, detail }, "Outlook sendMail error");
+    // Retry once after 2 s on 429 (Outlook MailboxConcurrency throttle)
+    const ok = await sendEmailOnce(payload, log);
+    if (!ok) {
+      log.warn({ to: payload.to }, "Outlook 429 — retrying after 2 s");
+      await sleep(2000);
+      await sendEmailOnce(payload, log);
     }
   } catch (err) {
     log.error({ err }, "Failed to send email via Outlook");

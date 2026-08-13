@@ -272,7 +272,6 @@ export async function sendTrainerInvitations(
   }
 
   const base = apiBaseUrl();
-  const sends: Promise<void>[] = [];
 
   for (const instructor of instructors) {
     const token = crypto.randomUUID();
@@ -288,14 +287,10 @@ export async function sendTrainerInvitations(
     const declineUrl = `${base}/trainer-invite/${token}/decline`;
 
     const emailContent = buildTrainerInviteEmail(instructor.name, cls, acceptUrl, declineUrl);
-    sends.push(
-      sendEmail({ to: instructor.email, ...emailContent }, log).catch(err =>
-        log.error({ err, instructorId: instructor.id }, "Trainer invite email failed"),
-      ),
+    await sendEmail({ to: instructor.email, ...emailContent }, log).catch(err =>
+      log.error({ err, instructorId: instructor.id }, "Trainer invite email failed"),
     );
   }
-
-  await Promise.allSettled(sends);
   log.info({ classId: cls.id, inviteCount: instructors.length }, "Trainer invitations sent");
 }
 

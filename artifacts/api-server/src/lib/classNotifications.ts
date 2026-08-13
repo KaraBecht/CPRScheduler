@@ -271,26 +271,22 @@ export async function sendClassNotifications(
 
   const staffRecipients = [...admins, ...coordinators, ...ehsUsers];
 
-  const sends: Promise<void>[] = [];
-
   // Requestor
   if (requestor?.email) {
     const content = buildRequestorEmail(cls, requestor, variant);
-    sends.push(sendEmail({ to: requestor.email, ...content }, log).catch(err =>
+    await sendEmail({ to: requestor.email, ...content }, log).catch(err =>
       log.error({ err, to: requestor!.email }, "Class notification to requestor failed"),
-    ));
+    );
   }
 
-  // Staff (admin + coordinator + EHS) — personalized per recipient
+  // Staff (admin + coordinator + EHS) — personalized per recipient, sent sequentially
   for (const staff of staffRecipients) {
     if (!staff.email) continue;
     const staffEmail = buildStaffEmail(cls, requestor, variant, businessUnit, staff.name);
-    sends.push(sendEmail({ to: staff.email, ...staffEmail }, log).catch(err =>
+    await sendEmail({ to: staff.email, ...staffEmail }, log).catch(err =>
       log.error({ err, to: staff.email }, "Class notification to staff failed"),
-    ));
+    );
   }
-
-  await Promise.allSettled(sends);
 
   log.info(
     {
