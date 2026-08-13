@@ -91,7 +91,7 @@ export function LocationAutocomplete({ value, onChange, placeholder, "data-testi
         onChange={handleChange}
         onKeyDown={handleKeyDown}
         onFocus={() => suggestions.length > 0 && setOpen(true)}
-        placeholder={placeholder ?? "1211, Studio Lot, DC Bureau, WTXF…"}
+        placeholder={placeholder ?? "Address"}
         data-testid={testId}
         autoComplete="off"
       />
