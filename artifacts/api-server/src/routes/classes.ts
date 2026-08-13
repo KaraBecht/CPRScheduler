@@ -8,6 +8,7 @@ import {
   classRosterTable,
   usersTable,
   certificatesTable,
+  locationsTable,
 } from "@workspace/db";
 import { and, eq, gte, ilike, ne, or, sql, desc, asc, isNotNull, inArray } from "drizzle-orm";
 import {
@@ -21,6 +22,22 @@ import { sendTrainerInvitations } from "../lib/trainerNotifications";
 import { sendClassNotifications, type ClassInfo } from "../lib/classNotifications";
 
 const router: IRouter = Router();
+
+/**
+ * When a class is confirmed, ensure a matching location card exists.
+ * Uses case-insensitive name match; creates a minimal record if absent.
+ */
+async function ensureLocationExists(title: string) {
+  if (!title.trim()) return;
+  const existing = await db
+    .select({ id: locationsTable.id })
+    .from(locationsTable)
+    .where(ilike(locationsTable.name, title.trim()))
+    .limit(1);
+  if (existing.length === 0) {
+    await db.insert(locationsTable).values({ name: title.trim() }).onConflictDoNothing();
+  }
+}
 
 async function serializeClass(row: typeof classesTable.$inferSelect) {
   const [[enrollCounts], [rosterCounts], classInstructors] = await Promise.all([
@@ -143,6 +160,8 @@ router.post("/classes", async (req, res) => {
         date: row.date, startTime: row.startTime, location: row.location, capacity: row.capacity ?? null },
       req.log,
     ).catch(() => {});
+    // Auto-create a location card if one doesn't already exist for this name
+    ensureLocationExists(row.title).catch(() => {});
   }
 
   res.status(201).json(await serializeClass(row));
@@ -236,6 +255,8 @@ router.patch("/classes/:classId", async (req, res) => {
       },
       req.log,
     ).catch(() => {});
+    // Auto-create a location card if one doesn't already exist for this name
+    ensureLocationExists(row.title).catch(() => {});
   }
 
   res.json(await serializeClass(row));
