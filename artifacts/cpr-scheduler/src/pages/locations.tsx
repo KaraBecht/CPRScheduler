@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearch } from "wouter";
 import { read as xlsxRead, utils as xlsxUtils } from "xlsx";
 import {
   useListLocations,
@@ -1933,9 +1934,13 @@ function LocationsExportDialog({ locations }: { locations: LocationDetail[] }) {
 
 export default function Locations() {
   const qc = useQueryClient();
+  const qs = useSearch();
+  const paramCert = new URLSearchParams(qs).get("cert");
   const [query, setQuery] = useState("");
   const [buFilter, setBuFilter] = useState("");
-  const [certFilter, setCertFilter] = useState<"" | "expiring" | "expired">("");
+  const [certFilter, setCertFilter] = useState<"" | "expiring" | "expired">(
+    paramCert === "expiring" || paramCert === "expired" ? paramCert : ""
+  );
   const { data: locations = [], isLoading } = useListLocations();
 
   const create = useCreateLocation({

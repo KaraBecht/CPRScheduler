@@ -220,7 +220,7 @@ export function AdminDashboardPage() {
       {hasLocationAlerts && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
           {dash.locationsExpiring > 0 && (
-            <Link href="/locations" data-testid="alert-locations-expiring">
+            <Link href="/locations?cert=expiring" data-testid="alert-locations-expiring">
               <div className="flex items-center gap-3 rounded-lg border border-yellow-200 bg-yellow-50 dark:border-yellow-900/40 dark:bg-yellow-950/20 px-4 py-3 hover:bg-yellow-100/60 dark:hover:bg-yellow-950/30 transition-colors cursor-pointer">
                 <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-500 flex-shrink-0" />
                 <div className="min-w-0">
@@ -235,7 +235,7 @@ export function AdminDashboardPage() {
             </Link>
           )}
           {dash.locationsExpired > 0 && (
-            <Link href="/locations" data-testid="alert-locations-expired">
+            <Link href="/locations?cert=expired" data-testid="alert-locations-expired">
               <div className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/20 px-4 py-3 hover:bg-red-100/60 dark:hover:bg-red-950/30 transition-colors cursor-pointer">
                 <ShieldAlert className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0" />
                 <div className="min-w-0">
