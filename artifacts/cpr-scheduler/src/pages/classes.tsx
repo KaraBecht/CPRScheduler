@@ -372,7 +372,7 @@ function CreateClassDialog() {
             </Select>
           </div>
           <div>
-            <Label>Description</Label>
+            <Label>Additional information</Label>
             <Textarea
               rows={3}
               value={description}
