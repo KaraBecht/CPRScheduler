@@ -147,7 +147,8 @@ function buildRequestorEmail(
     `  Organization:  ${requestor.organizationName}`,
     `  Certification: ${cert}`,
     `  Date:          ${cls.date} @ ${cls.startTime}`,
-    cls.location ? `  Location:      ${cls.location}` : null,
+    cls.title    ? `  Location:      ${cls.title}` : null,
+    cls.location ? `  Address:       ${cls.location}` : null,
     ``,
     isReminder ? reminderNote : `Our team will follow up shortly with the instructor and location details if not yet confirmed.`,
     ``,
@@ -169,7 +170,8 @@ function buildRequestorEmail(
       ${row("Organization", requestor.organizationName)}
       ${row("Certification", cert)}
       ${row("Date", `${cls.date} @ ${cls.startTime}`)}
-      ${cls.location ? row("Location", cls.location) : ""}
+      ${cls.title    ? row("Location", cls.title) : ""}
+      ${cls.location ? row("Address",  cls.location) : ""}
     </table>
 
     ${isReminder
@@ -215,7 +217,8 @@ function buildStaffEmail(
     `CLASS`,
     `  Certification: ${cert}`,
     `  Date:          ${cls.date} @ ${cls.startTime}`,
-    `  Location:      ${cls.location}`,
+    cls.title    ? `  Location:      ${cls.title}` : null,
+    cls.location ? `  Address:       ${cls.location}` : null,
     businessUnit ? `  Business Unit: ${businessUnit}` : null,
   ].filter(l => l !== null).join("\n");
 
@@ -242,7 +245,8 @@ function buildStaffEmail(
     <table style="border-collapse:collapse;margin-bottom:4px">
       ${row("Certification", cert)}
       ${row("Date", `${cls.date} @ ${cls.startTime}`)}
-      ${row("Location", cls.location)}
+      ${cls.title    ? row("Location", cls.title) : ""}
+      ${cls.location ? row("Address",  cls.location) : ""}
       ${businessUnit ? row("Business Unit", businessUnit) : ""}
     </table>
   </div>

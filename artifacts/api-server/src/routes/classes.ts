@@ -25,18 +25,32 @@ const router: IRouter = Router();
 
 /**
  * When a class is confirmed, ensure a matching location card exists.
- * Uses case-insensitive name match; creates a minimal record if absent.
+ * Uses case-insensitive name match; creates a populated record if absent.
+ * Existing records are never overwritten.
  */
-async function ensureLocationExists(title: string) {
-  if (!title.trim()) return;
+async function ensureLocationExists(row: {
+  title: string;
+  location?: string | null;
+  businessUnit?: string | null;
+}) {
+  const name = row.title.trim();
+  if (!name) return;
   const existing = await db
     .select({ id: locationsTable.id })
     .from(locationsTable)
-    .where(ilike(locationsTable.name, title.trim()))
+    .where(ilike(locationsTable.name, name))
     .limit(1);
-  if (existing.length === 0) {
-    await db.insert(locationsTable).values({ name: title.trim() }).onConflictDoNothing();
-  }
+  if (existing.length > 0) return;
+
+  const notes = row.businessUnit ? `Business Unit: ${row.businessUnit}` : undefined;
+  await db
+    .insert(locationsTable)
+    .values({
+      name,
+      address: row.location?.trim() || null,
+      notes: notes ?? null,
+    })
+    .onConflictDoNothing();
 }
 
 async function serializeClass(row: typeof classesTable.$inferSelect) {
@@ -161,7 +175,7 @@ router.post("/classes", async (req, res) => {
       req.log,
     ).catch(() => {});
     // Auto-create a location card if one doesn't already exist for this name
-    ensureLocationExists(row.title).catch(() => {});
+    ensureLocationExists(row).catch(() => {});
   }
 
   res.status(201).json(await serializeClass(row));
@@ -256,7 +270,7 @@ router.patch("/classes/:classId", async (req, res) => {
       req.log,
     ).catch(() => {});
     // Auto-create a location card if one doesn't already exist for this name
-    ensureLocationExists(row.title).catch(() => {});
+    ensureLocationExists(row).catch(() => {});
   }
 
   res.json(await serializeClass(row));
