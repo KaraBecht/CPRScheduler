@@ -188,14 +188,11 @@ function CreateClassDialog() {
         <div className="space-y-3">
           <div>
             <Label>Location name</Label>
-            <LocationAutocomplete
+            <Input
               data-testid="input-class-title"
               placeholder="1211, Studio Lot, KTTV, DC Bureau…"
               value={title}
-              onChange={(v) => {
-                setTitle(v);
-                if (!location || location === title) setLocation(v);
-              }}
+              onChange={(e) => setTitle(e.target.value)}
             />
           </div>
           <div className="grid grid-cols-2 gap-3">

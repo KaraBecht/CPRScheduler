@@ -449,16 +449,12 @@ export default function ClassDetail() {
           <div className="space-y-3">
             <div>
               <Label>Location name</Label>
-              <LocationAutocomplete
+              <Input
                 data-testid="input-edit-title"
                 placeholder="1211, Studio Lot, KTTV, DC Bureau…"
                 value={editForm.title}
-                onChange={(v) =>
-                  setEditForm((f) => ({
-                    ...f,
-                    title: v,
-                    location: f.location === f.title || !f.location ? v : f.location,
-                  }))
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, title: e.target.value }))
                 }
               />
             </div>
