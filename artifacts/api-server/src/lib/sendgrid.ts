@@ -392,6 +392,131 @@ export function buildScheduledEmail(data: {
   };
 }
 
+export function buildInstructorRosterEmail(data: {
+  instructorName: string;
+  classTitle: string;
+  classDate: string;
+  startTime?: string | null;
+  location?: string | null;
+  certificationType: string;
+  attendees: { position: number; name: string; email?: string; phone?: string; result?: string | null }[];
+}): Pick<EmailPayload, "subject" | "text" | "html"> {
+  const certLabels: Record<string, string> = {
+    cpr_aed: "CPR/AED",
+    cpr_aed_first_aid: "CPR/AED + First Aid",
+    first_aid: "First Aid",
+    bls: "BLS (Basic Life Support)",
+    stop_the_bleed: "Stop the Bleed",
+    cpr_aed_first_aid_stop_the_bleed: "CPR + Stop the Bleed",
+  };
+  const cert = certLabels[data.certificationType] ?? data.certificationType;
+  const filled = data.attendees.filter(a => a.name?.trim());
+  const passed  = filled.filter(a => a.result === "pass").length;
+  const failed  = filled.filter(a => a.result === "fail").length;
+  const noShow  = filled.filter(a => a.result === "no_show").length;
+  const pending = filled.filter(a => !a.result).length;
+
+  const resultLabel = (r?: string | null) => {
+    if (r === "pass") return "✓ Pass";
+    if (r === "fail") return "✗ Fail";
+    if (r === "no_show") return "– No Show";
+    return "";
+  };
+
+  const subject = `Class complete — ${data.classTitle} roster (${data.classDate})`;
+
+  const text = [
+    `Hi ${data.instructorName},`,
+    ``,
+    `Your class has been marked complete. Here is the full roster:`,
+    ``,
+    `CLASS`,
+    `  Title:       ${data.classTitle}`,
+    `  Date:        ${data.classDate}${data.startTime ? " @ " + data.startTime : ""}`,
+    data.location ? `  Location:    ${data.location}` : null,
+    `  Cert type:   ${cert}`,
+    ``,
+    `ROSTER (${filled.length} attendee${filled.length === 1 ? "" : "s"})`,
+    ...filled.map((a, i) => [
+      `  ${i + 1}. ${a.name}${a.result ? " — " + resultLabel(a.result) : ""}`,
+      a.email ? `     Email: ${a.email}` : null,
+      a.phone ? `     Phone: ${a.phone}` : null,
+    ].filter(Boolean).join("\n")),
+    ``,
+    `SUMMARY`,
+    `  Total:   ${filled.length}`,
+    passed  ? `  Passed:  ${passed}` : null,
+    failed  ? `  Failed:  ${failed}` : null,
+    noShow  ? `  No-show: ${noShow}` : null,
+    pending ? `  Pending: ${pending}` : null,
+    ``,
+    `— PulsePoint CPR Hub`,
+  ].filter(l => l !== null).join("\n");
+
+  const resultBadge = (r?: string | null) => {
+    if (r === "pass")    return `<span style="color:#16a34a;font-weight:600">✓ Pass</span>`;
+    if (r === "fail")    return `<span style="color:#dc2626;font-weight:600">✗ Fail</span>`;
+    if (r === "no_show") return `<span style="color:#9ca3af;font-weight:600">– No Show</span>`;
+    return `<span style="color:#9ca3af">—</span>`;
+  };
+
+  const html = `
+<div style="font-family:sans-serif;max-width:640px;margin:0 auto;color:#111827">
+  <div style="background:#1d4ed8;padding:20px 24px;border-radius:8px 8px 0 0">
+    <h1 style="margin:0;color:#fff;font-size:18px">Class Complete — Full Roster</h1>
+    <p style="margin:4px 0 0;color:#bfdbfe;font-size:13px">${data.classTitle} &mdash; ${data.classDate}</p>
+  </div>
+  <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px">
+    <p style="margin:0 0 20px">Hi <strong>${data.instructorName}</strong>, your class has been marked complete. Here is the full roster:</p>
+
+    <h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin:0 0 8px">Class Details</h2>
+    <table style="border-collapse:collapse;margin-bottom:20px">
+      <tr><td style="padding:4px 12px 4px 0;color:#6b7280;font-size:14px">Title</td><td style="font-size:14px"><strong>${data.classTitle}</strong></td></tr>
+      <tr><td style="padding:4px 12px 4px 0;color:#6b7280;font-size:14px">Date</td><td style="font-size:14px"><strong>${data.classDate}${data.startTime ? " @ " + data.startTime : ""}</strong></td></tr>
+      ${data.location ? `<tr><td style="padding:4px 12px 4px 0;color:#6b7280;font-size:14px">Location</td><td style="font-size:14px"><strong>${data.location}</strong></td></tr>` : ""}
+      <tr><td style="padding:4px 12px 4px 0;color:#6b7280;font-size:14px">Certification</td><td style="font-size:14px"><strong>${cert}</strong></td></tr>
+    </table>
+
+    <h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin:0 0 8px">
+      Roster <span style="font-weight:400;text-transform:none">(${filled.length} attendee${filled.length === 1 ? "" : "s"})</span>
+    </h2>
+    ${filled.length === 0
+      ? `<p style="color:#6b7280;font-size:14px;font-style:italic">No attendees recorded.</p>`
+      : `<table style="border-collapse:collapse;width:100%;margin-bottom:20px">
+      <thead>
+        <tr style="background:#f9fafb;border-bottom:1px solid #e5e7eb">
+          <th style="text-align:left;padding:8px 12px 8px 0;font-size:13px;color:#6b7280;font-weight:600">#</th>
+          <th style="text-align:left;padding:8px 12px;font-size:13px;color:#6b7280;font-weight:600">Name</th>
+          <th style="text-align:left;padding:8px 12px;font-size:13px;color:#6b7280;font-weight:600">Contact</th>
+          <th style="text-align:left;padding:8px 0 8px 12px;font-size:13px;color:#6b7280;font-weight:600">Result</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${filled.map((a, i) => `
+        <tr style="border-bottom:1px solid #f3f4f6">
+          <td style="padding:10px 12px 10px 0;font-size:14px;color:#6b7280">${i + 1}</td>
+          <td style="padding:10px 12px;font-size:14px;font-weight:500">${a.name}</td>
+          <td style="padding:10px 12px;font-size:13px;color:#6b7280">${[a.email, a.phone].filter(Boolean).join("<br>") || "—"}</td>
+          <td style="padding:10px 0 10px 12px;font-size:14px">${resultBadge(a.result)}</td>
+        </tr>`).join("")}
+      </tbody>
+    </table>`}
+
+    <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;padding:12px 16px;font-size:14px;color:#0369a1">
+      <strong>Total: ${filled.length}</strong>
+      ${passed  ? `&nbsp;&bull;&nbsp;<span style="color:#16a34a">${passed} passed</span>` : ""}
+      ${failed  ? `&nbsp;&bull;&nbsp;<span style="color:#dc2626">${failed} failed</span>` : ""}
+      ${noShow  ? `&nbsp;&bull;&nbsp;<span style="color:#9ca3af">${noShow} no-show</span>` : ""}
+      ${pending ? `&nbsp;&bull;&nbsp;${pending} pending` : ""}
+    </div>
+
+    <p style="margin:20px 0 0;font-size:12px;color:#9ca3af">— PulsePoint CPR Hub</p>
+  </div>
+</div>`.trim();
+
+  return { subject, text, html };
+}
+
 export function buildAdminScheduledEmail(data: {
   requestorName: string;
   requestorEmail: string;

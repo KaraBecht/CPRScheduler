@@ -20,6 +20,7 @@ import { serializeUser } from "./users";
 import { upsertClassReminder } from "../lib/classReminder";
 import { sendTrainerInvitations } from "../lib/trainerNotifications";
 import { sendClassNotifications, type ClassInfo } from "../lib/classNotifications";
+import { sendCompletionRoster } from "../lib/completionRoster";
 
 const router: IRouter = Router();
 
@@ -271,6 +272,11 @@ router.patch("/classes/:classId", async (req, res) => {
     ).catch(() => {});
     // Auto-create a location card if one doesn't already exist for this name
     ensureLocationExists(row).catch(() => {});
+  }
+
+  // When a class is marked complete, email the full roster to the instructor(s)
+  if (statusChanged && row.status === "completed") {
+    sendCompletionRoster(row, req.log).catch(() => {});
   }
 
   res.json(await serializeClass(row));

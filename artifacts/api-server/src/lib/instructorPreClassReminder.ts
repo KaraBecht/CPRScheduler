@@ -62,6 +62,7 @@ function buildInstructorEmail(
   instructorName: string,
   cls: typeof classesTable.$inferSelect,
   signinUrl: string,
+  rosterUrl: string,
 ): { subject: string; text: string; html: string } {
   const cert = formatCertificationType(cls.certificationType);
   const formattedDate = formatDateLong(cls.date);
@@ -86,6 +87,10 @@ function buildInstructorEmail(
     `ROSTER SIGN-IN LINK`,
     `Share this link with attendees so they can sign in on their own device:`,
     `  ${signinUrl}`,
+    ``,
+    `FULL ROSTER`,
+    `View the current roster (names already signed in) here:`,
+    `  ${rosterUrl}`,
     ``,
     `— PulsePoint CPR Hub`,
   ].join("\n");
@@ -112,7 +117,12 @@ function buildInstructorEmail(
     <h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin:0 0 8px">Roster Sign-In Link</h2>
     <p style="margin:0 0 12px;color:#374151;font-size:14px">Share this link with attendees so they can sign in on their own device:</p>
     <a href="${signinUrl}" style="display:inline-block;padding:12px 24px;background:#1d4ed8;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;font-size:14px">Open Sign-In Sheet →</a>
-    <p style="margin:12px 0 0;font-size:12px;color:#6b7280;word-break:break-all">${signinUrl}</p>
+    <p style="margin:12px 0 20px;font-size:12px;color:#6b7280;word-break:break-all">${signinUrl}</p>
+
+    <h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin:0 0 8px">Full Roster</h2>
+    <p style="margin:0 0 12px;color:#374151;font-size:14px">View the current roster with all signed-in students:</p>
+    <a href="${rosterUrl}" style="display:inline-block;padding:12px 24px;background:#f3f4f6;color:#111827;text-decoration:none;border-radius:6px;font-weight:600;font-size:14px;border:1px solid #e5e7eb">View Full Roster →</a>
+    <p style="margin:12px 0 0;font-size:12px;color:#6b7280;word-break:break-all">${rosterUrl}</p>
   </div>
 </div>`.trim();
 
@@ -263,10 +273,11 @@ export async function sendInstructorPreClassReminders(): Promise<void> {
     }
 
     const signinUrl = `${appBaseUrl()}/roster-signin/${cls.id}`;
+    const rosterUrl = `${appBaseUrl()}/classes/${cls.id}/roster`;
 
     // Email each instructor
     for (const instructor of instructors) {
-      const content = buildInstructorEmail(instructor.name, cls, signinUrl);
+      const content = buildInstructorEmail(instructor.name, cls, signinUrl, rosterUrl);
       await sendEmail({ to: instructor.email, ...content }, logger).catch(err =>
         logger.error({ err, instructorId: instructor.id, classId: cls.id }, "Instructor pre-class reminder failed"),
       );
