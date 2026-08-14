@@ -168,11 +168,12 @@ router.post("/classes", async (req, res) => {
     const clsInfo: ClassInfo = {
       id: row.id, title: row.title, location: row.location,
       certificationType: row.certificationType, date: row.date, startTime: row.startTime,
+      endTime: row.endTime ?? null,
     };
     sendClassNotifications(clsInfo, null, "confirmation", req.log, row.businessUnit ?? null).catch(() => {});
     sendTrainerInvitations(
       { id: row.id, title: row.title, certificationType: row.certificationType,
-        date: row.date, startTime: row.startTime, location: row.location, capacity: row.capacity ?? null },
+        date: row.date, startTime: row.startTime, endTime: row.endTime ?? null, location: row.location, capacity: row.capacity ?? null },
       req.log,
     ).catch(() => {});
     // Auto-create a location card if one doesn't already exist for this name
@@ -256,6 +257,7 @@ router.patch("/classes/:classId", async (req, res) => {
     const clsInfo: ClassInfo = {
       id: row.id, title: row.title, location: row.location,
       certificationType: row.certificationType, date: row.date, startTime: row.startTime,
+      endTime: row.endTime ?? null,
     };
     sendClassNotifications(clsInfo, null, "confirmation", req.log, row.businessUnit ?? null).catch(() => {});
     sendTrainerInvitations(
@@ -265,6 +267,7 @@ router.patch("/classes/:classId", async (req, res) => {
         certificationType: row.certificationType,
         date: row.date,
         startTime: row.startTime,
+        endTime: row.endTime ?? null,
         location: row.location,
         capacity: row.capacity ?? null,
       },

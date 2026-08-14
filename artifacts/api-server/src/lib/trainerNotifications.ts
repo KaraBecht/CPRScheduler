@@ -19,6 +19,7 @@ import {
 } from "@workspace/db";
 import { sendEmail } from "./sendgrid";
 import { formatCertificationType } from "./formatCertType";
+import { buildCalendarLinks, calendarHtml, calendarText } from "./calendarLinks";
 
 export const ADMIN_SERVICE_EMAIL = "svc_medical@fox.com";
 export const API_PATH_PREFIX = "/api";
@@ -57,10 +58,12 @@ function formatTime(hhmm: string): string {
 function buildTrainerInviteEmail(
   trainerName: string,
   cls: {
+    id: number;
     title: string;
     certificationType: string;
     date: string;
     startTime: string;
+    endTime?: string | null;
     location: string;
     capacity: number | null;
   },
@@ -71,6 +74,11 @@ function buildTrainerInviteEmail(
   const formattedDate = formatDate(cls.date);
   const formattedTime = formatTime(cls.startTime);
   const subject = `CPR Class Invitation — ${cls.title} on ${formattedDate}`;
+
+  const cal = buildCalendarLinks(
+    { classId: cls.id, title: cls.title, certificationType: cls.certificationType, date: cls.date, startTime: cls.startTime, endTime: cls.endTime, location: cls.location },
+    apiBaseUrl(),
+  );
 
   const text = [
     `Hi ${trainerName},`,
@@ -87,6 +95,8 @@ function buildTrainerInviteEmail(
     ``,
     `✓ ACCEPT this class:  ${acceptUrl}`,
     `✗ DECLINE this class: ${declineUrl}`,
+    ``,
+    calendarText(cal),
     ``,
     `Questions? Contact us at ${ADMIN_SERVICE_EMAIL}`,
     ``,
@@ -122,7 +132,9 @@ function buildTrainerInviteEmail(
       <td>${btn(declineUrl, "#dc2626", "✗ Decline")}</td>
     </tr></table>
 
-    <p style="margin:24px 0 0;font-size:13px;color:#6b7280">
+    ${calendarHtml(cal)}
+
+    <p style="margin:16px 0 0;font-size:13px;color:#6b7280">
       Questions? Contact <a href="mailto:${ADMIN_SERVICE_EMAIL}" style="color:#1d4ed8">${ADMIN_SERVICE_EMAIL}</a>
     </p>
   </div>

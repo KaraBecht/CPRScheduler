@@ -18,6 +18,7 @@ import {
 import { logger } from "./logger";
 import { sendEmail } from "./sendgrid";
 import { formatCertificationType } from "./formatCertType";
+import { buildCalendarLinks, calendarHtml, calendarText } from "./calendarLinks";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -72,6 +73,11 @@ export function buildInstructorEmail(
 
   const subject = `Reminder: You're teaching tomorrow — ${cls.title} (${formattedDate})`;
 
+  const cal = buildCalendarLinks(
+    { classId: cls.id, title: cls.title, certificationType: cls.certificationType, date: cls.date, startTime: cls.startTime, endTime: cls.endTime, location: cls.location },
+    appBaseUrl(),
+  );
+
   const text = [
     `Hi ${instructorName},`,
     ``,
@@ -91,6 +97,8 @@ export function buildInstructorEmail(
     `FULL ROSTER`,
     `View the current roster (names already signed in) here:`,
     `  ${rosterUrl}`,
+    ``,
+    calendarText(cal),
     ``,
     `— PulsePoint CPR Hub`,
   ].join("\n");
@@ -123,6 +131,8 @@ export function buildInstructorEmail(
     <p style="margin:0 0 12px;color:#374151;font-size:14px">View the current roster with all signed-in students:</p>
     <a href="${rosterUrl}" style="display:inline-block;padding:12px 24px;background:#f3f4f6;color:#111827;text-decoration:none;border-radius:6px;font-weight:600;font-size:14px;border:1px solid #e5e7eb">View Full Roster →</a>
     <p style="margin:12px 0 0;font-size:12px;color:#6b7280;word-break:break-all">${rosterUrl}</p>
+
+    ${calendarHtml(cal)}
   </div>
 </div>`.trim();
 

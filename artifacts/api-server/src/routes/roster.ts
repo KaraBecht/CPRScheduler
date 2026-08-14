@@ -243,6 +243,55 @@ router.post("/roster/import", async (req, res) => {
   res.json({ classId: cls.id, classTitle: cls.title, classDate: cls.date, imported, skipped });
 });
 
+router.get("/public/classes/:classId/calendar.ics", async (req, res) => {
+  const classId = parseId(req.params.classId, "classId");
+  const [cls] = await db.select().from(classesTable).where(eq(classesTable.id, classId));
+  if (!cls) { res.status(404).send("Not found"); return; }
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const toIcsDt = (date: string, time: string) =>
+    date.replace(/-/g, "") + "T" + time.replace(":", "") + "00";
+
+  const [hh, mm] = (cls.startTime ?? "09:00").split(":").map(Number);
+  const endTotal = hh! * 60 + mm! + 240; // default +4 hours
+  const defaultEnd = `${pad(Math.floor(endTotal / 60) % 24)}:${pad(endTotal % 60)}`;
+
+  const dtStart = toIcsDt(cls.date, cls.startTime ?? "09:00");
+  const dtEnd   = toIcsDt(cls.date, cls.endTime ?? defaultEnd);
+  const now     = new Date().toISOString().replace(/[-:.]/g, "").slice(0, 15) + "Z";
+
+  const certLabels: Record<string, string> = {
+    cpr_aed: "CPR/AED", cpr_aed_first_aid: "CPR/AED + First Aid",
+    first_aid: "First Aid", bls: "BLS (Basic Life Support)",
+    stop_the_bleed: "Stop the Bleed",
+    cpr_aed_first_aid_stop_the_bleed: "CPR + Stop the Bleed",
+  };
+  const cert = certLabels[cls.certificationType] ?? cls.certificationType;
+  const summary  = `CPR Training — ${cls.title} (${cert})`;
+  const location = cls.location ?? "";
+
+  const ics = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//PulsePoint CPR Hub//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "BEGIN:VEVENT",
+    `UID:class-${cls.id}@pulsepoint.fox.com`,
+    `DTSTAMP:${now}`,
+    `DTSTART:${dtStart}`,
+    `DTEND:${dtEnd}`,
+    `SUMMARY:${summary}`,
+    location ? `LOCATION:${location.replace(/\n/g, "\\n")}` : null,
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].filter(Boolean).join("\r\n");
+
+  res.setHeader("Content-Type", "text/calendar; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="class-${cls.id}.ics"`);
+  res.send(ics);
+});
+
 router.get("/public/classes/:classId/signin-sheet", async (req, res) => {
   const classId = parseId(req.params.classId, "classId");
   const [cls] = await db

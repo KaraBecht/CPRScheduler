@@ -17,6 +17,7 @@ import type { Logger } from "pino";
 import { db, locationsTable, usersTable } from "@workspace/db";
 import { sendEmail } from "./sendgrid";
 import { formatCertificationType } from "./formatCertType";
+import { buildCalendarLinks, calendarHtml, calendarText } from "./calendarLinks";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -29,6 +30,16 @@ export interface ClassInfo {
   certificationType: string;
   date: string;
   startTime: string;
+  endTime?: string | null;
+}
+
+function appBaseUrl(): string {
+  const domains = process.env["REPLIT_DOMAINS"];
+  if (domains) {
+    const first = domains.split(",")[0]?.trim();
+    if (first) return `https://${first}`;
+  }
+  return "http://localhost";
 }
 
 export interface RequestorInfo {
@@ -138,6 +149,8 @@ function buildRequestorEmail(
 
   const reminderNote = `Please note: classes are 3.5–4 hours long. We recommend bringing water and wearing non-restrictive clothing that allows for practice of CPR skills.`;
 
+  const cal = buildCalendarLinks({ classId: cls.id, title: cls.title, certificationType: cls.certificationType, date: cls.date, startTime: cls.startTime, endTime: cls.endTime, location: cls.location }, appBaseUrl());
+
   const text = [
     `Hi ${requestor.name},`,
     ``,
@@ -153,6 +166,8 @@ function buildRequestorEmail(
     isReminder ? reminderNote : `Our team will follow up shortly with the instructor and location details if not yet confirmed.`,
     ``,
     `Thank you for choosing PulsePoint CPR Hub.`,
+    ``,
+    calendarText(cal),
   ].filter(l => l !== null).join("\n");
 
   const html = `
@@ -179,7 +194,8 @@ function buildRequestorEmail(
       <p style="margin:0;color:#1e40af;font-size:14px"><strong>Please note:</strong> Classes are 3.5–4 hours long. We recommend bringing water and wearing non-restrictive clothing that allows for practice of CPR skills.</p>
     </div>`
       : `<p style="margin:0 0 8px;color:#374151">Our team will follow up shortly with the instructor and location details if not yet confirmed.</p>`}
-    <p style="margin:0;color:#374151">Thank you for choosing <strong>PulsePoint CPR Hub</strong>.</p>
+    <p style="margin:0 0 0;color:#374151">Thank you for choosing <strong>PulsePoint CPR Hub</strong>.</p>
+    ${calendarHtml(cal)}
   </div>
 </div>`.trim();
 
@@ -201,6 +217,8 @@ function buildStaffEmail(
     ? `[Reminder] One week until class — ${orgLabel} (${cert})`
     : `[Admin] Class confirmed — ${orgLabel} (${cert})`;
 
+  const cal = buildCalendarLinks({ classId: cls.id, title: cls.title, certificationType: cls.certificationType, date: cls.date, startTime: cls.startTime, endTime: cls.endTime, location: cls.location }, appBaseUrl());
+
   const text = [
     `Hi ${recipientName},`,
     ``,
@@ -220,6 +238,8 @@ function buildStaffEmail(
     cls.title    ? `  Location:      ${cls.title}` : null,
     cls.location ? `  Address:       ${cls.location}` : null,
     businessUnit ? `  Business Unit: ${businessUnit}` : null,
+    ``,
+    calendarText(cal),
   ].filter(l => l !== null).join("\n");
 
   const html = `
@@ -249,6 +269,7 @@ function buildStaffEmail(
       ${cls.location ? row("Address",  cls.location) : ""}
       ${businessUnit ? row("Business Unit", businessUnit) : ""}
     </table>
+    ${calendarHtml(cal)}
   </div>
 </div>`.trim();
 
