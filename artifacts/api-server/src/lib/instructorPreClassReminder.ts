@@ -273,7 +273,7 @@ export async function sendInstructorPreClassReminders(): Promise<void> {
     }
 
     const signinUrl = `${appBaseUrl()}/roster-signin/${cls.id}`;
-    const rosterUrl = `${appBaseUrl()}/classes/${cls.id}/roster`;
+    const rosterUrl = `${appBaseUrl()}/classes/${cls.id}/signin-sheet`;
 
     // Email each instructor
     for (const instructor of instructors) {

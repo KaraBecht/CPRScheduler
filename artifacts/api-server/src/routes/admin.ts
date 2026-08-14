@@ -44,7 +44,7 @@ router.post("/admin/send-test-email", async (req, res) => {
   } as Parameters<typeof buildInstructorEmail>[1];
 
   const signinUrl = `${base}/roster-signin/0`;
-  const rosterUrl = `${base}/classes/0/roster`;
+  const rosterUrl = `${base}/classes/0/signin-sheet`;
 
   const content = buildInstructorEmail("Instructor Name", sampleCls, signinUrl, rosterUrl);
 
