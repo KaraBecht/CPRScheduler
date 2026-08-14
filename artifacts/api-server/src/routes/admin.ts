@@ -1,6 +1,8 @@
 import { Router, type IRouter } from "express";
+import { gte } from "drizzle-orm";
 import { sendInstructorPreClassReminders, buildInstructorEmail } from "../lib/instructorPreClassReminder";
 import { sendEmail } from "../lib/sendgrid";
+import { db, classesTable } from "@workspace/db";
 
 const router: IRouter = Router();
 
@@ -20,7 +22,7 @@ router.post("/admin/trigger-pre-class-reminders", async (req, res) => {
 });
 
 /**
- * Send a test instructor reminder email with sample data.
+ * Send a test instructor reminder email using a real upcoming class.
  * POST /api/admin/send-test-email
  * Body: { to: "email@example.com" }   (optional — defaults to svc_medical@fox.com)
  */
@@ -31,27 +33,40 @@ router.post("/admin/send-test-email", async (req, res) => {
     ? `https://${process.env["REPLIT_DOMAINS"].split(",")[0]!.trim()}`
     : "http://localhost";
 
-  // Build a realistic sample class to test the full email layout
-  const sampleCls = {
-    id: 0,
-    title: "KPSS — Test Location",
-    certificationType: "cpr_aed_first_aid",
-    date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split("T")[0]!,
-    startTime: "09:00",
-    endTime: "12:00",
-    location: "123 Test St, Los Angeles, CA 90001",
-    capacity: 20,
-  } as Parameters<typeof buildInstructorEmail>[1];
+  // Use a real upcoming class so the calendar ICS link actually works
+  const today = new Date().toISOString().split("T")[0]!;
+  const rows = await db
+    .select()
+    .from(classesTable)
+    .where(gte(classesTable.date, today))
+    .orderBy(classesTable.date)
+    .limit(1);
 
-  const signinUrl = `${base}/roster-signin/0`;
-  const rosterUrl = `${base}/classes/0/signin-sheet`;
+  let cls = rows[0];
 
-  const content = buildInstructorEmail("Instructor Name", sampleCls, signinUrl, rosterUrl);
+  // Fall back to a synthetic class if there are no upcoming classes
+  if (!cls) {
+    cls = {
+      id: 0,
+      title: "KPSS — Test Location",
+      certificationType: "cpr_aed_first_aid",
+      date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split("T")[0]!,
+      startTime: "09:00",
+      endTime: "12:00",
+      location: "123 Test St, Los Angeles, CA 90001",
+      capacity: 20,
+    } as typeof classesTable.$inferSelect;
+  }
 
-  req.log.info({ to }, "Sending test instructor reminder email");
+  const signinUrl  = `${base}/roster-signin/${cls.id}`;
+  const rosterUrl  = `${base}/classes/${cls.id}/signin-sheet`;
+
+  const content = buildInstructorEmail("Instructor Name", cls, signinUrl, rosterUrl);
+
+  req.log.info({ to, classId: cls.id }, "Sending test instructor reminder email");
   try {
     await sendEmail({ to, ...content }, req.log);
-    res.json({ ok: true, to, subject: content.subject });
+    res.json({ ok: true, to, subject: content.subject, classId: cls.id });
   } catch (err) {
     req.log.error({ err }, "Test email failed");
     res.status(500).json({ ok: false, error: String(err) });
