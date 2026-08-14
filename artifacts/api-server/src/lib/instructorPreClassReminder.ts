@@ -58,7 +58,7 @@ function row(label: string, value: string): string {
 // Email builders
 // ---------------------------------------------------------------------------
 
-function buildInstructorEmail(
+export function buildInstructorEmail(
   instructorName: string,
   cls: typeof classesTable.$inferSelect,
   signinUrl: string,
