@@ -208,9 +208,11 @@ function buildStaffEmail(
   variant: NotificationVariant,
   businessUnit: string | null,
   recipientName: string,
+  role: "admin" | "coordinator" | "ehs" = "admin",
 ): { subject: string; text: string; html: string } {
   const cert = formatCertificationType(cls.certificationType);
   const isReminder = variant === "reminder";
+  const isCoordinator = role === "coordinator";
   const orgLabel = requestor?.organizationName ?? cls.title;
 
   const subject = isReminder
@@ -239,6 +241,10 @@ function buildStaffEmail(
     cls.location ? `  Address:       ${cls.location}` : null,
     businessUnit ? `  Business Unit: ${businessUnit}` : null,
     ``,
+    isCoordinator && !isReminder ? `ACTION REQUIRED — ACCOMMODATIONS` : null,
+    isCoordinator && !isReminder ? `Please arrange hotel/travel accommodations for the assigned instructor.` : null,
+    isCoordinator && !isReminder ? `Confirm bookings are in place and share the details with the instructor before the class date.` : null,
+    isCoordinator && !isReminder ? `` : null,
     calendarText(cal),
   ].filter(l => l !== null).join("\n");
 
@@ -269,6 +275,16 @@ function buildStaffEmail(
       ${cls.location ? row("Address",  cls.location) : ""}
       ${businessUnit ? row("Business Unit", businessUnit) : ""}
     </table>
+
+    ${isCoordinator && !isReminder ? `
+    <div style="margin-top:24px;padding:16px 20px;background:#fefce8;border:1px solid #fde047;border-radius:8px">
+      <h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#854d0e;margin:0 0 8px">⚠ Action Required — Accommodations</h2>
+      <p style="margin:0;font-size:14px;color:#713f12">
+        Please arrange hotel and/or travel accommodations for the assigned instructor.
+        Confirm bookings are in place and share the details with the instructor before the class date.
+      </p>
+    </div>` : ""}
+
     ${calendarHtml(cal)}
   </div>
 </div>`.trim();
@@ -301,9 +317,14 @@ export async function sendClassNotifications(
   }
 
   // Staff (admin + coordinator + EHS) — personalized per recipient, sent sequentially
+  const coordinatorEmails = new Set(coordinators.map(c => c.email).filter(Boolean));
+  const ehsEmails = new Set(ehsUsers.map(e => e.email).filter(Boolean));
   for (const staff of staffRecipients) {
     if (!staff.email) continue;
-    const staffEmail = buildStaffEmail(cls, requestor, variant, businessUnit, staff.name);
+    const role = coordinatorEmails.has(staff.email) ? "coordinator"
+      : ehsEmails.has(staff.email) ? "ehs"
+      : "admin";
+    const staffEmail = buildStaffEmail(cls, requestor, variant, businessUnit, staff.name, role);
     await sendEmail({ to: staff.email, ...staffEmail }, log).catch(err =>
       log.error({ err, to: staff.email }, "Class notification to staff failed"),
     );
