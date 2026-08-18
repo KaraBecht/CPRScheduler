@@ -213,7 +213,9 @@ function buildStaffEmail(
   const cert = formatCertificationType(cls.certificationType);
   const isReminder = variant === "reminder";
   const isCoordinator = role === "coordinator";
+  const isAdmin = role === "admin";
   const orgLabel = requestor?.organizationName ?? cls.title;
+  const supplyUrl = "https://supplymanager.replit.app/";
 
   const subject = isReminder
     ? `[Reminder] One week until class — ${orgLabel} (${cert})`
@@ -245,6 +247,10 @@ function buildStaffEmail(
     isCoordinator && !isReminder ? `Please arrange hotel/travel accommodations for the assigned instructor.` : null,
     isCoordinator && !isReminder ? `Confirm bookings are in place and share the details with the instructor before the class date.` : null,
     isCoordinator && !isReminder ? `` : null,
+    isAdmin && !isReminder ? `ACTION REQUIRED — SUPPLY TRACKING` : null,
+    isAdmin && !isReminder ? `Confirm that all required class supplies and equipment are prepared and accounted for.` : null,
+    isAdmin && !isReminder ? `Track and confirm supplies here: ${supplyUrl}` : null,
+    isAdmin && !isReminder ? `` : null,
     calendarText(cal),
   ].filter(l => l !== null).join("\n");
 
@@ -283,6 +289,15 @@ function buildStaffEmail(
         Please arrange hotel and/or travel accommodations for the assigned instructor.
         Confirm bookings are in place and share the details with the instructor before the class date.
       </p>
+    </div>` : ""}
+
+    ${isAdmin && !isReminder ? `
+    <div style="margin-top:24px;padding:16px 20px;background:#eff6ff;border:1px solid #93c5fd;border-radius:8px">
+      <h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#1e40af;margin:0 0 8px">📦 Action Required — Supply Tracking</h2>
+      <p style="margin:0 0 12px;font-size:14px;color:#1e3a8a">
+        Confirm that all required class supplies and equipment are prepared and accounted for before the class date.
+      </p>
+      <a href="${supplyUrl}" style="display:inline-block;padding:10px 20px;background:#1d4ed8;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;font-size:13px">Track &amp; Confirm Supplies →</a>
     </div>` : ""}
 
     ${calendarHtml(cal)}
