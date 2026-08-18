@@ -202,7 +202,7 @@ function buildRequestorEmail(
   return { subject, text, html };
 }
 
-function buildStaffEmail(
+export function buildStaffEmail(
   cls: ClassInfo,
   requestor: RequestorInfo | null,
   variant: NotificationVariant,
