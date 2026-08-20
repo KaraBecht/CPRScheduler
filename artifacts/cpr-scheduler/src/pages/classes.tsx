@@ -57,9 +57,9 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth-context";
 import { useListUsers } from "@workspace/api-client-react";
-import { Plus, Trash2, LayoutGrid, CalendarDays, ChevronLeft, ChevronRight, X, Search, SlidersHorizontal } from "lucide-react";
+import { Plus, Trash2, LayoutGrid, CalendarDays, ChevronLeft, ChevronRight, X, Search, SlidersHorizontal, ClipboardList, MapPin, Clock } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { formatCertificationType, certificationDuration } from "@/lib/format";
+import { formatCertificationType, certificationDuration, formatDate, formatTime } from "@/lib/format";
 import { Link } from "wouter";
 import {
   format,
@@ -438,6 +438,10 @@ export const CLASS_STATUS_OPTIONS = [
 /** Statuses considered "active" (not yet done or cancelled). */
 const ACTIVE_STATUSES = new Set(["being_scheduled", "pending_schedule", "confirmed", "scheduled"]);
 
+const CERT_ACCENT: Record<string, string> = {
+  cpr_aed_first_aid: "#007BA7",
+  stop_the_bleed:    "#4CAF50",
+};
 function CalendarView({ classes }: { classes: ClassSession[] }) {
   const [month, setMonth] = useState(() => new Date());
 
@@ -644,7 +648,7 @@ function OverdueClassesBanner({ classes }: { classes: ClassSession[] }) {
 }
 
 export default function Classes() {
-  const { role } = useAuth();
+  const { role, userId } = useAuth();
   const qs = useSearch();
   const [view, setView] = useState<"list" | "calendar">("list");
   const validTabs = ["all", "upcoming", "completed", "scheduling", "cancelled"] as const;
@@ -752,6 +756,11 @@ export default function Classes() {
         }
       />
       <OverdueClassesBanner classes={allClasses} />
+
+      {/* My Schedule — shown to instructors with a known userId */}
+      {role === "instructor" && userId !== null && (
+        <MyScheduleSection userId={userId} />
+      )}
 
       {/* Search + Filter bar */}
       <div className="flex items-center gap-2 mb-4">
@@ -914,3 +923,107 @@ export default function Classes() {
     </>
   );
 }
+
+function MyScheduleCard({ session }: { session: ClassSession }) {
+  const accent = CERT_ACCENT[session.certificationType] ?? DEFAULT_ACCENT;
+  return (
+    <div
+      className="bg-card rounded-2xl overflow-hidden flex flex-col"
+      style={{ border: "1px solid hsl(200 18% 90%)", boxShadow: "0 1px 3px 0 rgb(0 0 0 / 0.06)" }}
+    >
+      {/* Cert-type stripe */}
+      <div className="h-1 w-full shrink-0" style={{ background: accent }} />
+
+      <div className="p-4 flex flex-col gap-3 flex-1">
+        {/* Cert badge + title */}
+        <div>
+          <span
+            className="inline-block text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full mb-2 text-white"
+            style={{ background: accent }}
+          >
+            {formatCertificationType(session.certificationType)}
+          </span>
+          <h3 className="font-semibold text-base leading-tight text-foreground">
+            {session.title}
+          </h3>
+        </div>
+
+        {/* Date / time / location */}
+        <div className="text-xs space-y-1.5" style={{ color: "#A9B0B3" }}>
+          <div className="flex items-center gap-1.5">
+            <CalendarDays className="h-3.5 w-3.5 shrink-0" style={{ color: accent }} />
+            <span>{formatDate(session.date)}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Clock className="h-3.5 w-3.5 shrink-0" style={{ color: accent }} />
+            <span>
+              {formatTime(session.startTime ?? "")}
+              {session.endTime ? ` – ${formatTime(session.endTime)}` : ""}
+            </span>
+          </div>
+          {session.location && session.location !== "TBD" && (
+            <div className="flex items-center gap-1.5">
+              <MapPin className="h-3.5 w-3.5 shrink-0" style={{ color: accent }} />
+              <span className="truncate">{session.location}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-2 mt-auto pt-1 flex-wrap">
+          <Link href={`/classes/${session.id}`}>
+            <Button variant="outline" size="sm" className="text-xs h-7">
+              View details
+            </Button>
+          </Link>
+          <Link href={`/classes/${session.id}/signin-sheet`}>
+            <Button size="sm" className="text-xs h-7 gap-1" style={{ background: accent, color: "#fff" }}>
+              <ClipboardList className="h-3.5 w-3.5" />
+              Sign-in sheet
+            </Button>
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MyScheduleSection({ userId }: { userId: number }) {
+  const { data: myClasses = [], isLoading } = useListClasses(
+    { instructorId: userId, upcoming: true },
+  );
+
+  // Only show active (non-completed, non-cancelled) upcoming classes
+  const upcoming = myClasses
+    .filter((c) => ACTIVE_STATUSES.has(c.status))
+    .sort((a, b) => a.date.localeCompare(b.date) || (a.startTime ?? "").localeCompare(b.startTime ?? ""));
+
+  return (
+    <section className="mb-8">
+      <div className="mb-3">
+        <h2 className="text-lg font-semibold text-foreground">My Schedule</h2>
+        <p className="text-sm text-muted-foreground">
+          Your upcoming assigned classes
+        </p>
+      </div>
+
+      {isLoading ? (
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      ) : upcoming.length === 0 ? (
+        <Card>
+          <CardContent className="pt-6 pb-6 text-sm text-muted-foreground text-center">
+            You have no upcoming classes scheduled.
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {upcoming.map((c) => (
+            <MyScheduleCard key={c.id} session={c} />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+const DEFAULT_ACCENT = "#008080";
