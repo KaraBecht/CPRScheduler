@@ -53,7 +53,7 @@ interface ParsedRequest {
   sessions?: { date: string; startTime: string }[];
 }
 
-interface ParseResult {
+export interface ParseResult {
   data: ParsedRequest;
   submittedAt: string | null;
   /** Errors that prevent advancing to the review step */
@@ -84,6 +84,19 @@ export function parseImportedJson(raw: unknown): ParseResult {
     ? obj.requestorEmail.trim()
     : undefined;
   if (!requestorEmail) blockingErrors.push("Requestor email is missing or empty.");
+
+  // If none of the three required fields are present, the file is almost certainly wrong
+  if (!locationName && !requestorName && !requestorEmail) {
+    const unknownKeys = Object.keys(obj);
+    const sample = unknownKeys.length > 0
+      ? `Found unrecognized fields: ${unknownKeys.slice(0, 5).join(", ")}${unknownKeys.length > 5 ? ", …" : ""}.`
+      : "The file appears to be empty.";
+    blockingErrors.length = 0; // replace the individual messages with one clear one
+    blockingErrors.push(
+      `This doesn't look like a CPR Training Request file. ${sample} Expected fields like locationName, requestorEmail.`
+    );
+    return { data: {}, submittedAt: null, blockingErrors, warnings };
+  }
 
   // --- Sessions ---
   const sessions: { date: string; startTime: string }[] = [];
@@ -230,8 +243,12 @@ export function ImportRequestModal({ open, onOpenChange }: ImportRequestModalPro
         setReviewWarnings(warnings);
         setParseError(null);
         setStep("review");
-      } catch {
-        setParseError("Could not read the file. Make sure it's a JSON file exported from the offline request form.");
+      } catch (err) {
+        setParseError(
+          err instanceof SyntaxError
+            ? "The file isn't valid JSON. Make sure you're uploading a CPR_Request_*.json file exported from the offline request form."
+            : "Could not read the file. Make sure it's a JSON file exported from the offline request form."
+        );
         setFieldErrors([]);
       }
     };
@@ -316,7 +333,7 @@ export function ImportRequestModal({ open, onOpenChange }: ImportRequestModalPro
               />
             </div>
 
-            {/* Generic parse error */}
+            {/* Generic parse error (JSON syntax / file read) */}
             {parseError && (
               <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive" data-testid="import-error">
                 <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
