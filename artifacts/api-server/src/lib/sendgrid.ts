@@ -2,11 +2,21 @@ import type { Logger } from "pino";
 import { ReplitConnectors } from "@replit/connectors-sdk";
 import { EMAILS_ENABLED } from "./emailConfig";
 
+interface EmailAttachment {
+  /** Filename shown in the email client */
+  name: string;
+  /** MIME type, e.g. "text/html" or "application/pdf" */
+  contentType: string;
+  /** Base64-encoded file content */
+  contentBytes: string;
+}
+
 interface EmailPayload {
   to: string;
   subject: string;
   text: string;
   html: string;
+  attachments?: EmailAttachment[];
 }
 
 const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
@@ -24,6 +34,16 @@ async function sendEmailOnce(payload: EmailPayload, log: Logger): Promise<SendRe
         subject: payload.subject,
         body: { contentType: "HTML", content: payload.html },
         toRecipients: [{ emailAddress: { address: payload.to } }],
+        ...(payload.attachments && payload.attachments.length > 0
+          ? {
+              attachments: payload.attachments.map((a) => ({
+                "@odata.type": "#microsoft.graph.fileAttachment",
+                name: a.name,
+                contentType: a.contentType,
+                contentBytes: a.contentBytes,
+              })),
+            }
+          : {}),
       },
       saveToSentItems: true,
     }),

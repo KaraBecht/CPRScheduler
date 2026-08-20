@@ -8,6 +8,8 @@
  */
 
 import { and, eq, inArray, isNotNull } from "drizzle-orm";
+import fs from "node:fs";
+import path from "node:path";
 import {
   db,
   classesTable,
@@ -53,6 +55,55 @@ function formatTime12(hhmm: string): string {
 
 function row(label: string, value: string): string {
   return `<tr><td style="padding:4px 12px 4px 0;color:#6b7280;font-size:14px;white-space:nowrap">${label}</td><td style="padding:4px 0;font-size:14px"><strong>${value}</strong></td></tr>`;
+}
+
+// ---------------------------------------------------------------------------
+// Roster form attachment
+// ---------------------------------------------------------------------------
+
+/**
+ * Reads the offline roster HTML form, injects the class details as pre-filled
+ * values, and returns a base64-encoded attachment ready for the Graph API.
+ */
+export function buildRosterAttachmentForClass(cls: typeof classesTable.$inferSelect) {
+  return buildRosterAttachment(cls);
+}
+
+function buildRosterAttachment(
+  cls: typeof classesTable.$inferSelect,
+): { name: string; contentType: string; contentBytes: string } | null {
+  try {
+    // dist/ is one level inside artifacts/api-server/, so ../../cpr-scheduler/public/
+    const formPath = path.resolve(
+      __dirname,
+      "../../cpr-scheduler/public/cpr-roster-form.html",
+    );
+    let html = fs.readFileSync(formPath, "utf-8");
+
+    // Inject a small script that pre-fills the class fields after the page loads.
+    // The form's own init script runs synchronously, so appending before </body>
+    // guarantees all input elements already exist.
+    const prefill = `
+<script>
+(function () {
+  var el;
+  el = document.getElementById('classId');    if (el) el.value = ${cls.id || ""};
+  el = document.getElementById('classDate');  if (el) el.value = ${JSON.stringify(cls.date)};
+  el = document.getElementById('startTime');  if (el) el.value = ${JSON.stringify(cls.startTime)};
+  el = document.getElementById('classTitle'); if (el) el.value = ${JSON.stringify(cls.title)};
+})();
+</script>`;
+
+    html = html.replace("</body>", `${prefill}\n</body>`);
+
+    const safeTitle = cls.title.replace(/[^a-z0-9]/gi, "_").slice(0, 40);
+    const name = `CPR_Roster_${safeTitle}_${cls.date}.html`;
+    const contentBytes = Buffer.from(html, "utf-8").toString("base64");
+    return { name, contentType: "text/html", contentBytes };
+  } catch (err) {
+    logger.warn({ err }, "Could not build roster form attachment — skipping");
+    return null;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -131,6 +182,11 @@ export function buildInstructorEmail(
     <p style="margin:0 0 12px;color:#374151;font-size:14px">View the current roster with all signed-in students:</p>
     <a href="${rosterUrl}" style="display:inline-block;padding:12px 24px;background:#f3f4f6;color:#111827;text-decoration:none;border-radius:6px;font-weight:600;font-size:14px;border:1px solid #e5e7eb">View Full Roster →</a>
     <p style="margin:12px 0 0;font-size:12px;color:#6b7280;word-break:break-all">${rosterUrl}</p>
+
+    <div style="margin-top:24px;padding:14px 16px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px">
+      <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#1e40af">📎 Offline Roster Form Attached</p>
+      <p style="margin:0;font-size:13px;color:#374151">A pre-filled roster form is attached to this email. Open it in any browser to collect attendee names, pass/fail results, and card-sent status — no internet required. Upload the saved <strong>.json</strong> file at the class roster page when you're back online.</p>
+    </div>
 
     ${calendarHtml(cal)}
   </div>
@@ -292,9 +348,10 @@ export async function sendInstructorPreClassReminders(): Promise<void> {
       continue;
     }
 
+    const attachment = buildRosterAttachment(cls);
     for (const instructor of toNotify) {
       const content = buildInstructorEmail(instructor.name, cls, signinUrl, rosterUrl);
-      const ok = await sendEmail({ to: instructor.email, ...content }, logger);
+      const ok = await sendEmail({ to: instructor.email, ...content, attachments: attachment ? [attachment] : [] }, logger);
       if (!ok) {
         logger.error({ instructorId: instructor.id, classId: cls.id }, "Instructor pre-class reminder failed — will retry on next daily run");
       } else {
@@ -365,9 +422,10 @@ export async function sendImmediateReminderIfWithin24h(
     .where(and(eq(usersTable.role, "administrator"), eq(usersTable.adminRole, "admin"), isNotNull(usersTable.email))) as { name: string; email: string }[];
 
   const notifiedNames: string[] = [];
+  const attachment = buildRosterAttachment(cls);
   for (const instructor of instructors) {
     const content = buildInstructorEmail(instructor.name, cls, signinUrl, rosterUrl);
-    const ok = await sendEmail({ to: instructor.email, ...content }, logger);
+    const ok = await sendEmail({ to: instructor.email, ...content, attachments: attachment ? [attachment] : [] }, logger);
     if (ok) {
       sentReminderKeys.add(reminderKey(cls.id, instructor.id));
       notifiedNames.push(instructor.name);

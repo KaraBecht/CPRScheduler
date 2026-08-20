@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { gte } from "drizzle-orm";
-import { sendInstructorPreClassReminders, buildInstructorEmail } from "../lib/instructorPreClassReminder";
+import { sendInstructorPreClassReminders, buildInstructorEmail, buildRosterAttachmentForClass } from "../lib/instructorPreClassReminder";
 import { buildStaffEmail } from "../lib/classNotifications";
 import { sendEmail } from "../lib/sendgrid";
 import { db, classesTable } from "@workspace/db";
@@ -63,10 +63,11 @@ router.post("/admin/send-test-email", async (req, res) => {
   const rosterUrl  = `${base}/classes/${cls.id}/signin-sheet`;
 
   const content = buildInstructorEmail("Instructor Name", cls, signinUrl, rosterUrl);
+  const attachment = buildRosterAttachmentForClass(cls);
 
   req.log.info({ to, classId: cls.id }, "Sending test instructor reminder email");
   try {
-    await sendEmail({ to, ...content }, req.log);
+    await sendEmail({ to, ...content, attachments: attachment ? [attachment] : [] }, req.log);
     res.json({ ok: true, to, subject: content.subject, classId: cls.id });
   } catch (err) {
     req.log.error({ err }, "Test email failed");
