@@ -120,6 +120,20 @@ export function parseImportedJson(raw: unknown): ParseResult {
         continue;
       }
 
+      // Check if the session date is in the past (non-blocking warning)
+      const todayStr = (() => {
+        const t = new Date();
+        const yyyy = t.getFullYear();
+        const mm = String(t.getMonth() + 1).padStart(2, "0");
+        const dd = String(t.getDate()).padStart(2, "0");
+        return `${yyyy}-${mm}-${dd}`;
+      })();
+      if (rawDate < todayStr) {
+        warnings.push(
+          `Session ${i + 1} (${rawDate}) is in the past — please update the date before submitting.`
+        );
+      }
+
       // Time is optional; default to 09:00 if absent or malformed (non-blocking)
       const rawTime = typeof rec.startTime === "string" ? rec.startTime.trim() : "";
       let startTime = "09:00";
@@ -405,12 +419,12 @@ export function ImportRequestModal({ open, onOpenChange }: ImportRequestModalPro
               </button>
             </div>
 
-            {/* Non-blocking warnings (e.g. some sessions skipped) */}
+            {/* Non-blocking warnings (e.g. past-dated sessions, bad time values) */}
             {reviewWarnings.length > 0 && (
               <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-900/40 dark:bg-amber-950/20 px-4 py-3 text-sm text-amber-800 dark:text-amber-300 space-y-1" data-testid="import-review-warnings">
                 <div className="flex items-center gap-2 font-medium">
                   <AlertCircle className="h-4 w-4 shrink-0" />
-                  <span>Some data was skipped:</span>
+                  <span>Please review before submitting:</span>
                 </div>
                 <ul className="list-disc list-inside pl-1 space-y-0.5">
                   {reviewWarnings.map((w, i) => (
