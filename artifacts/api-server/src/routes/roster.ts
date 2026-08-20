@@ -202,13 +202,23 @@ router.post("/roster/import", async (req, res) => {
   }
 
   const existing = await db
-    .select({ position: classRosterTable.position, name: classRosterTable.name, email: classRosterTable.email })
+    .select({
+      position: classRosterTable.position,
+      name: classRosterTable.name,
+      email: classRosterTable.email,
+      result: classRosterTable.result,
+      cardSent: classRosterTable.cardSent,
+    })
     .from(classRosterTable)
     .where(eq(classRosterTable.classId, cls.id));
 
   const filledPositions = new Set(existing.map((r) => r.position));
-  const existingNames = new Set(existing.map((r) => r.name.trim().toLowerCase()));
-  const existingEmails = new Set(existing.filter((r) => r.email).map((r) => r.email!.trim().toLowerCase()));
+  // Map from normalised name → existing row (for update lookup)
+  const existingByName = new Map(existing.map((r) => [r.name.trim().toLowerCase(), r]));
+  // Map from normalised email → existing row
+  const existingByEmail = new Map(
+    existing.filter((r) => r.email).map((r) => [r.email!.trim().toLowerCase(), r]),
+  );
 
   let nextSlot = 0;
   const findSlot = () => {
@@ -217,6 +227,7 @@ router.post("/roster/import", async (req, res) => {
   };
 
   let imported = 0;
+  let updated = 0;
   let skipped = 0;
 
   for (const entry of entries) {
@@ -227,22 +238,44 @@ router.post("/roster/import", async (req, res) => {
     const result = (entry as { result?: string }).result?.trim() || null;
     const cardSent = Boolean((entry as { cardSent?: boolean }).cardSent);
 
-    const isDuplicate =
-      existingNames.has(name.toLowerCase()) ||
-      (email && existingEmails.has(email.toLowerCase()));
-    if (isDuplicate) { skipped++; continue; }
+    // Check if this attendee is already on the roster
+    const matchedRow =
+      existingByName.get(name.toLowerCase()) ??
+      (email ? existingByEmail.get(email.toLowerCase()) : undefined);
+
+    if (matchedRow) {
+      // Only update if the incoming entry actually carries result or cardSent data
+      if (result !== null || cardSent) {
+        await db
+          .update(classRosterTable)
+          .set({
+            result: result as "pass" | "fail" | null,
+            cardSent,
+          })
+          .where(
+            and(
+              eq(classRosterTable.classId, cls.id),
+              eq(classRosterTable.position, matchedRow.position),
+            ),
+          );
+        updated++;
+      } else {
+        skipped++;
+      }
+      continue;
+    }
 
     const slot = findSlot();
     if (slot === -1) { skipped++; continue; }
 
     await db.insert(classRosterTable).values({ classId: cls.id, position: slot, name, email, phone, result: result as "pass" | "fail" | null, cardSent });
     filledPositions.add(slot);
-    existingNames.add(name.toLowerCase());
-    if (email) existingEmails.add(email.toLowerCase());
+    existingByName.set(name.toLowerCase(), { position: slot, name, email, result: result as "pass" | "fail" | null, cardSent });
+    if (email) existingByEmail.set(email.toLowerCase(), { position: slot, name, email, result: result as "pass" | "fail" | null, cardSent });
     imported++;
   }
 
-  res.json({ classId: cls.id, classTitle: cls.title, classDate: cls.date, imported, skipped });
+  res.json({ classId: cls.id, classTitle: cls.title, classDate: cls.date, imported, updated, skipped });
 });
 
 router.get("/public/classes/:classId/calendar.ics", async (req, res) => {

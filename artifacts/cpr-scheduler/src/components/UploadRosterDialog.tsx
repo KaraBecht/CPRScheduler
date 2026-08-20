@@ -98,6 +98,7 @@ interface ImportResult {
   classTitle: string;
   classDate: string;
   imported: number;
+  updated: number;
   skipped: number;
 }
 
@@ -164,7 +165,7 @@ export function UploadRosterDialog({ open, onOpenChange, onImported }: Props) {
           entries: parsed.entries,
         }),
       });
-      const data = await res.json() as { classId?: number; classTitle?: string; classDate?: string; imported?: number; skipped?: number; error?: string };
+      const data = await res.json() as { classId?: number; classTitle?: string; classDate?: string; imported?: number; updated?: number; skipped?: number; error?: string };
       if (!res.ok) {
         setError(data.error ?? "Import failed");
         setLoading(false);
@@ -174,6 +175,7 @@ export function UploadRosterDialog({ open, onOpenChange, onImported }: Props) {
         classTitle: data.classTitle ?? "",
         classDate: data.classDate ?? "",
         imported: data.imported ?? 0,
+        updated: data.updated ?? 0,
         skipped: data.skipped ?? 0,
       });
       if (data.classId) onImported?.(data.classId);
@@ -279,13 +281,20 @@ export function UploadRosterDialog({ open, onOpenChange, onImported }: Props) {
                 </p>
               </div>
             </div>
-            <div className="flex gap-3">
-              <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-sm px-3 py-1">
-                {result.imported} imported
-              </Badge>
+            <div className="flex flex-wrap gap-3">
+              {result.imported > 0 && (
+                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-sm px-3 py-1">
+                  {result.imported} added
+                </Badge>
+              )}
+              {result.updated > 0 && (
+                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-sm px-3 py-1">
+                  {result.updated} updated
+                </Badge>
+              )}
               {result.skipped > 0 && (
                 <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-sm px-3 py-1">
-                  {result.skipped} skipped (duplicates or class full)
+                  {result.skipped} skipped
                 </Badge>
               )}
             </div>

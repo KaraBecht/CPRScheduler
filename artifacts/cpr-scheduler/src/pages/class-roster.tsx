@@ -254,35 +254,74 @@ export default function ClassRoster() {
 
       const next = [...entries];
       const newDirty = new Set(dirtyPositions);
-      let pi = 0;
-      let imported = 0;
+      let addedCount = 0;
+      let updatedCount = 0;
+      let skippedCount = 0;
 
-      for (let i = 0; i < next.length && pi < parsed.length; i++) {
-        if (!next[i]!.name.trim()) {
-          const p = parsed[pi++]!;
-          next[i] = {
-            ...next[i]!,
-            name: p.name,
-            email: p.email,
-            phone: p.phone,
-            ...(p.result !== undefined ? { result: p.result as RosterResult } : {}),
-            ...(p.cardSent !== undefined ? { cardSent: p.cardSent } : {}),
-          };
-          newDirty.add(next[i]!.position);
-          imported++;
+      // Build lookup maps for existing filled entries
+      const nameToIndex = new Map<string, number>();
+      const emailToIndex = new Map<string, number>();
+      for (let i = 0; i < next.length; i++) {
+        const e = next[i]!;
+        if (e.name.trim()) nameToIndex.set(e.name.trim().toLowerCase(), i);
+        if (e.email.trim()) emailToIndex.set(e.email.trim().toLowerCase(), i);
+      }
+
+      for (const p of parsed) {
+        const normName = p.name.trim().toLowerCase();
+        const normEmail = p.email?.trim().toLowerCase() ?? "";
+
+        // Check if this person is already on the roster
+        const existingIdx =
+          nameToIndex.get(normName) ??
+          (normEmail ? emailToIndex.get(normEmail) : undefined);
+
+        if (existingIdx !== undefined) {
+          // Update result/cardSent only when the parsed entry carries them
+          if (p.result !== undefined || p.cardSent !== undefined) {
+            next[existingIdx] = {
+              ...next[existingIdx]!,
+              ...(p.result !== undefined ? { result: p.result as RosterResult } : {}),
+              ...(p.cardSent !== undefined ? { cardSent: p.cardSent } : {}),
+            };
+            newDirty.add(next[existingIdx]!.position);
+            updatedCount++;
+          } else {
+            skippedCount++;
+          }
+          continue;
         }
+
+        // New attendee — fill the next empty slot
+        const emptyIdx = next.findIndex((e) => !e.name.trim());
+        if (emptyIdx === -1) { skippedCount++; continue; }
+
+        next[emptyIdx] = {
+          ...next[emptyIdx]!,
+          name: p.name,
+          email: p.email,
+          phone: p.phone,
+          ...(p.result !== undefined ? { result: p.result as RosterResult } : {}),
+          ...(p.cardSent !== undefined ? { cardSent: p.cardSent } : {}),
+        };
+        newDirty.add(next[emptyIdx]!.position);
+        // Keep lookup maps up to date so later entries don't double-match
+        nameToIndex.set(p.name.trim().toLowerCase(), emptyIdx);
+        if (p.email?.trim()) emailToIndex.set(p.email.trim().toLowerCase(), emptyIdx);
+        addedCount++;
       }
 
       setEntries(next);
       setDirtyPositions(newDirty);
 
-      const remaining = parsed.length - imported;
+      const parts: string[] = [];
+      if (addedCount) parts.push(`${addedCount} added`);
+      if (updatedCount) parts.push(`${updatedCount} updated`);
+      if (skippedCount) parts.push(`${skippedCount} skipped`);
+
       toast({
-        title: `Imported ${imported} attendee${imported !== 1 ? "s" : ""}`,
-        description:
-          remaining > 0
-            ? `${remaining} row${remaining !== 1 ? "s" : ""} skipped (roster full or already filled)`
-            : `From ${file.name}`,
+        title: parts.join(", "),
+        description: `From ${file.name}`,
       });
     } catch (err) {
       toast({
