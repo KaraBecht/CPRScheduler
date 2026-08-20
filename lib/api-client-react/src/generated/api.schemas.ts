@@ -19,15 +19,6 @@ export const UserRole = {
   requestor: 'requestor',
 } as const;
 
-export type AdminRole = typeof AdminRole[keyof typeof AdminRole];
-
-/** Sub-role for administrator accounts — used to filter email notifications. */
-export const AdminRole = {
-  admin: 'admin',
-  coordinator: 'coordinator',
-  ehs: 'ehs',
-} as const;
-
 export type CertificationType = typeof CertificationType[keyof typeof CertificationType];
 
 
@@ -69,13 +60,23 @@ export const EnrollmentStatus = {
   cancelled: 'cancelled',
 } as const;
 
+/**
+ * Sub-role for administrator accounts — used to filter email notifications.
+ */
+export type AdminRole = typeof AdminRole[keyof typeof AdminRole];
+
+
+export const AdminRole = {
+  admin: 'admin',
+  coordinator: 'coordinator',
+  ehs: 'ehs',
+} as const;
+
 export interface User {
   id: number;
   name: string;
-  /** @nullable */
-  email?: string | null;
+  email: string;
   role: UserRole;
-  /** @nullable */
   adminRole?: AdminRole | null;
   /** @nullable */
   phone?: string | null;
@@ -92,8 +93,7 @@ export interface User {
 export interface UserInput {
   /** @minLength 1 */
   name: string;
-  /** @nullable */
-  email?: string | null;
+  email: string;
   role: UserRole;
   adminRole?: AdminRole;
   phone?: string;
@@ -108,7 +108,7 @@ export interface UserUpdate {
   name?: string;
   email?: string;
   role?: UserRole;
-  adminRole?: AdminRole | null;
+  adminRole?: AdminRole;
   phone?: string;
   organization?: string;
   bio?: string;
@@ -144,6 +144,23 @@ export interface ClassSession {
   businessUnit?: string | null;
 }
 
+export type TrainerInviteStatus = typeof TrainerInviteStatus[keyof typeof TrainerInviteStatus];
+
+
+export const TrainerInviteStatus = {
+  pending: 'pending',
+  accepted: 'accepted',
+  declined: 'declined',
+} as const;
+
+export interface TrainerInvitation {
+  id: number;
+  userId: number;
+  trainerName: string;
+  status: TrainerInviteStatus;
+  respondedAt?: string | null;
+}
+
 export interface Enrollment {
   id: number;
   classId: number;
@@ -157,6 +174,7 @@ export interface Enrollment {
 
 export type ClassDetail = ClassSession & {
   enrollments?: Enrollment[];
+  trainerInvitations?: TrainerInvitation[];
 };
 
 export interface ClassInput {
@@ -231,7 +249,7 @@ export interface ClassUpdate {
   capacity?: number;
   instructorIds?: number[];
   description?: string;
-  businessUnit?: string | null;
+  businessUnit?: string;
   status?: ClassStatus;
 }
 
@@ -351,6 +369,10 @@ export interface Certificate {
   id: number;
   studentId: number;
   studentName: string;
+  /** @nullable */
+  studentEmail?: string | null;
+  /** @nullable */
+  studentPhone?: string | null;
   /** @nullable */
   studentOrganization?: string | null;
   /** @nullable */

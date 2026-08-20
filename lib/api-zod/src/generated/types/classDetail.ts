@@ -7,7 +7,9 @@
  */
 import type { ClassSession } from './classSession';
 import type { Enrollment } from './enrollment';
+import type { TrainerInvitation } from './trainerInvitation';
 
 export type ClassDetail = ClassSession & {
   enrollments?: Enrollment[];
+  trainerInvitations?: TrainerInvitation[];
 };

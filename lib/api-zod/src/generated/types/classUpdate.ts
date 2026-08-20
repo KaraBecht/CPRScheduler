@@ -18,5 +18,6 @@ export interface ClassUpdate {
   capacity?: number;
   instructorIds?: number[];
   description?: string;
+  businessUnit?: string;
   status?: ClassStatus;
 }

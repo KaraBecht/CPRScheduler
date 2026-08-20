@@ -16,7 +16,11 @@ router.get("/users", async (req, res) => {
 
 router.post("/users", async (req, res) => {
   const body = CreateUserBody.parse(req.body);
-  const [row] = await db.insert(usersTable).values(body).returning();
+  if (!body.email) {
+    res.status(400).json({ error: "Email is required" });
+    return;
+  }
+  const [row] = await db.insert(usersTable).values({ ...body, email: body.email }).returning();
   res.status(201).json(serializeUser(row));
 });
 
@@ -30,7 +34,10 @@ router.get("/users/:userId", async (req, res) => {
 router.patch("/users/:userId", async (req, res) => {
   const userId = parseId(req.params.userId, "userId");
   const body = UpdateUserBody.parse(req.body);
-  const [row] = await db.update(usersTable).set(body).where(eq(usersTable.id, userId)).returning();
+  // Exclude null email from the update set — the column is NOT NULL; omitting it leaves it unchanged
+  const { email, ...rest } = body;
+  const updateSet = email != null ? { ...rest, email } : rest;
+  const [row] = await db.update(usersTable).set(updateSet).where(eq(usersTable.id, userId)).returning();
   if (!row) { res.status(404).json({ error: "User not found" }); return; }
   res.json(serializeUser(row));
 });

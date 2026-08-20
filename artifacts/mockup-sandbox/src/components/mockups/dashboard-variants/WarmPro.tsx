@@ -1,7 +1,7 @@
 import React from "react";
 import { Badge } from "../../ui/badge";
 import { ScrollArea } from "../../ui/scroll-area";
-import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, Cell, XAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Calendar, Users, FileText, Award, MapPin, Clock, Check, X, ShieldAlert, CheckCircle2, Activity } from "lucide-react";
 
 const kpis = { upcomingClasses:3, totalStudents:18, pendingRequests:2, certificatesIssued:14 };
@@ -80,7 +80,7 @@ export function WarmPro() {
                   <Bar dataKey="classes" radius={[4, 4, 0, 0]}>
                     {
                       chartData.map((entry, index) => (
-                        <cell key={`cell-${index}`} fill={index === 0 ? '#f59e0b' : '#57534e'} />
+                        <Cell key={`cell-${index}`} fill={index === 0 ? '#f59e0b' : '#57534e'} />
                       ))
                     }
                   </Bar>

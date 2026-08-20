@@ -114,7 +114,7 @@ router.get("/certificates", async (req, res) => {
           id: -(c.id * 1000 + r.position + 1),
           studentId: 0,
           studentName: r.name,
-          studentEmail: r.email || null,
+          studentEmail: r.email ?? "",
           studentPhone: r.phone || null,
           studentOrganization: null,
           classId: c.id,

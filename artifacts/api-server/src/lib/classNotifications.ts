@@ -113,14 +113,14 @@ async function getStaffRecipients(classLocation: string, classBusinessUnit?: str
     if (matched.length > 0) ehsUsers = matched;
   }
 
-  const toRecipient = (u: { name: string; email: string | null }): Recipient | null =>
-    u.email ? { name: u.name, email: u.email } : null;
-  const compact = <T>(arr: (T | null)[]): T[] => arr.filter((x): x is T => x !== null);
+  const toRecipients = (arr: { name: string; email: string | null }[]): Recipient[] =>
+    arr.filter((u): u is typeof u & { email: string } => u.email !== null)
+       .map(u => ({ name: u.name, email: u.email }));
 
   return {
-    admins: compact(admins.map(toRecipient)),
-    coordinators: compact(coordinators.map(toRecipient)),
-    ehsUsers: compact(ehsUsers.map(toRecipient)),
+    admins: toRecipients(admins),
+    coordinators: toRecipients(coordinators),
+    ehsUsers: toRecipients(ehsUsers),
     businessUnit,
   };
 }

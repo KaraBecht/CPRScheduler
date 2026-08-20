@@ -96,6 +96,17 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/User" }
+    delete:
+      operationId: deleteUser
+      tags: [users]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: No Content
 
   /classes:
     get:
@@ -732,6 +743,11 @@ components:
       type: string
       enum: [registered, attended, no_show, cancelled]
 
+    AdminRole:
+      type: string
+      enum: [admin, coordinator, ehs]
+      description: Sub-role for administrator accounts — used to filter email notifications.
+
     User:
       type: object
       required: [id, name, email, role, isActive, createdAt]
@@ -740,6 +756,9 @@ components:
         name: { type: string }
         email: { type: string }
         role: { $ref: "#/components/schemas/UserRole" }
+        adminRole:
+          $ref: "#/components/schemas/AdminRole"
+          nullable: true
         phone: { type: ["string", "null"] }
         organization: { type: ["string", "null"] }
         bio: { type: ["string", "null"] }
@@ -754,6 +773,7 @@ components:
         name: { type: string, minLength: 1 }
         email: { type: string }
         role: { $ref: "#/components/schemas/UserRole" }
+        adminRole: { $ref: "#/components/schemas/AdminRole" }
         phone: { type: string }
         organization: { type: string }
         bio: { type: string }
@@ -766,6 +786,7 @@ components:
         name: { type: string, minLength: 1 }
         email: { type: string }
         role: { $ref: "#/components/schemas/UserRole" }
+        adminRole: { $ref: "#/components/schemas/AdminRole" }
         phone: { type: string }
         organization: { type: string }
         bio: { type: string }
@@ -808,6 +829,21 @@ components:
               id: { type: integer }
               name: { type: string }
         description: { type: ["string", "null"] }
+        businessUnit: { type: ["string", "null"] }
+
+    TrainerInviteStatus:
+      type: string
+      enum: [pending, accepted, declined]
+
+    TrainerInvitation:
+      type: object
+      required: [id, userId, trainerName, status]
+      properties:
+        id: { type: integer }
+        userId: { type: integer }
+        trainerName: { type: string }
+        status: { $ref: "#/components/schemas/TrainerInviteStatus" }
+        respondedAt: { type: string, nullable: true }
 
     ClassDetail:
       allOf:
@@ -817,6 +853,9 @@ components:
             enrollments:
               type: array
               items: { $ref: "#/components/schemas/Enrollment" }
+            trainerInvitations:
+              type: array
+              items: { $ref: "#/components/schemas/TrainerInvitation" }
 
     ClassInput:
       type: object
@@ -835,6 +874,7 @@ components:
           items: { type: integer }
         status: { $ref: "#/components/schemas/ClassStatus" }
         description: { type: string }
+        businessUnit: { type: string }
 
     RosterResult:
       type: string
@@ -915,6 +955,7 @@ components:
           type: array
           items: { type: integer }
         description: { type: string }
+        businessUnit: { type: string }
         status: { $ref: "#/components/schemas/ClassStatus" }
 
     Enrollment:
@@ -1086,6 +1127,8 @@ components:
         id: { type: integer }
         studentId: { type: integer }
         studentName: { type: string }
+        studentEmail: { type: ["string", "null"] }
+        studentPhone: { type: ["string", "null"] }
         studentOrganization: { type: ["string", "null"] }
         classId: { type: ["integer", "null"] }
         classTitle: { type: ["string", "null"] }

@@ -67,22 +67,19 @@ router.get("/requests", async (req, res) => {
 });
 
 router.post("/requests", async (req, res) => {
-  const body = UpdateRequestBody.parse(req.body);
-  const [row] = await db
-    .update(requestsTable)
-    .set(body)
-    .where(eq(requestsTable.id, id))
-    .returning();
+  const body = CreateRequestBody.parse(req.body);
+  const [row] = await db.insert(requestsTable).values(body).returning();
   res.status(201).json(await serializeRequest(row));
 });
 
 router.post("/training-requests", async (req, res) => {
-  const body = UpdateRequestBody.parse(req.body);
+  const body = SubmitTrainingRequestBody.parse(req.body);
   const email = body.requestorEmail.trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     res.status(400).json({ error: "Invalid email address" });
     return;
   }
+  // Upsert requestor by email — atomic, handles concurrent submissions safely
   const [user] = await db
     .insert(usersTable)
     .values({
@@ -92,12 +89,28 @@ router.post("/training-requests", async (req, res) => {
       phone: body.requestorPhone ?? null,
       organization: body.locationName,
     })
+    .onConflictDoUpdate({
+      target: usersTable.email,
+      set: { name: body.requestorName, phone: body.requestorPhone ?? null },
+    })
     .returning();
   const firstSession = body.sessions[0]!;
   const [row] = await db
-    .update(requestsTable)
-    .set(body)
-    .where(eq(requestsTable.id, id))
+    .insert(requestsTable)
+    .values({
+      requestorId: user.id,
+      organizationName: body.locationName,
+      contactEmail: email,
+      contactPhone: body.requestorPhone ?? null,
+      certificationType: body.certificationType ?? "cpr_aed_first_aid",
+      preferredDate: firstSession.date,
+      preferredLocation: body.locationName,
+      address: body.address ?? null,
+      numberOfClasses: body.numberOfClasses,
+      sessions: body.sessions,
+      attendeeCount: body.attendeeCount,
+      notes: body.notes ?? null,
+    })
     .returning();
   const saved = await serializeRequest(row);
 
@@ -139,11 +152,7 @@ router.post("/training-requests", async (req, res) => {
 
 router.get("/requests/:requestId", async (req, res) => {
   const id = parseId(req.params.requestId, "requestId");
-  const [row] = await db
-    .update(requestsTable)
-    .set(body)
-    .where(eq(requestsTable.id, id))
-    .returning();
+  const [row] = await db.select().from(requestsTable).where(eq(requestsTable.id, id));
   if (!row) { res.status(404).json({ error: "Request not found" }); return; }
   res.json(await serializeRequest(row));
 });
@@ -167,45 +176,12 @@ router.patch("/requests/:requestId", async (req, res) => {
         : existing.sessions && existing.sessions.length > 0
           ? (existing.sessions as { date: string; startTime: string }[])
           : [{ date: existing.preferredDate, startTime: "09:00" }];
-
-    // Extract business unit from request notes up front so it flows into classes + location
-    const buMatch = existing.notes?.match(/Business Unit:\s*(.+)/i);
-    const requestBusinessUnit = buMatch?.[1]?.trim() ?? null;
-
-    // Upsert a location record for this organization so it appears in the Locations tab.
-    // If a BU is present on the request, write it into the location's notes too so the
-    // location card shows the correct business unit band.
     const locationName = existing.organizationName;
     const [existingLoc] = await db
       .select()
       .from(locationsTable)
       .where(ilike(locationsTable.name, locationName))
       .limit(1);
-
-    if (!existingLoc) {
-      // Brand-new location — include BU in notes if available
-      const newNotes = requestBusinessUnit ? `Business Unit: ${requestBusinessUnit}` : null;
-      await db.insert(locationsTable).values({
-        name: locationName,
-        address: existing.address ?? null,
-        contactEmail: existing.contactEmail ?? null,
-        contactPhone: existing.contactPhone ?? null,
-        notes: newNotes,
-      });
-    } else if (requestBusinessUnit) {
-      // Existing location — add BU if it doesn't already have one
-      const existingBuMatch = existingLoc.notes?.match(/Business Unit:\s*(.+)/i);
-      if (!existingBuMatch) {
-        const updatedNotes = existingLoc.notes
-          ? `${existingLoc.notes.trimEnd()}\nBusiness Unit: ${requestBusinessUnit}`
-          : `Business Unit: ${requestBusinessUnit}`;
-        await db
-          .update(locationsTable)
-          .set({ notes: updatedNotes })
-          .where(eq(locationsTable.id, existingLoc.id));
-      }
-    }
-
     const { updatedRequest, createdClassRows } = await db.transaction(async (tx) => {
       const insertedClasses: typeof classesTable.$inferSelect[] = [];
       for (const session of sessions) {
@@ -218,8 +194,7 @@ router.patch("/requests/:requestId", async (req, res) => {
             startTime: session.startTime,
             location: locationName,
             capacity: existing.attendeeCount,
-            status: ((session as { date: string; startTime: string; status?: string }).status ?? "confirmed") as "confirmed" | "scheduled" | "pending_schedule" | "being_scheduled" | "completed" | "cancelled",
-            businessUnit: requestBusinessUnit ?? undefined,
+            status: ((session as { date: string; startTime: string; status?: string }).status ?? "confirmed") as "being_scheduled" | "pending_schedule" | "confirmed" | "completed" | "cancelled" | "scheduled",
           })
           .returning();
         if (cls) insertedClasses.push(cls);
@@ -255,7 +230,7 @@ router.patch("/requests/:requestId", async (req, res) => {
             organizationName: existing.organizationName,
           }
         : null;
-      sendClassNotifications(clsInfo, requestorInfo, "confirmation", req.log, requestBusinessUnit).catch(() => {});
+      sendClassNotifications(clsInfo, requestorInfo, "confirmation", req.log).catch(() => {});
     }
 
     // Invite all active trainers for each created class

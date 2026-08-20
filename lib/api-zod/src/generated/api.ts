@@ -20,14 +20,12 @@ export const ListUsersQueryParams = zod.object({
   "role": zod.enum(['administrator', 'instructor', 'student', 'requestor']).optional()
 })
 
-export const AdminRole = zod.enum(['admin', 'coordinator', 'ehs'])
-
 export const ListUsersResponseItem = zod.object({
   "id": zod.number(),
   "name": zod.string(),
-  "email": zod.string().nullish(),
+  "email": zod.string(),
   "role": zod.enum(['administrator', 'instructor', 'student', 'requestor']),
-  "adminRole": AdminRole.nullish(),
+  "adminRole": zod.enum(['admin', 'coordinator', 'ehs']).nullish().describe('Sub-role for administrator accounts — used to filter email notifications.'),
   "phone": zod.string().nullish(),
   "organization": zod.string().nullish(),
   "bio": zod.string().nullish(),
@@ -43,9 +41,9 @@ export const ListUsersResponse = zod.array(ListUsersResponseItem)
 
 export const CreateUserBody = zod.object({
   "name": zod.string().min(1),
-  "email": zod.string().nullish(),
+  "email": zod.string(),
   "role": zod.enum(['administrator', 'instructor', 'student', 'requestor']),
-  "adminRole": AdminRole.optional(),
+  "adminRole": zod.enum(['admin', 'coordinator', 'ehs']).optional().describe('Sub-role for administrator accounts — used to filter email notifications.'),
   "phone": zod.string().optional(),
   "organization": zod.string().optional(),
   "bio": zod.string().optional(),
@@ -61,9 +59,9 @@ export const GetUserParams = zod.object({
 export const GetUserResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
-  "email": zod.string().nullish(),
+  "email": zod.string(),
   "role": zod.enum(['administrator', 'instructor', 'student', 'requestor']),
-  "adminRole": AdminRole.nullish(),
+  "adminRole": zod.enum(['admin', 'coordinator', 'ehs']).nullish().describe('Sub-role for administrator accounts — used to filter email notifications.'),
   "phone": zod.string().nullish(),
   "organization": zod.string().nullish(),
   "bio": zod.string().nullish(),
@@ -82,12 +80,12 @@ export const UpdateUserParams = zod.object({
 
 export const UpdateUserBody = zod.object({
   "name": zod.string().min(1).optional(),
-  "email": zod.string().nullish(),
+  "email": zod.string().optional(),
   "role": zod.enum(['administrator', 'instructor', 'student', 'requestor']).optional(),
-  "adminRole": AdminRole.nullish(),
-  "phone": zod.string().nullish(),
-  "organization": zod.string().nullish(),
-  "bio": zod.string().nullish(),
+  "adminRole": zod.enum(['admin', 'coordinator', 'ehs']).optional().describe('Sub-role for administrator accounts — used to filter email notifications.'),
+  "phone": zod.string().optional(),
+  "organization": zod.string().optional(),
+  "bio": zod.string().optional(),
   "avatarUrl": zod.string().optional(),
   "isActive": zod.boolean().optional()
 })
@@ -95,15 +93,20 @@ export const UpdateUserBody = zod.object({
 export const UpdateUserResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
-  "email": zod.string().nullish(),
+  "email": zod.string(),
   "role": zod.enum(['administrator', 'instructor', 'student', 'requestor']),
-  "adminRole": AdminRole.nullish(),
+  "adminRole": zod.enum(['admin', 'coordinator', 'ehs']).nullish().describe('Sub-role for administrator accounts — used to filter email notifications.'),
   "phone": zod.string().nullish(),
   "organization": zod.string().nullish(),
   "bio": zod.string().nullish(),
   "avatarUrl": zod.string().nullish(),
   "isActive": zod.boolean(),
   "createdAt": zod.string()
+})
+
+
+export const DeleteUserParams = zod.object({
+  "userId": zod.coerce.number()
 })
 
 
@@ -131,7 +134,8 @@ export const ListClassesResponseItem = zod.object({
   "id": zod.number(),
   "name": zod.string()
 })).optional(),
-  "description": zod.string().nullish()
+  "description": zod.string().nullish(),
+  "businessUnit": zod.string().nullish()
 })
 export const ListClassesResponse = zod.array(ListClassesResponseItem)
 
@@ -188,6 +192,13 @@ export const GetClassResponse = zod.object({
   "status": zod.enum(['registered', 'attended', 'no_show', 'cancelled']),
   "certificateIssued": zod.boolean().optional(),
   "enrolledAt": zod.string()
+})).optional(),
+  "trainerInvitations": zod.array(zod.object({
+  "id": zod.number(),
+  "userId": zod.number(),
+  "trainerName": zod.string(),
+  "status": zod.enum(['pending', 'accepted', 'declined']),
+  "respondedAt": zod.string().nullish()
 })).optional()
 }))
 
@@ -206,7 +217,7 @@ export const UpdateClassBody = zod.object({
   "capacity": zod.number().optional(),
   "instructorIds": zod.array(zod.number()).optional(),
   "description": zod.string().optional(),
-  "businessUnit": zod.string().nullish(),
+  "businessUnit": zod.string().optional(),
   "status": zod.enum(['being_scheduled', 'pending_schedule', 'confirmed', 'completed', 'cancelled', 'scheduled']).optional()
 })
 
@@ -317,7 +328,8 @@ export const ListEnrollmentsResponseItem = zod.object({
   "id": zod.number(),
   "name": zod.string()
 })).optional(),
-  "description": zod.string().nullish()
+  "description": zod.string().nullish(),
+  "businessUnit": zod.string().nullish()
 })
 })
 export const ListEnrollmentsResponse = zod.array(ListEnrollmentsResponseItem)
@@ -451,7 +463,8 @@ export const ListRequestsResponseItem = zod.object({
   "id": zod.number(),
   "name": zod.string()
 })).optional(),
-  "description": zod.string().nullish()
+  "description": zod.string().nullish(),
+  "businessUnit": zod.string().nullish()
 })).optional()
 })
 export const ListRequestsResponse = zod.array(ListRequestsResponseItem)
@@ -553,7 +566,8 @@ export const GetRequestResponse = zod.object({
   "id": zod.number(),
   "name": zod.string()
 })).optional(),
-  "description": zod.string().nullish()
+  "description": zod.string().nullish(),
+  "businessUnit": zod.string().nullish()
 })).optional()
 })
 
@@ -612,7 +626,8 @@ export const UpdateRequestResponse = zod.object({
   "id": zod.number(),
   "name": zod.string()
 })).optional(),
-  "description": zod.string().nullish()
+  "description": zod.string().nullish(),
+  "businessUnit": zod.string().nullish()
 })).optional()
 })
 
@@ -692,7 +707,8 @@ export const GetAdminDashboardResponse = zod.object({
   "id": zod.number(),
   "name": zod.string()
 })).optional(),
-  "description": zod.string().nullish()
+  "description": zod.string().nullish(),
+  "businessUnit": zod.string().nullish()
 })),
   "recentRequests": zod.array(zod.object({
   "id": zod.number(),
@@ -733,7 +749,8 @@ export const GetAdminDashboardResponse = zod.object({
   "id": zod.number(),
   "name": zod.string()
 })).optional(),
-  "description": zod.string().nullish()
+  "description": zod.string().nullish(),
+  "businessUnit": zod.string().nullish()
 })).optional()
 }))
 })
@@ -749,6 +766,7 @@ export const GetInstructorDashboardResponse = zod.object({
   "name": zod.string(),
   "email": zod.string(),
   "role": zod.enum(['administrator', 'instructor', 'student', 'requestor']),
+  "adminRole": zod.enum(['admin', 'coordinator', 'ehs']).nullish().describe('Sub-role for administrator accounts — used to filter email notifications.'),
   "phone": zod.string().nullish(),
   "organization": zod.string().nullish(),
   "bio": zod.string().nullish(),
@@ -773,7 +791,8 @@ export const GetInstructorDashboardResponse = zod.object({
   "id": zod.number(),
   "name": zod.string()
 })).optional(),
-  "description": zod.string().nullish()
+  "description": zod.string().nullish(),
+  "businessUnit": zod.string().nullish()
 })),
   "pastClasses": zod.array(zod.object({
   "id": zod.number(),
@@ -792,7 +811,8 @@ export const GetInstructorDashboardResponse = zod.object({
   "id": zod.number(),
   "name": zod.string()
 })).optional(),
-  "description": zod.string().nullish()
+  "description": zod.string().nullish(),
+  "businessUnit": zod.string().nullish()
 })),
   "totalStudentsTaught": zod.number(),
   "totalCertificatesIssued": zod.number(),
@@ -813,7 +833,8 @@ export const GetInstructorDashboardResponse = zod.object({
   "id": zod.number(),
   "name": zod.string()
 })).optional(),
-  "description": zod.string().nullish()
+  "description": zod.string().nullish(),
+  "businessUnit": zod.string().nullish()
 }),zod.null()])
 })
 
@@ -828,6 +849,7 @@ export const GetStudentDashboardResponse = zod.object({
   "name": zod.string(),
   "email": zod.string(),
   "role": zod.enum(['administrator', 'instructor', 'student', 'requestor']),
+  "adminRole": zod.enum(['admin', 'coordinator', 'ehs']).nullish().describe('Sub-role for administrator accounts — used to filter email notifications.'),
   "phone": zod.string().nullish(),
   "organization": zod.string().nullish(),
   "bio": zod.string().nullish(),
@@ -859,7 +881,8 @@ export const GetStudentDashboardResponse = zod.object({
   "id": zod.number(),
   "name": zod.string()
 })).optional(),
-  "description": zod.string().nullish()
+  "description": zod.string().nullish(),
+  "businessUnit": zod.string().nullish()
 })
 })),
   "pastEnrollments": zod.array(zod.object({
@@ -886,13 +909,16 @@ export const GetStudentDashboardResponse = zod.object({
   "id": zod.number(),
   "name": zod.string()
 })).optional(),
-  "description": zod.string().nullish()
+  "description": zod.string().nullish(),
+  "businessUnit": zod.string().nullish()
 })
 })),
   "certificates": zod.array(zod.object({
   "id": zod.number(),
   "studentId": zod.number(),
   "studentName": zod.string(),
+  "studentEmail": zod.string().nullish(),
+  "studentPhone": zod.string().nullish(),
   "studentOrganization": zod.string().nullish(),
   "classId": zod.number().nullish(),
   "classTitle": zod.string().nullish(),
@@ -920,7 +946,8 @@ export const GetStudentDashboardResponse = zod.object({
   "id": zod.number(),
   "name": zod.string()
 })).optional(),
-  "description": zod.string().nullish()
+  "description": zod.string().nullish(),
+  "businessUnit": zod.string().nullish()
 }))
 })
 
@@ -935,6 +962,7 @@ export const GetRequestorDashboardResponse = zod.object({
   "name": zod.string(),
   "email": zod.string(),
   "role": zod.enum(['administrator', 'instructor', 'student', 'requestor']),
+  "adminRole": zod.enum(['admin', 'coordinator', 'ehs']).nullish().describe('Sub-role for administrator accounts — used to filter email notifications.'),
   "phone": zod.string().nullish(),
   "organization": zod.string().nullish(),
   "bio": zod.string().nullish(),
@@ -981,7 +1009,8 @@ export const GetRequestorDashboardResponse = zod.object({
   "id": zod.number(),
   "name": zod.string()
 })).optional(),
-  "description": zod.string().nullish()
+  "description": zod.string().nullish(),
+  "businessUnit": zod.string().nullish()
 })).optional()
 })),
   "scheduledClasses": zod.array(zod.object({
@@ -1001,7 +1030,8 @@ export const GetRequestorDashboardResponse = zod.object({
   "id": zod.number(),
   "name": zod.string()
 })).optional(),
-  "description": zod.string().nullish()
+  "description": zod.string().nullish(),
+  "businessUnit": zod.string().nullish()
 })),
   "pendingCount": zod.number(),
   "approvedCount": zod.number()
@@ -1044,6 +1074,8 @@ export const ListLocationsResponseItem = zod.object({
   "id": zod.number(),
   "studentId": zod.number(),
   "studentName": zod.string(),
+  "studentEmail": zod.string().nullish(),
+  "studentPhone": zod.string().nullish(),
   "studentOrganization": zod.string().nullish(),
   "classId": zod.number().nullish(),
   "classTitle": zod.string().nullish(),
@@ -1104,6 +1136,8 @@ export const GetLocationResponse = zod.object({
   "id": zod.number(),
   "studentId": zod.number(),
   "studentName": zod.string(),
+  "studentEmail": zod.string().nullish(),
+  "studentPhone": zod.string().nullish(),
   "studentOrganization": zod.string().nullish(),
   "classId": zod.number().nullish(),
   "classTitle": zod.string().nullish(),
@@ -1159,6 +1193,8 @@ export const UpdateLocationResponse = zod.object({
   "id": zod.number(),
   "studentId": zod.number(),
   "studentName": zod.string(),
+  "studentEmail": zod.string().nullish(),
+  "studentPhone": zod.string().nullish(),
   "studentOrganization": zod.string().nullish(),
   "classId": zod.number().nullish(),
   "classTitle": zod.string().nullish(),
@@ -1238,7 +1274,8 @@ export const ListRemindersResponseItem = zod.object({
   "id": zod.number(),
   "name": zod.string()
 })).optional(),
-  "description": zod.string().nullish()
+  "description": zod.string().nullish(),
+  "businessUnit": zod.string().nullish()
 })
 })
 export const ListRemindersResponse = zod.array(ListRemindersResponseItem)
@@ -1281,7 +1318,8 @@ export const UpdateReminderResponse = zod.object({
   "id": zod.number(),
   "name": zod.string()
 })).optional(),
-  "description": zod.string().nullish()
+  "description": zod.string().nullish(),
+  "businessUnit": zod.string().nullish()
 })
 })
 

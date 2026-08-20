@@ -9,6 +9,7 @@ import {
   usersTable,
   certificatesTable,
   locationsTable,
+  trainerInvitationsTable,
 } from "@workspace/db";
 import { and, eq, gte, ilike, ne, or, sql, desc, asc, isNotNull, inArray } from "drizzle-orm";
 import {
@@ -150,13 +151,9 @@ router.get("/classes", async (req, res) => {
 });
 
 router.post("/classes", async (req, res) => {
-  const body = UpdateClassBody.parse(req.body);
+  const body = CreateClassBody.parse(req.body);
   const { instructorIds, ...classData } = body;
-  const [row] = await db
-    .update(classesTable)
-    .set(updateData)
-    .where(eq(classesTable.id, classId))
-    .returning();
+  const [row] = await db.insert(classesTable).values(classData).returning();
   if (instructorIds && instructorIds.length > 0) {
     await db
       .insert(classInstructorsTable)
@@ -167,7 +164,6 @@ router.post("/classes", async (req, res) => {
 
   // Notify admin/coordinator/EHS staff when a class is created directly as scheduled or confirmed
   if (row.status === "scheduled" || row.status === "confirmed") {
-    // Fire immediate reminder if class is within 24 h and has instructors
     if (instructorIds && instructorIds.length > 0) {
       sendImmediateReminderIfWithin24h(row, instructorIds, req.log).catch((err) =>
         req.log.error({ err, classId: row.id }, "Immediate instructor reminder error (create)"),
@@ -180,48 +176,44 @@ router.post("/classes", async (req, res) => {
     };
     sendClassNotifications(clsInfo, null, "confirmation", req.log, row.businessUnit ?? null).catch(() => {});
     sendTrainerInvitations(
-      {
-        id: row.id,
-        title: row.title,
-        certificationType: row.certificationType,
-        date: row.date,
-        startTime: row.startTime,
-        endTime: row.endTime ?? null,
-        location: row.location,
-        capacity: row.capacity ?? null,
-      },
+      { id: row.id, title: row.title, certificationType: row.certificationType,
+        date: row.date, startTime: row.startTime,
+        location: row.location, capacity: row.capacity ?? null },
       req.log,
     ).catch(() => {});
-    // Auto-create a location card if one doesn't already exist for this name
     ensureLocationExists(row).catch(() => {});
   }
 
-  // When a class is marked complete, email the full roster to the instructor(s)
-  if (statusChanged && row.status === "completed") {
-    sendCompletionRoster(row, req.log).catch(() => {});
-  }
-
-  res.json(await serializeClass(row));
+  res.status(201).json(await serializeClass(row));
 });
 
-router.delete("/classes/:classId", async (req, res) => {
+router.get("/classes/:classId", async (req, res) => {
   const classId = parseId(req.params.classId, "classId");
-  const [row] = await db
-    .update(classesTable)
-    .set(updateData)
-    .where(eq(classesTable.id, classId))
-    .returning();
+  const [row] = await db.select().from(classesTable).where(eq(classesTable.id, classId));
   if (!row) { res.status(404).json({ error: "Class not found" }); return; }
   const base = await serializeClass(row);
-  const enrolls = await db
-    .select({
-      e: enrollmentsTable,
-      u: usersTable,
-    })
-    .from(enrollmentsTable)
-    .leftJoin(usersTable, eq(enrollmentsTable.studentId, usersTable.id))
-    .where(eq(enrollmentsTable.classId, classId))
-    .orderBy(desc(enrollmentsTable.enrolledAt));
+
+  const [enrolls, invites] = await Promise.all([
+    db
+      .select({ e: enrollmentsTable, u: usersTable })
+      .from(enrollmentsTable)
+      .leftJoin(usersTable, eq(enrollmentsTable.studentId, usersTable.id))
+      .where(eq(enrollmentsTable.classId, classId))
+      .orderBy(desc(enrollmentsTable.enrolledAt)),
+    db
+      .select({
+        id: trainerInvitationsTable.id,
+        userId: trainerInvitationsTable.userId,
+        trainerName: usersTable.name,
+        status: trainerInvitationsTable.status,
+        respondedAt: trainerInvitationsTable.respondedAt,
+      })
+      .from(trainerInvitationsTable)
+      .innerJoin(usersTable, eq(trainerInvitationsTable.userId, usersTable.id))
+      .where(eq(trainerInvitationsTable.classId, classId))
+      .orderBy(asc(usersTable.name)),
+  ]);
+
   res.json({
     ...base,
     enrollments: enrolls.map(({ e, u }) => ({
@@ -233,6 +225,13 @@ router.delete("/classes/:classId", async (req, res) => {
       status: e.status,
       certificateIssued: e.certificateIssued,
       enrolledAt: e.enrolledAt.toISOString(),
+    })),
+    trainerInvitations: invites.map((i) => ({
+      id: i.id,
+      userId: i.userId,
+      trainerName: i.trainerName,
+      status: i.status,
+      respondedAt: i.respondedAt ? new Date(i.respondedAt).toISOString() : null,
     })),
   });
 });
@@ -269,7 +268,6 @@ router.patch("/classes/:classId", async (req, res) => {
         .insert(classInstructorsTable)
         .values(instructorIds.map((userId) => ({ classId, userId })))
         .onConflictDoNothing();
-      // Fire immediate reminder if the class is already within the next 24 hours
       sendImmediateReminderIfWithin24h(row, instructorIds, req.log).catch((err) =>
         req.log.error({ err, classId }, "Immediate instructor reminder error"),
       );
@@ -287,19 +285,11 @@ router.patch("/classes/:classId", async (req, res) => {
     };
     sendClassNotifications(clsInfo, null, "confirmation", req.log, row.businessUnit ?? null).catch(() => {});
     sendTrainerInvitations(
-      {
-        id: row.id,
-        title: row.title,
-        certificationType: row.certificationType,
-        date: row.date,
-        startTime: row.startTime,
-        endTime: row.endTime ?? null,
-        location: row.location,
-        capacity: row.capacity ?? null,
-      },
+      { id: row.id, title: row.title, certificationType: row.certificationType,
+        date: row.date, startTime: row.startTime,
+        location: row.location, capacity: row.capacity ?? null },
       req.log,
     ).catch(() => {});
-    // Auto-create a location card if one doesn't already exist for this name
     ensureLocationExists(row).catch(() => {});
   }
 

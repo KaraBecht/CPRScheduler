@@ -21,4 +21,5 @@ export interface ClassInput {
   instructorIds?: number[];
   status?: ClassStatus;
   description?: string;
+  businessUnit?: string;
 }

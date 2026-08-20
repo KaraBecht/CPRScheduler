@@ -15,6 +15,7 @@ import {
   db,
   usersTable,
   classesTable,
+  classInstructorsTable,
   trainerInvitationsTable,
 } from "@workspace/db";
 import { sendEmail } from "./sendgrid";
@@ -301,6 +302,7 @@ export async function sendTrainerInvitations(
     const acceptUrl  = `${base}/trainer-invite/${token}/accept`;
     const declineUrl = `${base}/trainer-invite/${token}/decline`;
 
+    if (!instructor.email) continue;
     const emailContent = buildTrainerInviteEmail(instructor.name, cls, acceptUrl, declineUrl);
     sends.push(
       sendEmail({ to: instructor.email, ...emailContent }, log).catch(err =>
@@ -347,7 +349,7 @@ export async function recordTrainerResponse(
   const cls     = classRows[0];
   if (!trainer || !cls) return { found: true, alreadyResponded: false };
 
-  // Notify admin sub-role users
+  // Notify admin sub-role users (personalized per recipient)
   const admins = await db
     .select({ email: usersTable.email, name: usersTable.name })
     .from(usersTable)

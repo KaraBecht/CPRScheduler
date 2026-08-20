@@ -954,6 +954,42 @@ export default function ClassDetail() {
           </CardContent>
         </Card>
       </div>
+      {canManage && cls.trainerInvitations && cls.trainerInvitations.length > 0 && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <UserIcon className="h-4 w-4" />
+              Trainer Responses · {cls.trainerInvitations.length}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="divide-y divide-border">
+              {cls.trainerInvitations.map((inv) => (
+                <div key={inv.id} className="flex items-center gap-3 py-3">
+                  <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold shrink-0">
+                    {inv.trainerName.split(" ").map((s: string) => s[0]).slice(0, 2).join("")}
+                  </div>
+                  <p className="flex-1 text-sm font-medium">{inv.trainerName}</p>
+                  {inv.status === "accepted" && (
+                    <Badge className="bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/10 border-emerald-500/20">
+                      <Check className="h-3 w-3 mr-1" /> Accepted
+                    </Badge>
+                  )}
+                  {inv.status === "declined" && (
+                    <Badge className="bg-red-500/10 text-red-700 hover:bg-red-500/10 border-red-500/20">
+                      <X className="h-3 w-3 mr-1" /> Declined
+                    </Badge>
+                  )}
+                  {inv.status === "pending" && (
+                    <Badge variant="secondary">Pending</Badge>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <UploadRosterDialog
         open={uploadOpen}
         onOpenChange={setUploadOpen}

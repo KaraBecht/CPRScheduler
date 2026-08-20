@@ -5,6 +5,7 @@
  * CPR class scheduling platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { AdminRole } from './adminRole';
 import type { UserRole } from './userRole';
 
 export interface User {
@@ -12,6 +13,7 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
+  adminRole?: AdminRole | null;
   /** @nullable */
   phone?: string | null;
   /** @nullable */

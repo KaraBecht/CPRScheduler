@@ -88,7 +88,7 @@ const BUSINESS_UNITS = [
 
 const BLANK_NEW_USER = {
   name: "",
-  email: "" as string | null,
+  email: "",
   role: "student" as UserRole,
   adminRole: null as AdminRole | null,
   phone: "",
@@ -137,7 +137,7 @@ function NewUserDialog() {
               <Input
                 data-testid="input-user-email"
                 value={form.email ?? ""}
-                onChange={(e) => setForm({ ...form, email: e.target.value || null })}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
               />
             </div>
             <div>
@@ -220,7 +220,7 @@ function NewUserDialog() {
           <Button
             data-testid="button-submit-user"
             disabled={!form.name || create.isPending}
-            onClick={() => create.mutate({ data: { ...form, email: form.email || null, phone: form.phone || undefined, organization: form.organization || undefined, bio: form.bio || undefined, adminRole: form.adminRole ?? undefined } })}
+            onClick={() => create.mutate({ data: { ...form, email: form.email || "", phone: form.phone || undefined, organization: form.organization || undefined, bio: form.bio || undefined, adminRole: form.adminRole ?? undefined } })}
           >
             Add person
           </Button>
@@ -234,7 +234,7 @@ function EditUserDialog({
   user,
   role = "administrator",
 }: {
-  user: { id: number; name: string; email?: string | null; adminRole?: AdminRole | null; phone?: string | null; organization?: string | null; bio?: string | null };
+  user: { id: number; name: string; email: string; adminRole?: AdminRole | null; phone?: string | null; organization?: string | null; bio?: string | null };
   role?: "administrator" | "instructor";
 }) {
   const isInstructor = role === "instructor";
@@ -243,7 +243,7 @@ function EditUserDialog({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [form, setForm] = useState({
     name: user.name,
-    email: user.email ?? undefined as string | undefined,
+    email: user.email,
     adminRole: user.adminRole ?? null as AdminRole | null,
     phone: user.phone ?? "",
     organization: user.organization ?? "",
@@ -253,7 +253,7 @@ function EditUserDialog({
   function resetForm() {
     setForm({
       name: user.name,
-      email: user.email ?? undefined,
+      email: user.email,
       adminRole: user.adminRole ?? null,
       phone: user.phone ?? "",
       organization: user.organization ?? "",
@@ -313,7 +313,7 @@ function EditUserDialog({
               </div>
               <div>
                 <Label>Email</Label>
-                <Input type="email" value={form.email ?? ""} onChange={(e) => setForm({ ...form, email: e.target.value || undefined })} />
+                <Input type="email" value={form.email ?? ""} onChange={(e) => setForm({ ...form, email: e.target.value || "" })} />
               </div>
 
               {/* Admin role — only for administrators */}
@@ -393,8 +393,8 @@ function EditUserDialog({
                       userId: user.id,
                       data: {
                         name: form.name,
-                        email: form.email,
-                        adminRole: isInstructor ? undefined : (form.adminRole ?? null),
+                        email: form.email || undefined,
+                        adminRole: isInstructor ? undefined : (form.adminRole ?? undefined),
                         phone: form.phone || undefined,
                         organization: form.organization || undefined,
                         bio: form.bio || undefined,
@@ -732,11 +732,11 @@ export default function People() {
                       </p>
                     )}
                     {tab === "administrator" && role === "administrator" && (
-                      <EditUserDialog user={{ ...u, adminRole: (u.adminRole as AdminRole | null | undefined) }} role="administrator" />
+                      <EditUserDialog user={{ ...u, email: u.email ?? "", adminRole: (u.adminRole as AdminRole | null | undefined) }} role="administrator" />
                     )}
                     {tab === "instructor" && role === "administrator" && (
                       <>
-                        <EditUserDialog user={u} role="instructor" />
+                        <EditUserDialog user={{ ...u, email: u.email ?? "" }} role="instructor" />
                         <InstructorActiveToggle userId={u.id} isActive={u.isActive} />
                       </>
                     )}

@@ -28,4 +28,6 @@ export interface ClassSession {
   instructors?: ClassSessionInstructorsItem[];
   /** @nullable */
   description?: string | null;
+  /** @nullable */
+  businessUnit?: string | null;
 }

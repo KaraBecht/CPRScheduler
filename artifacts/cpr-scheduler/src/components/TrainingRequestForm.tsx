@@ -141,7 +141,7 @@ export function TrainingRequestForm({ onSuccess, onCancel, initialValues }: Trai
           <MapboxAddressInput
             value={address}
             onChange={setAddress}
-            onSelect={(full) => setAddress(full)}
+
             placeholder="Street, city, state, zip"
           />
         </div>
