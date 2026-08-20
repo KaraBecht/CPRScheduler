@@ -34,7 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth-context";
-import { Plus, Check, X, Send, Share2, Copy, CheckCheck, Trash2, CalendarDays } from "lucide-react";
+import { Plus, Check, X, Send, Share2, Copy, CheckCheck, Trash2, CalendarDays, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { formatCertificationType, formatDate, timeAgo } from "@/lib/format";
@@ -546,6 +546,13 @@ export default function Requests() {
         action={
           <div className="flex gap-2">
             {role === "administrator" && <ShareIntakeDialog />}
+            {role === "administrator" && (
+              <a href={`${import.meta.env.BASE_URL}cpr-request-form.html`} download="CPR_Training_Request_Form.html">
+                <Button variant="outline">
+                  <Download className="h-4 w-4 mr-1.5" /> Offline form
+                </Button>
+              </a>
+            )}
             <SendTrainingRequestDialog />
             {canCreate ? <NewRequestDialog requestorId={userId!} /> : null}
           </div>

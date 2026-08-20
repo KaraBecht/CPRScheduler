@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CPR Training Request — PulsePoint CPR Hub</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f1f5f9;
+      color: #111827;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      background: #1d4ed8;
+      color: #fff;
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .logo {
+      width: 40px; height: 40px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .logo svg { width: 22px; height: 22px; }
+    .brand-name { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
+    .brand-sub  { font-size: 11px; color: #bfdbfe; text-transform: uppercase; letter-spacing: 0.07em; margin-top: 1px; }
+
+    /* ── Layout ── */
+    main {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      padding: 36px 16px 60px;
+    }
+    .container { width: 100%; max-width: 680px; }
+
+    .page-title { font-size: 26px; font-weight: 700; letter-spacing: -0.4px; margin-bottom: 6px; }
+    .page-sub   { color: #6b7280; font-size: 14px; margin-bottom: 28px; }
+
+    /* ── Card ── */
+    .card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    /* ── Sections ── */
+    .section {
+      padding: 24px 28px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .section:last-child { border-bottom: none; }
+    .section-header {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #6b7280;
+      margin-bottom: 16px;
+    }
+
+    /* ── Form elements ── */
+    .field { margin-bottom: 14px; }
+    .field:last-child { margin-bottom: 0; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 5px;
+    }
+    label .req { color: #dc2626; margin-left: 2px; }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    input[type="number"],
+    input[type="date"],
+    input[type="time"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 7px;
+      font-size: 14px;
+      color: #111827;
+      background: #fff;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      font-family: inherit;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+    }
+    input::placeholder, textarea::placeholder { color: #9ca3af; }
+
+    select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%236b7280' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 34px; }
+
+    textarea { resize: vertical; min-height: 90px; }
+
+    .hint { font-size: 12px; color: #6b7280; margin-top: 4px; }
+    .hint.warn { color: #d97706; }
+
+    /* ── Grid ── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    @media (max-width: 540px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    }
+
+    /* ── Sessions ── */
+    .sessions { display: flex; flex-direction: column; gap: 10px; }
+    .session-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 10px;
+      align-items: end;
+    }
+    .session-num {
+      display: flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px;
+      background: #eff6ff;
+      border-radius: 50%;
+      font-size: 12px; font-weight: 700; color: #1d4ed8;
+      margin-bottom: 2px;
+      flex-shrink: 0;
+    }
+    .btn-remove {
+      width: 34px; height: 38px;
+      border: 1px solid #e5e7eb;
+      border-radius: 7px;
+      background: #fff;
+      color: #6b7280;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.12s, color 0.12s;
+      flex-shrink: 0;
+    }
+    .btn-remove:hover { background: #fef2f2; color: #dc2626; border-color: #fca5a5; }
+    .btn-remove:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .btn-add {
+      margin-top: 10px;
+      padding: 8px 14px;
+      border: 1px dashed #d1d5db;
+      border-radius: 7px;
+      background: #f9fafb;
+      font-size: 13px;
+      font-weight: 500;
+      color: #374151;
+      cursor: pointer;
+      width: 100%;
+      transition: background 0.12s, border-color 0.12s;
+    }
+    .btn-add:hover { background: #f1f5f9; border-color: #9ca3af; }
+
+    /* ── Submit bar ── */
+    .submit-bar {
+      display: flex;
+      justify-content: flex-end;
+      padding: 20px 28px;
+      background: #f9fafb;
+      border-top: 1px solid #e5e7eb;
+    }
+    .btn-submit {
+      padding: 11px 28px;
+      background: #1d4ed8;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-submit:hover { background: #1e40af; }
+    .btn-submit:disabled { background: #93c5fd; cursor: not-allowed; }
+
+    /* ── Success ── */
+    #success {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 16px;
+      padding: 60px 28px;
+    }
+    .success-icon {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: #d1fae5;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .success-icon svg { width: 32px; height: 32px; color: #059669; }
+    #success h2 { font-size: 22px; font-weight: 700; }
+    #success p  { color: #6b7280; font-size: 14px; max-width: 360px; }
+
+    .dl-btn {
+      padding: 11px 24px;
+      background: #1d4ed8;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .dl-btn:hover { background: #1e40af; }
+
+    .another-btn {
+      padding: 10px 20px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      background: #fff;
+      font-size: 14px;
+      font-weight: 500;
+      color: #374151;
+      cursor: pointer;
+    }
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+
+    /* ── Info note ── */
+    .info-note {
+      font-size: 13px;
+      color: #374151;
+      background: #eff6ff;
+      border: 1px solid #93c5fd;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+      <path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/>
+    </svg>
+  </div>
+  <div>
+    <div class="brand-name">PulsePoint</div>
+    <div class="brand-sub">CPR Training Hub</div>
+  </div>
+</header>
+
+<main>
+  <div class="container">
+    <div id="form-view">
+      <div class="page-title">Request CPR Training</div>
+      <p class="page-sub">Tell us where you'd like CPR training and when works best. We'll route this to our team.</p>
+
+      <div class="card">
+        <form id="intake-form" novalidate>
+
+          <!-- WHERE -->
+          <div class="section">
+            <div class="section-header">Where</div>
+            <div class="field">
+              <label for="locationName">Location name <span class="req">*</span></label>
+              <input type="text" id="locationName" name="locationName" placeholder="e.g. Studio Lot, Building 3" required />
+            </div>
+            <div class="field">
+              <label for="address">Address</label>
+              <input type="text" id="address" name="address" placeholder="Street, city, state, zip" />
+            </div>
+          </div>
+
+          <!-- CONTACT -->
+          <div class="section">
+            <div class="section-header">Your contact info</div>
+            <div class="grid-2" style="margin-bottom:14px">
+              <div class="field" style="margin-bottom:0">
+                <label for="requestorName">Name <span class="req">*</span></label>
+                <input type="text" id="requestorName" name="requestorName" required />
+              </div>
+              <div class="field" style="margin-bottom:0">
+                <label for="requestorPhone">Phone</label>
+                <input type="tel" id="requestorPhone" name="requestorPhone" placeholder="(___) ___-____" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="requestorEmail">Email <span class="req">*</span></label>
+              <input type="email" id="requestorEmail" name="requestorEmail" required />
+            </div>
+          </div>
+
+          <!-- CLASS DETAILS -->
+          <div class="section">
+            <div class="section-header">Class details</div>
+            <div class="grid-3">
+              <div class="field" style="margin-bottom:0">
+                <label for="certificationType">Certification <span class="req">*</span></label>
+                <select id="certificationType" name="certificationType" required>
+                  <option value="cpr_aed_first_aid">CPR / AED / First Aid (~4 hrs)</option>
+                  <option value="stop_the_bleed">Stop the Bleed (~1 hr)</option>
+                  <option value="cpr_aed_first_aid_stop_the_bleed">CPR / AED / First Aid + Stop the Bleed (~5 hrs)</option>
+                </select>
+              </div>
+              <div class="field" style="margin-bottom:0">
+                <label for="numberOfClasses">Number of classes <span class="req">*</span></label>
+                <input type="number" id="numberOfClasses" name="numberOfClasses" min="1" value="1" required />
+              </div>
+              <div class="field" style="margin-bottom:0">
+                <label for="attendeeCount">Attendees per class <span class="req">*</span></label>
+                <input type="number" id="attendeeCount" name="attendeeCount" min="1" value="10" required />
+                <div class="hint" id="attendeeHint">Max 10 students per instructor.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- DATES -->
+          <div class="section">
+            <div class="section-header">Suggested dates &amp; times</div>
+            <div class="sessions" id="sessions-list"></div>
+            <button type="button" class="btn-add" id="add-session">+ Add another date</button>
+          </div>
+
+          <!-- BUSINESS UNIT -->
+          <div class="section">
+            <div class="section-header">Business unit</div>
+            <div class="field">
+              <label for="businessUnit">Business unit</label>
+              <select id="businessUnit" name="businessUnit">
+                <option value="">— None —</option>
+                <option>FOX Digital</option>
+                <option>Fox Corp</option>
+                <option>FOX Entertainment</option>
+                <option>FOX News Media</option>
+                <option>FOX Sports</option>
+                <option>FOX Studio Lot</option>
+                <option>FOX Television Stations</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- NOTES -->
+          <div class="section">
+            <div class="section-header">Notes</div>
+            <div class="field">
+              <label for="notes">Additional notes <span style="font-weight:400;color:#9ca3af">(optional)</span></label>
+              <textarea id="notes" name="notes" placeholder="Anything else we should know — special requirements, accessibility needs, large groups, etc."></textarea>
+            </div>
+          </div>
+
+          <!-- SUBMIT -->
+          <div class="submit-bar">
+            <button type="submit" class="btn-submit" id="submit-btn">Submit request</button>
+          </div>
+
+        </form>
+      </div><!-- /card -->
+
+      <div class="info-note">
+        You can also submit online at <strong>cprscheduler.replit.app/intake</strong> — or email the completed file to <strong>svc_medical@fox.com</strong>.
+      </div>
+    </div><!-- /form-view -->
+
+    <!-- SUCCESS -->
+    <div class="card" id="success">
+      <div class="success-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 6 9 17l-5-5"/>
+        </svg>
+      </div>
+      <h2>Request saved!</h2>
+      <p>Your request has been packaged as a <strong>.json</strong> file. Download it and send it to <strong>svc_medical@fox.com</strong> or upload it to the scheduler.</p>
+      <div class="btn-row">
+        <button class="dl-btn" id="download-btn">⬇ Download request file</button>
+        <button class="another-btn" id="new-request-btn">Submit another request</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  // ── Session rows ──────────────────────────────────────────────────────────
+  let sessionCount = 0;
+  const sessionsList = document.getElementById("sessions-list");
+
+  function addSession() {
+    sessionCount++;
+    const idx = sessionCount;
+    const row = document.createElement("div");
+    row.className = "session-row";
+    row.dataset.idx = idx;
+    row.innerHTML = `
+      <div class="field" style="margin-bottom:0">
+        ${idx === 1 ? '<label>Date <span class="req">*</span></label>' : '<div style="height:21px"></div>'}
+        <input type="date" name="session_date_${idx}" required />
+      </div>
+      <div class="field" style="margin-bottom:0">
+        ${idx === 1 ? '<label>Start time <span class="req">*</span></label>' : '<div style="height:21px"></div>'}
+        <input type="time" name="session_time_${idx}" value="09:00" required />
+      </div>
+      <div style="display:flex;align-items:flex-end">
+        <button type="button" class="btn-remove" data-idx="${idx}" title="Remove" ${idx === 1 ? "disabled" : ""}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+          </svg>
+        </button>
+      </div>
+    `;
+    sessionsList.appendChild(row);
+    updateRemoveButtons();
+  }
+
+  function updateRemoveButtons() {
+    const rows = sessionsList.querySelectorAll(".session-row");
+    rows.forEach(r => {
+      const btn = r.querySelector(".btn-remove");
+      if (btn) btn.disabled = rows.length === 1;
+    });
+  }
+
+  sessionsList.addEventListener("click", e => {
+    const btn = e.target.closest(".btn-remove");
+    if (!btn || btn.disabled) return;
+    btn.closest(".session-row").remove();
+    updateRemoveButtons();
+  });
+
+  document.getElementById("add-session").addEventListener("click", addSession);
+  addSession(); // start with one row
+
+  // ── Attendee hint ─────────────────────────────────────────────────────────
+  document.getElementById("attendeeCount").addEventListener("input", function() {
+    const hint = document.getElementById("attendeeHint");
+    if (parseInt(this.value) > 10) {
+      hint.textContent = "Groups over 10 need multiple instructors — describe your needs in Notes.";
+      hint.className = "hint warn";
+    } else {
+      hint.textContent = "Max 10 students per instructor.";
+      hint.className = "hint";
+    }
+  });
+
+  // ── Stored submission ─────────────────────────────────────────────────────
+  let lastSubmission = null;
+
+  // ── Form submit ───────────────────────────────────────────────────────────
+  document.getElementById("intake-form").addEventListener("submit", function(e) {
+    e.preventDefault();
+
+    // Gather sessions
+    const sessions = [];
+    sessionsList.querySelectorAll(".session-row").forEach(row => {
+      const dateInput = row.querySelector('input[type="date"]');
+      const timeInput = row.querySelector('input[type="time"]');
+      if (dateInput && timeInput && dateInput.value) {
+        sessions.push({ date: dateInput.value, startTime: timeInput.value });
+      }
+    });
+
+    if (sessions.length === 0) {
+      alert("Please add at least one suggested date.");
+      return;
+    }
+
+    // Build payload
+    const f = this;
+    const get = id => document.getElementById(id).value.trim();
+
+    const notes = [
+      get("businessUnit") ? `Business Unit: ${get("businessUnit")}` : null,
+      get("notes") || null,
+    ].filter(Boolean).join("\n");
+
+    lastSubmission = {
+      submittedAt: new Date().toISOString(),
+      locationName: get("locationName"),
+      address: get("address") || undefined,
+      requestorName: get("requestorName"),
+      requestorEmail: get("requestorEmail"),
+      requestorPhone: get("requestorPhone") || undefined,
+      certificationType: get("certificationType"),
+      numberOfClasses: parseInt(document.getElementById("numberOfClasses").value) || 1,
+      attendeeCount: parseInt(document.getElementById("attendeeCount").value) || 10,
+      businessUnit: get("businessUnit") || undefined,
+      sessions,
+      notes: notes || undefined,
+    };
+
+    // Auto-download
+    downloadFile();
+
+    // Show success
+    document.getElementById("form-view").style.display = "none";
+    const success = document.getElementById("success");
+    success.style.display = "flex";
+  });
+
+  // ── Download ──────────────────────────────────────────────────────────────
+  function downloadFile() {
+    if (!lastSubmission) return;
+    const name = (lastSubmission.locationName || "request").replace(/[^a-z0-9]/gi, "_");
+    const date = lastSubmission.submittedAt.split("T")[0];
+    const filename = `CPR_Request_${name}_${date}.json`;
+    const blob = new Blob([JSON.stringify(lastSubmission, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  document.getElementById("download-btn").addEventListener("click", downloadFile);
+
+  document.getElementById("new-request-btn").addEventListener("click", () => {
+    document.getElementById("intake-form").reset();
+    // Reset sessions to one row
+    sessionsList.innerHTML = "";
+    sessionCount = 0;
+    addSession();
+    document.getElementById("success").style.display = "none";
+    document.getElementById("form-view").style.display = "";
+    lastSubmission = null;
+  });
+</script>
+</body>
+</html>
