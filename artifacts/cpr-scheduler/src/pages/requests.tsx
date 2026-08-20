@@ -548,7 +548,6 @@ export default function Requests() {
         }
         action={
           <div className="flex gap-2">
-            {role === "administrator" && <ShareIntakeDialog />}
             {role === "administrator" && (
               <a href={`${import.meta.env.BASE_URL}cpr-request-form.html`} download="CPR_Training_Request_Form.html">
                 <Button variant="outline">
