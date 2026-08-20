@@ -30,7 +30,7 @@ interface ParsedRequest {
   sessions?: { date: string; startTime: string }[];
 }
 
-function parseImportedJson(raw: unknown): ParsedRequest {
+export function parseImportedJson(raw: unknown): ParsedRequest {
   if (!raw || typeof raw !== "object") throw new Error("Not a valid JSON object");
   const obj = raw as Record<string, unknown>;
 
