@@ -67,13 +67,17 @@ router.get("/requests", async (req, res) => {
 });
 
 router.post("/requests", async (req, res) => {
-  const body = CreateRequestBody.parse(req.body);
-  const [row] = await db.insert(requestsTable).values(body).returning();
+  const body = UpdateRequestBody.parse(req.body);
+  const [row] = await db
+    .update(requestsTable)
+    .set(body)
+    .where(eq(requestsTable.id, id))
+    .returning();
   res.status(201).json(await serializeRequest(row));
 });
 
 router.post("/training-requests", async (req, res) => {
-  const body = SubmitTrainingRequestBody.parse(req.body);
+  const body = UpdateRequestBody.parse(req.body);
   const email = body.requestorEmail.trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     res.status(400).json({ error: "Invalid email address" });
@@ -91,21 +95,9 @@ router.post("/training-requests", async (req, res) => {
     .returning();
   const firstSession = body.sessions[0]!;
   const [row] = await db
-    .insert(requestsTable)
-    .values({
-      requestorId: user.id,
-      organizationName: body.locationName,
-      contactEmail: email,
-      contactPhone: body.requestorPhone ?? null,
-      certificationType: body.certificationType ?? "cpr_aed_first_aid",
-      preferredDate: firstSession.date,
-      preferredLocation: body.locationName,
-      address: body.address ?? null,
-      numberOfClasses: body.numberOfClasses,
-      sessions: body.sessions,
-      attendeeCount: body.attendeeCount,
-      notes: body.notes ?? null,
-    })
+    .update(requestsTable)
+    .set(body)
+    .where(eq(requestsTable.id, id))
     .returning();
   const saved = await serializeRequest(row);
 
@@ -147,7 +139,11 @@ router.post("/training-requests", async (req, res) => {
 
 router.get("/requests/:requestId", async (req, res) => {
   const id = parseId(req.params.requestId, "requestId");
-  const [row] = await db.select().from(requestsTable).where(eq(requestsTable.id, id));
+  const [row] = await db
+    .update(requestsTable)
+    .set(body)
+    .where(eq(requestsTable.id, id))
+    .returning();
   if (!row) { res.status(404).json({ error: "Request not found" }); return; }
   res.json(await serializeRequest(row));
 });
@@ -222,7 +218,7 @@ router.patch("/requests/:requestId", async (req, res) => {
             startTime: session.startTime,
             location: locationName,
             capacity: existing.attendeeCount,
-            status: (session as { date: string; startTime: string; status?: string }).status ?? "confirmed",
+            status: ((session as { date: string; startTime: string; status?: string }).status ?? "confirmed") as "confirmed" | "scheduled" | "pending_schedule" | "being_scheduled" | "completed" | "cancelled",
             businessUnit: requestBusinessUnit ?? undefined,
           })
           .returning();

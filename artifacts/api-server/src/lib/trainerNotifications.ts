@@ -284,6 +284,7 @@ export async function sendTrainerInvitations(
   }
 
   const base = apiBaseUrl();
+  const sends: Promise<unknown>[] = [];
 
   for (const instructor of instructors) {
     const token = crypto.randomUUID();
@@ -295,14 +296,20 @@ export async function sendTrainerInvitations(
       status: "pending",
     }).onConflictDoNothing();
 
+    if (!instructor.email) continue; // skip instructors without an email address
+
     const acceptUrl  = `${base}/trainer-invite/${token}/accept`;
     const declineUrl = `${base}/trainer-invite/${token}/decline`;
 
     const emailContent = buildTrainerInviteEmail(instructor.name, cls, acceptUrl, declineUrl);
-    await sendEmail({ to: instructor.email, ...emailContent }, log).catch(err =>
-      log.error({ err, instructorId: instructor.id }, "Trainer invite email failed"),
+    sends.push(
+      sendEmail({ to: instructor.email, ...emailContent }, log).catch(err =>
+        log.error({ err, instructorId: instructor.id }, "Trainer invite email failed"),
+      ),
     );
   }
+
+  await Promise.allSettled(sends);
   log.info({ classId: cls.id, inviteCount: instructors.length }, "Trainer invitations sent");
 }
 
@@ -355,7 +362,7 @@ export async function recordTrainerResponse(
     admins
       .filter(a => !!a.email)
       .map(admin => {
-        const emailContent = buildTrainerResponseEmail(admin.name, trainer.name, trainer.email, decision, cls);
+        const emailContent = buildTrainerResponseEmail(admin.name, trainer.name, trainer.email ?? "", decision, cls);
         return sendEmail({ to: admin.email!, ...emailContent }, log).catch(err =>
           log.error({ err, to: admin.email }, "Trainer response admin notification failed"),
         );

@@ -21,6 +21,7 @@ import { upsertClassReminder } from "../lib/classReminder";
 import { sendTrainerInvitations } from "../lib/trainerNotifications";
 import { sendClassNotifications, type ClassInfo } from "../lib/classNotifications";
 import { sendCompletionRoster } from "../lib/completionRoster";
+import { sendImmediateReminderIfWithin24h } from "../lib/instructorPreClassReminder";
 
 const router: IRouter = Router();
 
@@ -149,11 +150,12 @@ router.get("/classes", async (req, res) => {
 });
 
 router.post("/classes", async (req, res) => {
-  const body = CreateClassBody.parse(req.body);
+  const body = UpdateClassBody.parse(req.body);
   const { instructorIds, ...classData } = body;
   const [row] = await db
-    .insert(classesTable)
-    .values({ ...classData, instructorId: instructorIds?.[0] ?? null })
+    .update(classesTable)
+    .set(updateData)
+    .where(eq(classesTable.id, classId))
     .returning();
   if (instructorIds && instructorIds.length > 0) {
     await db
@@ -165,6 +167,12 @@ router.post("/classes", async (req, res) => {
 
   // Notify admin/coordinator/EHS staff when a class is created directly as scheduled or confirmed
   if (row.status === "scheduled" || row.status === "confirmed") {
+    // Fire immediate reminder if class is within 24 h and has instructors
+    if (instructorIds && instructorIds.length > 0) {
+      sendImmediateReminderIfWithin24h(row, instructorIds, req.log).catch((err) =>
+        req.log.error({ err, classId: row.id }, "Immediate instructor reminder error (create)"),
+      );
+    }
     const clsInfo: ClassInfo = {
       id: row.id, title: row.title, location: row.location,
       certificationType: row.certificationType, date: row.date, startTime: row.startTime,
@@ -172,23 +180,37 @@ router.post("/classes", async (req, res) => {
     };
     sendClassNotifications(clsInfo, null, "confirmation", req.log, row.businessUnit ?? null).catch(() => {});
     sendTrainerInvitations(
-      { id: row.id, title: row.title, certificationType: row.certificationType,
-        date: row.date, startTime: row.startTime, endTime: row.endTime ?? null, location: row.location, capacity: row.capacity ?? null },
+      {
+        id: row.id,
+        title: row.title,
+        certificationType: row.certificationType,
+        date: row.date,
+        startTime: row.startTime,
+        endTime: row.endTime ?? null,
+        location: row.location,
+        capacity: row.capacity ?? null,
+      },
       req.log,
     ).catch(() => {});
     // Auto-create a location card if one doesn't already exist for this name
     ensureLocationExists(row).catch(() => {});
   }
 
-  res.status(201).json(await serializeClass(row));
+  // When a class is marked complete, email the full roster to the instructor(s)
+  if (statusChanged && row.status === "completed") {
+    sendCompletionRoster(row, req.log).catch(() => {});
+  }
+
+  res.json(await serializeClass(row));
 });
 
-router.get("/classes/:classId", async (req, res) => {
+router.delete("/classes/:classId", async (req, res) => {
   const classId = parseId(req.params.classId, "classId");
   const [row] = await db
-    .select()
-    .from(classesTable)
-    .where(eq(classesTable.id, classId));
+    .update(classesTable)
+    .set(updateData)
+    .where(eq(classesTable.id, classId))
+    .returning();
   if (!row) { res.status(404).json({ error: "Class not found" }); return; }
   const base = await serializeClass(row);
   const enrolls = await db
@@ -247,6 +269,10 @@ router.patch("/classes/:classId", async (req, res) => {
         .insert(classInstructorsTable)
         .values(instructorIds.map((userId) => ({ classId, userId })))
         .onConflictDoNothing();
+      // Fire immediate reminder if the class is already within the next 24 hours
+      sendImmediateReminderIfWithin24h(row, instructorIds, req.log).catch((err) =>
+        req.log.error({ err, classId }, "Immediate instructor reminder error"),
+      );
     }
   }
   await upsertClassReminder(row);

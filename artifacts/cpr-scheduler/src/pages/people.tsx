@@ -234,7 +234,7 @@ function EditUserDialog({
   user,
   role = "administrator",
 }: {
-  user: { id: number; name: string; email: string; adminRole?: AdminRole | null; phone?: string | null; organization?: string | null; bio?: string | null };
+  user: { id: number; name: string; email?: string | null; adminRole?: AdminRole | null; phone?: string | null; organization?: string | null; bio?: string | null };
   role?: "administrator" | "instructor";
 }) {
   const isInstructor = role === "instructor";
@@ -243,7 +243,7 @@ function EditUserDialog({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [form, setForm] = useState({
     name: user.name,
-    email: user.email,
+    email: user.email ?? undefined as string | undefined,
     adminRole: user.adminRole ?? null as AdminRole | null,
     phone: user.phone ?? "",
     organization: user.organization ?? "",
@@ -253,7 +253,7 @@ function EditUserDialog({
   function resetForm() {
     setForm({
       name: user.name,
-      email: user.email,
+      email: user.email ?? undefined,
       adminRole: user.adminRole ?? null,
       phone: user.phone ?? "",
       organization: user.organization ?? "",
@@ -313,7 +313,7 @@ function EditUserDialog({
               </div>
               <div>
                 <Label>Email</Label>
-                <Input type="email" value={form.email ?? ""} onChange={(e) => setForm({ ...form, email: e.target.value || null })} />
+                <Input type="email" value={form.email ?? ""} onChange={(e) => setForm({ ...form, email: e.target.value || undefined })} />
               </div>
 
               {/* Admin role — only for administrators */}
@@ -395,9 +395,9 @@ function EditUserDialog({
                         name: form.name,
                         email: form.email,
                         adminRole: isInstructor ? undefined : (form.adminRole ?? null),
-                        phone: form.phone || null,
-                        organization: form.organization || null,
-                        bio: form.bio || null,
+                        phone: form.phone || undefined,
+                        organization: form.organization || undefined,
+                        bio: form.bio || undefined,
                       },
                     })
                   }
@@ -489,7 +489,7 @@ export default function People() {
     if (!q) return true;
     return (
       u.name.toLowerCase().includes(q) ||
-      u.email.toLowerCase().includes(q) ||
+      (u.email ?? "").toLowerCase().includes(q) ||
       (u.organization ?? "").toLowerCase().includes(q) ||
       (u.phone ?? "").toLowerCase().includes(q)
     );

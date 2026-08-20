@@ -7,7 +7,7 @@
  * Runs daily via scheduleInstructorPreClassReminders().
  */
 
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, isNotNull } from "drizzle-orm";
 import {
   db,
   classesTable,
@@ -194,13 +194,13 @@ function buildAdminConfirmationEmail(
   return { subject, text, html };
 }
 
-// ---------------------------------------------------------------------------
-// Instructor lookup
-// ---------------------------------------------------------------------------
-
+const sentReminderKeys = new Set<string>();
 async function getClassInstructors(
   cls: typeof classesTable.$inferSelect,
 ): Promise<{ id: number; name: string; email: string }[]> {
+  const hasEmail = (u: { id: number; name: string; email: string | null }): u is { id: number; name: string; email: string } =>
+    u.email !== null;
+
   // 1. Prefer instructors who explicitly accepted their invitation
   const accepted = await db
     .select({ id: usersTable.id, name: usersTable.name, email: usersTable.email })
@@ -214,7 +214,7 @@ async function getClassInstructors(
       ),
     );
 
-  if (accepted.length > 0) return accepted;
+  if (accepted.length > 0) return accepted.filter(hasEmail);
 
   // 2. No one has accepted yet — fall back to all assigned instructors
   const fromJoin = await db
@@ -228,7 +228,7 @@ async function getClassInstructors(
       ),
     );
 
-  if (fromJoin.length > 0) return fromJoin;
+  if (fromJoin.length > 0) return fromJoin.filter(hasEmail);
 
   // 3. Legacy: single instructorId column
   if (cls.instructorId) {
@@ -236,7 +236,7 @@ async function getClassInstructors(
       .select({ id: usersTable.id, name: usersTable.name, email: usersTable.email })
       .from(usersTable)
       .where(and(eq(usersTable.id, cls.instructorId), eq(usersTable.isActive, true)));
-    if (u) return [u];
+    if (u && hasEmail(u)) return [u];
   }
 
   return [];
@@ -266,11 +266,11 @@ export async function sendInstructorPreClassReminders(): Promise<void> {
     return;
   }
 
-  // Admin sub-role recipients — fetched once for all classes
+  // Admin sub-role recipients — fetched once for all classes (only those with an email address)
   const admins = await db
     .select({ name: usersTable.name, email: usersTable.email })
     .from(usersTable)
-    .where(and(eq(usersTable.role, "administrator"), eq(usersTable.adminRole, "admin")));
+    .where(and(eq(usersTable.role, "administrator"), eq(usersTable.adminRole, "admin"), isNotNull(usersTable.email))) as { name: string; email: string }[];
 
   logger.info({ targetDate, count: classes.length }, "Instructor pre-class reminder: sending");
 
@@ -285,16 +285,25 @@ export async function sendInstructorPreClassReminders(): Promise<void> {
     const signinUrl = `${appBaseUrl()}/roster-signin/${cls.id}`;
     const rosterUrl = `${appBaseUrl()}/classes/${cls.id}/signin-sheet`;
 
-    // Email each instructor
-    for (const instructor of instructors) {
+    // Email each instructor — skip any already sent via the immediate path
+    const toNotify = instructors.filter(i => !sentReminderKeys.has(reminderKey(cls.id, i.id)));
+    if (toNotify.length === 0) {
+      logger.debug({ classId: cls.id }, "Instructor pre-class reminder: already sent via immediate path, skipping");
+      continue;
+    }
+
+    for (const instructor of toNotify) {
       const content = buildInstructorEmail(instructor.name, cls, signinUrl, rosterUrl);
-      await sendEmail({ to: instructor.email, ...content }, logger).catch(err =>
-        logger.error({ err, instructorId: instructor.id, classId: cls.id }, "Instructor pre-class reminder failed"),
-      );
+      const ok = await sendEmail({ to: instructor.email, ...content }, logger);
+      if (!ok) {
+        logger.error({ instructorId: instructor.id, classId: cls.id }, "Instructor pre-class reminder failed — will retry on next daily run");
+      } else {
+        sentReminderKeys.add(reminderKey(cls.id, instructor.id));
+      }
     }
 
     // Confirm to each admin
-    const instructorNames = instructors.map(i => i.name);
+    const instructorNames = toNotify.map(i => i.name);
     for (const admin of admins) {
       const content = buildAdminConfirmationEmail(admin.name, cls, instructorNames, signinUrl);
       await sendEmail({ to: admin.email, ...content }, logger).catch(err =>
@@ -309,10 +318,79 @@ export async function sendInstructorPreClassReminders(): Promise<void> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Scheduler
-// ---------------------------------------------------------------------------
+/**
+ * If `cls` starts within the next 24 hours, sends pre-class reminders to any
+ * of the supplied `instructorIds` that haven't already received one this
+ * server process (dedup against the daily job via `sentReminderKeys`).
+ */
+export async function sendImmediateReminderIfWithin24h(
+  cls: typeof classesTable.$inferSelect,
+  instructorIds: number[],
+  log: { info: (...args: unknown[]) => void; warn: (...args: unknown[]) => void; error: (...args: unknown[]) => void },
+): Promise<void> {
+  // Only send for active classes — mirrors the status filter used by the daily job
+  if (cls.status !== "confirmed" && cls.status !== "scheduled") return;
 
+  // Is the class within the next 24 hours?
+  const now = Date.now();
+  const classStart = new Date(`${cls.date}T${cls.startTime}:00Z`).getTime();
+  const in24h = now + 24 * 60 * 60 * 1000;
+  if (classStart > in24h || classStart < now) {
+    // Either more than 24 h away (daily job will handle it) or already passed
+    return;
+  }
+
+  // Which of the supplied instructors haven't been reminded yet?
+  const unsent = instructorIds.filter(id => !sentReminderKeys.has(reminderKey(cls.id, id)));
+  if (unsent.length === 0) return;
+
+  // Fetch instructor records — only those with an email address
+  const instructors = await db
+    .select({ id: usersTable.id, name: usersTable.name, email: usersTable.email })
+    .from(usersTable)
+    .where(and(inArray(usersTable.id, unsent), eq(usersTable.isActive, true), isNotNull(usersTable.email))) as { id: number; name: string; email: string }[];
+
+  if (instructors.length === 0) {
+    log.warn({ classId: cls.id }, "Immediate instructor reminder: no active instructors with email found, skipping");
+    return;
+  }
+
+  const signinUrl = `${appBaseUrl()}/roster-signin/${cls.id}`;
+  const rosterUrl = `${appBaseUrl()}/classes/${cls.id}/signin-sheet`;
+
+  // Fetch admins for the confirmation copy (only those with an email address)
+  const admins = await db
+    .select({ name: usersTable.name, email: usersTable.email })
+    .from(usersTable)
+    .where(and(eq(usersTable.role, "administrator"), eq(usersTable.adminRole, "admin"), isNotNull(usersTable.email))) as { name: string; email: string }[];
+
+  const notifiedNames: string[] = [];
+  for (const instructor of instructors) {
+    const content = buildInstructorEmail(instructor.name, cls, signinUrl, rosterUrl);
+    const ok = await sendEmail({ to: instructor.email, ...content }, logger);
+    if (ok) {
+      sentReminderKeys.add(reminderKey(cls.id, instructor.id));
+      notifiedNames.push(instructor.name);
+    } else {
+      logger.error(
+        { instructorId: instructor.id, classId: cls.id },
+        "Immediate instructor reminder failed — daily job will retry if class is still tomorrow",
+      );
+    }
+  }
+
+  if (notifiedNames.length === 0) return;
+
+  for (const admin of admins) {
+    const content = buildAdminConfirmationEmail(admin.name, cls, notifiedNames, signinUrl);
+    await sendEmail({ to: admin.email, ...content }, logger);
+  }
+
+  log.info(
+    { classId: cls.id, instructors: notifiedNames, adminCount: admins.length },
+    "Immediate instructor reminder sent (class within 24 h)",
+  );
+}
 export function scheduleInstructorPreClassReminders(): void {
   const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -329,4 +407,8 @@ export function scheduleInstructorPreClassReminders(): void {
   }, 60 * 60 * 1000);
 
   logger.info("Instructor pre-class reminder job scheduled (daily, first check in 1 hour)");
+}
+
+function reminderKey(classId: number, instructorId: number): string {
+  return `${classId}-${instructorId}`;
 }

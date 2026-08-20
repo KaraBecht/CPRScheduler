@@ -145,7 +145,7 @@ export async function sendRenewalReminders(): Promise<number> {
       if (matched.length > 0) ehsRecipients = matched;
     }
 
-    const recipients = [...admins, ...ehsRecipients];
+    const recipients = [...admins, ...ehsRecipients].filter((u): u is typeof u & { email: string } => !!u.email);
 
     for (const recipient of recipients) {
       const text = [
