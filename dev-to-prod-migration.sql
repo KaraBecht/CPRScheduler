@@ -3,6 +3,9 @@
 -- Dev records get IDs offset by 1000 to avoid conflicts
 -- ============================================================
 
+-- Schema additions (idempotent)
+ALTER TABLE locations ADD COLUMN IF NOT EXISTS business_unit text;
+
 -- Dev users (skipping those whose emails already exist in prod)
 INSERT INTO users (id, name, email, role, phone, organization, bio, avatar_url, created_at, is_active) VALUES
   (1001, 'Kara Becht', 'kara.becht@fox.com', 'administrator', '3103692730', 'WorkCare', NULL, NULL, '2026-05-26 19:34:16.034031', 't'),

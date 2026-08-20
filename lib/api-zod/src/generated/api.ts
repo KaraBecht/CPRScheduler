@@ -36,9 +36,6 @@ export const ListUsersResponseItem = zod.object({
 export const ListUsersResponse = zod.array(ListUsersResponseItem)
 
 
-
-
-
 export const CreateUserBody = zod.object({
   "name": zod.string().min(1),
   "email": zod.string(),
@@ -74,8 +71,6 @@ export const GetUserResponse = zod.object({
 export const UpdateUserParams = zod.object({
   "userId": zod.coerce.number()
 })
-
-
 
 
 export const UpdateUserBody = zod.object({
@@ -138,10 +133,6 @@ export const ListClassesResponseItem = zod.object({
   "businessUnit": zod.string().nullish()
 })
 export const ListClassesResponse = zod.array(ListClassesResponseItem)
-
-
-
-
 
 
 export const CreateClassBody = zod.object({
@@ -470,11 +461,6 @@ export const ListRequestsResponseItem = zod.object({
 export const ListRequestsResponse = zod.array(ListRequestsResponseItem)
 
 
-
-
-
-
-
 export const CreateRequestBody = zod.object({
   "requestorId": zod.number(),
   "organizationName": zod.string().min(1),
@@ -500,10 +486,6 @@ export const CreateRequestBody = zod.object({
 
 
 export const submitTrainingRequestBodyRequestorEmailMin = 3;
-
-
-
-
 
 
 export const SubmitTrainingRequestBody = zod.object({
@@ -1059,6 +1041,7 @@ export const ListLocationsResponseItem = zod.object({
   "contactEmail": zod.string().nullish(),
   "contactPhone": zod.string().nullish(),
   "notes": zod.string().nullish(),
+  "businessUnit": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string(),
   "notes_log": zod.array(zod.object({
@@ -1095,14 +1078,14 @@ export const ListLocationsResponse = zod.array(ListLocationsResponseItem)
  */
 
 
-
 export const CreateLocationBody = zod.object({
   "name": zod.string().min(1),
   "address": zod.string().optional(),
   "contactName": zod.string().optional(),
   "contactEmail": zod.string().optional(),
   "contactPhone": zod.string().optional(),
-  "notes": zod.string().optional()
+  "notes": zod.string().optional(),
+  "businessUnit": zod.string().optional()
 })
 
 
@@ -1121,6 +1104,7 @@ export const GetLocationResponse = zod.object({
   "contactEmail": zod.string().nullish(),
   "contactPhone": zod.string().nullish(),
   "notes": zod.string().nullish(),
+  "businessUnit": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string(),
   "notes_log": zod.array(zod.object({
@@ -1159,15 +1143,14 @@ export const UpdateLocationParams = zod.object({
 })
 
 
-
-
 export const UpdateLocationBody = zod.object({
   "name": zod.string().min(1).optional(),
   "address": zod.string().optional(),
   "contactName": zod.string().optional(),
   "contactEmail": zod.string().optional(),
   "contactPhone": zod.string().optional(),
-  "notes": zod.string().optional()
+  "notes": zod.string().optional(),
+  "businessUnit": zod.string().optional()
 })
 
 export const UpdateLocationResponse = zod.object({
@@ -1178,6 +1161,7 @@ export const UpdateLocationResponse = zod.object({
   "contactEmail": zod.string().nullish(),
   "contactPhone": zod.string().nullish(),
   "notes": zod.string().nullish(),
+  "businessUnit": zod.string().nullish(),
   "createdAt": zod.string(),
   "updatedAt": zod.string(),
   "notes_log": zod.array(zod.object({
@@ -1222,8 +1206,6 @@ export const DeleteLocationParams = zod.object({
 export const CreateLocationNoteParams = zod.object({
   "locationId": zod.coerce.number()
 })
-
-
 
 
 export const CreateLocationNoteBody = zod.object({
@@ -1322,5 +1304,3 @@ export const UpdateReminderResponse = zod.object({
   "businessUnit": zod.string().nullish()
 })
 })
-
-

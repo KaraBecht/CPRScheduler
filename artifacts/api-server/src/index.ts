@@ -7,6 +7,7 @@ import { scheduleInstructorPreClassReminders } from "./lib/instructorPreClassRem
 import { db, usersTable } from "@workspace/db";
 import { eq, count } from "drizzle-orm";
 import { seedProductionIfEmpty } from "./lib/seedProduction";
+import { applyMigrations } from "./lib/applyMigrations";
 
 const rawPort = process.env["PORT"];
 
@@ -20,6 +21,15 @@ const port = Number(rawPort);
 
 if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
+}
+
+// Apply idempotent schema migrations before accepting any traffic.
+// Fail fast so a broken schema is caught at startup rather than at runtime.
+try {
+  await applyMigrations();
+} catch (e) {
+  logger.error({ err: e }, "Schema migration failed — aborting startup");
+  process.exit(1);
 }
 
 app.listen(port, async (err) => {

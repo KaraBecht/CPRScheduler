@@ -95,6 +95,7 @@ async function buildDetail(loc: typeof locationsTable.$inferSelect) {
     contactEmail: loc.contactEmail,
     contactPhone: loc.contactPhone,
     notes: loc.notes,
+    businessUnit: loc.businessUnit,
     createdAt: loc.createdAt.toISOString(),
     updatedAt: loc.updatedAt.toISOString(),
     notes_log: notes_log.map((n) => ({
@@ -132,6 +133,7 @@ router.post("/locations", async (req, res) => {
       contactEmail: body.contactEmail ?? null,
       contactPhone: body.contactPhone ?? null,
       notes: body.notes ?? null,
+      businessUnit: body.businessUnit ?? null,
     })
     .returning();
   res.status(201).json(await buildDetail(row));
@@ -179,6 +181,7 @@ router.patch("/locations/:locationId", async (req, res) => {
           ? body.contactPhone
           : existing.contactPhone,
       notes: body.notes !== undefined ? body.notes : existing.notes,
+      businessUnit: body.businessUnit !== undefined ? body.businessUnit : existing.businessUnit,
       updatedAt: new Date(),
     })
     .where(eq(locationsTable.id, id))

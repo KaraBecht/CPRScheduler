@@ -1,0 +1,32 @@
+import { sql } from "drizzle-orm";
+import { db } from "@workspace/db";
+import { logger } from "./logger";
+
+/**
+ * Idempotent schema migrations run on every startup.
+ * Each statement uses IF NOT EXISTS / DO NOTHING so it is safe to re-run.
+ */
+const MIGRATIONS: { name: string; sql: string }[] = [
+  {
+    name: "add_locations_business_unit",
+    sql: `ALTER TABLE locations ADD COLUMN IF NOT EXISTS business_unit text`,
+  },
+  {
+    name: "backfill_locations_business_unit_from_notes",
+    sql: `UPDATE locations
+          SET business_unit = (regexp_match(notes, 'Business Unit:\\s*(.+)'))[1]
+          WHERE business_unit IS NULL AND notes LIKE '%Business Unit:%'`,
+  },
+];
+
+export async function applyMigrations(): Promise<void> {
+  for (const migration of MIGRATIONS) {
+    try {
+      await db.execute(sql.raw(migration.sql));
+      logger.debug({ migration: migration.name }, "Migration applied");
+    } catch (e) {
+      logger.error({ err: e, migration: migration.name }, "Migration failed");
+      throw e;
+    }
+  }
+}

@@ -1339,6 +1339,7 @@ components:
         contactEmail: { type: ["string", "null"] }
         contactPhone: { type: ["string", "null"] }
         notes: { type: ["string", "null"] }
+        businessUnit: { type: ["string", "null"] }
         createdAt: { type: string }
         updatedAt: { type: string }
         notes_log:
@@ -1361,6 +1362,7 @@ components:
         contactEmail: { type: string }
         contactPhone: { type: string }
         notes: { type: string }
+        businessUnit: { type: string }
 
     LocationUpdate:
       type: object
@@ -1371,6 +1373,7 @@ components:
         contactEmail: { type: string }
         contactPhone: { type: string }
         notes: { type: string }
+        businessUnit: { type: string }
 
     LocationNoteInput:
       type: object

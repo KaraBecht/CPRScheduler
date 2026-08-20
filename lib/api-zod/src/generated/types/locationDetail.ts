@@ -21,6 +21,8 @@ export interface LocationDetail {
   contactPhone?: string | null;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  businessUnit?: string | null;
   createdAt: string;
   updatedAt: string;
   notes_log: LocationNote[];

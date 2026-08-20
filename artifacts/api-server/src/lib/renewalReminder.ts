@@ -8,19 +8,13 @@ import { formatCertificationType } from "./formatCertType";
 // Business-unit helpers (mirrors classNotifications.ts)
 // ---------------------------------------------------------------------------
 
-function extractBusinessUnit(notes: string | null | undefined): string | null {
-  if (!notes) return null;
-  const m = notes.match(/Business Unit:\s*(.+)/i);
-  return m?.[1]?.trim() ?? null;
-}
-
 async function getLocationBusinessUnit(locationName: string): Promise<string | null> {
   const [loc] = await db
-    .select({ notes: locationsTable.notes })
+    .select({ businessUnit: locationsTable.businessUnit })
     .from(locationsTable)
     .where(ilike(locationsTable.name, locationName))
     .limit(1);
-  return extractBusinessUnit(loc?.notes);
+  return loc?.businessUnit ?? null;
 }
 
 // ---------------------------------------------------------------------------

@@ -5,14 +5,13 @@
  *   • Requestor        — always, if an email address is available
  *   • admin sub-role   — Sharon & Kara (all users with adminRole = 'admin')
  *   • coordinator      — Carmen (adminRole = 'coordinator')
- *   • EHS              — filtered by business unit extracted from the location's
- *                        notes field ("Business Unit: FOX Television Stations").
- *                        Matched against each EHS user's `organization` value
- *                        (case-insensitive substring). Falls back to all EHS
- *                        users if no location / business unit is found.
+ *   • EHS              — filtered by the location's dedicated `businessUnit`
+ *                        column, matched against each EHS user's `organization`
+ *                        value (case-insensitive substring). Falls back to all
+ *                        EHS users if no location / business unit is found.
  */
 
-import { and, eq, ilike } from "drizzle-orm";
+import { eq, ilike } from "drizzle-orm";
 import type { Logger } from "pino";
 import { db, locationsTable, usersTable } from "@workspace/db";
 import { sendEmail } from "./sendgrid";
@@ -50,51 +49,30 @@ export interface RequestorInfo {
 }
 
 export type NotificationVariant = "confirmation" | "reminder";
-
-// ---------------------------------------------------------------------------
-// Business-unit helpers
-// ---------------------------------------------------------------------------
-
-function extractBusinessUnit(notes: string | null | undefined): string | null {
-  if (!notes) return null;
-  const m = notes.match(/Business Unit:\s*(.+)/i);
-  return m?.[1]?.trim() ?? null;
-}
-
-async function getLocationNotes(locationName: string): Promise<string | null> {
-  const [loc] = await db
-    .select({ notes: locationsTable.notes })
-    .from(locationsTable)
-    .where(ilike(locationsTable.name, locationName))
-    .limit(1);
-  return loc?.notes ?? null;
-}
-
-// ---------------------------------------------------------------------------
-// Recipient resolution
-// ---------------------------------------------------------------------------
-
 interface Recipient {
   name: string;
   email: string;
 }
 
-async function getStaffRecipients(classLocation: string, classBusinessUnit?: string | null): Promise<{
+async function getStaffRecipients(classLocation: string): Promise<{
   admins: Recipient[];
   coordinators: Recipient[];
   ehsUsers: Recipient[];
   businessUnit: string | null;
 }> {
-  const [allAdminUsers, notes] = await Promise.all([
+  const [allAdminUsers, locationRow] = await Promise.all([
     db
       .select({ name: usersTable.name, email: usersTable.email, adminRole: usersTable.adminRole, organization: usersTable.organization })
       .from(usersTable)
       .where(eq(usersTable.role, "administrator")),
-    getLocationNotes(classLocation),
+    db
+      .select({ businessUnit: locationsTable.businessUnit })
+      .from(locationsTable)
+      .where(ilike(locationsTable.name, classLocation))
+      .limit(1),
   ]);
 
-  // Prefer the class's own business unit field; fall back to what's in the location notes
-  const businessUnit = classBusinessUnit ?? extractBusinessUnit(notes);
+  const businessUnit = locationRow[0]?.businessUnit ?? null;
 
   const admins     = allAdminUsers.filter(u => u.adminRole === "admin");
   const coordinators = allAdminUsers.filter(u => u.adminRole === "coordinator");
@@ -113,9 +91,8 @@ async function getStaffRecipients(classLocation: string, classBusinessUnit?: str
     if (matched.length > 0) ehsUsers = matched;
   }
 
-  const toRecipients = (arr: { name: string; email: string | null }[]): Recipient[] =>
-    arr.filter((u): u is typeof u & { email: string } => u.email !== null)
-       .map(u => ({ name: u.name, email: u.email }));
+  const toRecipients = (list: { name: string; email: string | null }[]): Recipient[] =>
+    list.flatMap(u => (u.email ? [{ name: u.name, email: u.email }] : []));
 
   return {
     admins: toRecipients(admins),
@@ -321,7 +298,7 @@ export async function sendClassNotifications(
   classBusinessUnit?: string | null,
 ): Promise<void> {
   const { admins, coordinators, ehsUsers, businessUnit } =
-    await getStaffRecipients(cls.location, classBusinessUnit);
+    await getStaffRecipients(cls.location);
 
   const staffRecipients = [...admins, ...coordinators, ...ehsUsers];
 

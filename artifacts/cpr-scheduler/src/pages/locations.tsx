@@ -99,27 +99,6 @@ const CERT_LABELS: Record<string, string> = {
   stop_the_bleed: "Stop the Bleed",
   cpr_aed_first_aid_stop_the_bleed: "CPR+STB",
 };
-
-// ─── Business unit helpers ────────────────────────────────────────────────────
-
-/** Extract the "Business Unit: …" value from a notes string. */
-function parseBusinessUnit(notes: string): string {
-  const m = notes.match(/^Business Unit:\s*(.+)$/m);
-  return m?.[1]?.trim() ?? "";
-}
-
-/** Remove the "Business Unit: …" line from notes (used when the BU is shown separately in the form). */
-function stripBusinessUnitLine(notes: string): string {
-  return notes.replace(/^Business Unit:.*\n?/m, "").replace(/^\n+/, "").trim();
-}
-
-/** Rebuild a notes string that leads with the BU line when a BU is set. */
-function buildNotesWithBu(bu: string, otherNotes: string): string {
-  const body = otherNotes.trim();
-  if (!bu) return body;
-  return body ? `Business Unit: ${bu}\n${body}` : `Business Unit: ${bu}`;
-}
-
 const LS_BU_KEY = "pulsepoint_custom_bus";
 const SEED_BUSINESS_UNITS = [
   "FOX Digital",
@@ -695,6 +674,7 @@ type LocationForm = {
   contactEmail: string;
   contactPhone: string;
   notes: string;
+  businessUnit: string;
 };
 
 const EMPTY_FORM: LocationForm = {
@@ -704,6 +684,7 @@ const EMPTY_FORM: LocationForm = {
   contactEmail: "",
   contactPhone: "",
   notes: "",
+  businessUnit: "",
 };
 
 function LocationFormDialog({
@@ -729,9 +710,8 @@ function LocationFormDialog({
   function handleOpen(v: boolean) {
     if (v) {
       const f = initial ?? EMPTY_FORM;
-      const bu = parseBusinessUnit(f.notes);
-      const stripped = stripBusinessUnitLine(f.notes);
-      setForm({ ...f, notes: stripped });
+      setForm(f);
+      const bu = f.businessUnit ?? "";
       const fresh = getStoredBusinessUnits();
       setKnownBUs(fresh);
       if (!bu) {
@@ -760,7 +740,7 @@ function LocationFormDialog({
     if (buSelect === "__other__" && customBu.trim()) {
       saveCustomBusinessUnit(customBu.trim());
     }
-    onSave({ ...form, notes: buildNotesWithBu(effectiveBu, form.notes) });
+    onSave({ ...form, businessUnit: effectiveBu });
     setOpen(false);
   }
 
@@ -1371,7 +1351,7 @@ function LocationCard({ loc }: { loc: LocationDetail }) {
   });
 
   const expiringCount = loc.expiringCertificates?.length ?? 0;
-  const businessUnit = parseBusinessUnit(loc.notes ?? "");
+  const businessUnit = loc.businessUnit ?? "";
   const classCertStatus = certStatusFromLastClass(loc.lastClassDate);
 
   return (
@@ -1433,6 +1413,7 @@ function LocationCard({ loc }: { loc: LocationDetail }) {
                 contactEmail: loc.contactEmail ?? "",
                 contactPhone: loc.contactPhone ?? "",
                 notes: loc.notes ?? "",
+                businessUnit: loc.businessUnit ?? "",
               }}
               trigger={
                 <Button
@@ -1454,6 +1435,7 @@ function LocationCard({ loc }: { loc: LocationDetail }) {
                     contactEmail: form.contactEmail || undefined,
                     contactPhone: form.contactPhone || undefined,
                     notes: form.notes || undefined,
+                    businessUnit: form.businessUnit || undefined,
                   },
                 })
               }
@@ -1824,7 +1806,7 @@ function LocationsExportDialog({ locations }: { locations: LocationDetail[] }) {
   const allBUsForExport = useMemo(() => {
     const set = new Set<string>();
     for (const loc of locations) {
-      const bu = parseBusinessUnit(loc.notes ?? "");
+      const bu = loc.businessUnit ?? "";
       if (bu) set.add(bu);
     }
     return Array.from(set).sort();
@@ -1833,7 +1815,7 @@ function LocationsExportDialog({ locations }: { locations: LocationDetail[] }) {
   const preview = useMemo(() => {
     return locations.filter((loc) => {
       if (yearFilter !== LOC_EXPORT_ALL && loc.lastClassDate?.slice(0, 4) !== yearFilter) return false;
-      if (buFilter !== LOC_EXPORT_ALL && parseBusinessUnit(loc.notes ?? "") !== buFilter) return false;
+      if (buFilter !== LOC_EXPORT_ALL && (loc.businessUnit ?? "") !== buFilter) return false;
       if (certStatusFilter !== LOC_EXPORT_ALL) {
         const status = certStatusFromLastClass(loc.lastClassDate);
         if (certStatusFilter === "expiring" && status !== "expiring") return false;
@@ -1851,7 +1833,7 @@ function LocationsExportDialog({ locations }: { locations: LocationDetail[] }) {
       preview.map((loc) => [
         loc.name,
         loc.address ?? "",
-        parseBusinessUnit(loc.notes ?? ""),
+        loc.businessUnit ?? "",
         loc.contactName ?? "",
         loc.contactEmail ?? "",
         loc.contactPhone ?? "",
@@ -1958,7 +1940,7 @@ export default function Locations() {
   const allBUs = useMemo(() => {
     const set = new Set<string>();
     locations.forEach((loc) => {
-      const bu = parseBusinessUnit(loc.notes ?? "");
+      const bu = loc.businessUnit ?? "";
       if (bu) set.add(bu);
     });
     return [...set].sort();
@@ -1966,7 +1948,7 @@ export default function Locations() {
 
   const q = query.trim().toLowerCase();
   const filtered = locations.filter((loc) => {
-    if (buFilter && parseBusinessUnit(loc.notes ?? "") !== buFilter) return false;
+    if (buFilter && (loc.businessUnit ?? "") !== buFilter) return false;
     if (certFilter) {
       const status = certStatusFromLastClass(loc.lastClassDate);
       if (certFilter === "expired" && status !== "expired") return false;
@@ -2016,6 +1998,7 @@ export default function Locations() {
                     contactEmail: form.contactEmail || undefined,
                     contactPhone: form.contactPhone || undefined,
                     notes: form.notes || undefined,
+                    businessUnit: form.businessUnit || undefined,
                   },
                 })
               }

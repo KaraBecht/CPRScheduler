@@ -516,6 +516,8 @@ export interface LocationDetail {
   contactPhone?: string | null;
   /** @nullable */
   notes?: string | null;
+  /** @nullable */
+  businessUnit?: string | null;
   createdAt: string;
   updatedAt: string;
   notes_log: LocationNote[];
@@ -536,6 +538,7 @@ export interface LocationInput {
   contactEmail?: string;
   contactPhone?: string;
   notes?: string;
+  businessUnit?: string;
 }
 
 export interface LocationUpdate {
@@ -546,6 +549,7 @@ export interface LocationUpdate {
   contactEmail?: string;
   contactPhone?: string;
   notes?: string;
+  businessUnit?: string;
 }
 
 export interface LocationNoteInput {
@@ -632,4 +636,3 @@ export const ListRemindersStatus = {
   sent: 'sent',
   dismissed: 'dismissed',
 } as const;
-
