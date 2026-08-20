@@ -316,6 +316,7 @@ router.get("/public/classes/:classId/signin-sheet", async (req, res) => {
     classId: cls.id,
     title: cls.title,
     date: cls.date,
+    status: cls.status,
     startTime: cls.startTime,
     endTime: cls.endTime,
     location: cls.location,
@@ -345,6 +346,14 @@ router.post("/public/classes/:classId/roster-signin", async (req, res) => {
     res.status(404).json({ error: "Class not found" });
     return;
   }
+
+  // Reject sign-ins for completed classes or classes whose date has passed
+  const today = new Date().toISOString().slice(0, 10);
+  if (cls.status === "completed" || cls.date < today) {
+    res.status(409).json({ error: "Sign-in is closed for this class." });
+    return;
+  }
+
   const existing = await db
     .select({
       position: classRosterTable.position,

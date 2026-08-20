@@ -14,12 +14,14 @@ import {
   Clock,
   UserCheck,
   RotateCcw,
+  Lock,
 } from "lucide-react";
 
 type SheetData = {
   classId: number;
   title: string;
   date: string;
+  status: string;
   startTime: string | null;
   endTime: string | null;
   location: string | null;
@@ -135,6 +137,9 @@ export default function SigninSheet() {
 
   const pct = sheet.capacity > 0 ? (sheet.signedInCount / sheet.capacity) * 100 : 0;
 
+  const today = new Date().toISOString().slice(0, 10);
+  const isSigninClosed = sheet.status === "completed" || sheet.date < today;
+
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col">
       {/* Header */}
@@ -202,9 +207,23 @@ export default function SigninSheet() {
           </div>
         </div>
 
-        {/* Sign-in form or success */}
+        {/* Sign-in form or success or closed */}
         <div className="bg-white rounded-xl border border-border shadow-sm px-5 py-5">
-          {submitted ? (
+          {isSigninClosed ? (
+            <div className="flex flex-col items-center text-center gap-3 py-4">
+              <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center">
+                <Lock className="h-7 w-7 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="font-bold text-base">Sign-in is closed</p>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  {sheet.status === "completed"
+                    ? "This class has been completed. No new sign-ins are accepted."
+                    : "This class date has passed. No new sign-ins are accepted."}
+                </p>
+              </div>
+            </div>
+          ) : submitted ? (
             <div className="flex flex-col items-center text-center gap-3 py-4">
               <div className="h-14 w-14 rounded-full bg-emerald-500/10 flex items-center justify-center">
                 <CheckCircle2 className="h-7 w-7 text-emerald-600" />
