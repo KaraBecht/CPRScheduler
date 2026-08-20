@@ -7,3 +7,10 @@ uri = "file://CPR_Training_Request_Form.docx"
 type = "word_document"
 title = "CPR Training Request Form"
 description = "Fillable Word version of the intake form — matches all fields from cprscheduler.replit.app/intake"
+
+[[outputs]]
+id = "8kXwKP1l2GAZ3KXmd2Yfl"
+uri = "file://CPR_Training_Request_Form.html"
+type = "text"
+title = "CPR Training Request Form"
+description = "Public-facing intake form — fills out in any browser, downloads a .json file on submit that can be uploaded into the scheduler"
