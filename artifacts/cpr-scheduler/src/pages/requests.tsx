@@ -34,11 +34,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth-context";
-import { Plus, Check, X, Send, Share2, Copy, CheckCheck, Trash2, CalendarDays, Download } from "lucide-react";
+import { Plus, Check, X, Send, Share2, Copy, CheckCheck, Trash2, CalendarDays, Download, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { formatCertificationType, formatDate, timeAgo } from "@/lib/format";
 import { TrainingRequestForm } from "@/components/TrainingRequestForm";
+import { ImportRequestModal } from "@/components/ImportRequestModal";
 import { QRCodeSVG } from "qrcode.react";
 
 const CERT_TYPES: CertificationType[] = [
@@ -533,9 +534,11 @@ export default function Requests() {
     },
   });
 
+  const [importOpen, setImportOpen] = useState(false);
   const canCreate = role === "requestor" && userId;
   return (
     <>
+      <ImportRequestModal open={importOpen} onOpenChange={setImportOpen} />
       <PageHeader
         title={role === "requestor" ? "My requests" : "Training requests"}
         subtitle={
@@ -552,6 +555,11 @@ export default function Requests() {
                   <Download className="h-4 w-4 mr-1.5" /> Offline form
                 </Button>
               </a>
+            )}
+            {role === "administrator" && (
+              <Button variant="outline" onClick={() => setImportOpen(true)} data-testid="button-import-request">
+                <Upload className="h-4 w-4 mr-1.5" /> Import request
+              </Button>
             )}
             <SendTrainingRequestDialog />
             {canCreate ? <NewRequestDialog requestorId={userId!} /> : null}
