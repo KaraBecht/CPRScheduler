@@ -7,6 +7,7 @@ import {
 } from "@workspace/api-client-react";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
+import { ImportRequestModal } from "@/components/ImportRequestModal";
 import {
   CalendarDays,
   Inbox,
@@ -20,6 +21,7 @@ import {
   X,
   ChevronDown,
   ChevronUp,
+  Upload,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ClassCard } from "@/components/ClassCard";
@@ -152,6 +154,7 @@ export function AdminDashboardPage() {
   const { data: dash, isLoading } = useGetAdminDashboard();
   const { data: activity = [] } = useGetActivityFeed();
   const { data: reminders = [] } = useListReminders({ status: "pending" });
+  const [importOpen, setImportOpen] = useState(false);
 
   if (isLoading || !dash) {
     return (
@@ -185,9 +188,22 @@ export function AdminDashboardPage() {
 
   return (
     <>
+      <ImportRequestModal open={importOpen} onOpenChange={setImportOpen} />
       <PageHeader
         title="Dashboard"
         subtitle="Real-time view of classes, students, and incoming training requests."
+        action={
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={() => setImportOpen(true)}
+            data-testid="button-import-request"
+          >
+            <Upload className="h-4 w-4" />
+            Import request
+          </Button>
+        }
       />
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-4 items-stretch">

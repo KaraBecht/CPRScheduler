@@ -40,27 +40,42 @@ const BUSINESS_UNITS = [
 
 type Session = { date: string; startTime: string };
 
+interface InitialValues {
+  locationName?: string;
+  address?: string;
+  requestorName?: string;
+  requestorEmail?: string;
+  requestorPhone?: string;
+  certificationType?: CertificationType;
+  numberOfClasses?: number;
+  attendeeCount?: number;
+  businessUnit?: string;
+  notes?: string;
+  sessions?: Session[];
+}
+
 interface TrainingRequestFormProps {
   onSuccess: () => void;
   onCancel?: () => void;
+  initialValues?: InitialValues;
 }
 
-export function TrainingRequestForm({ onSuccess, onCancel }: TrainingRequestFormProps) {
+export function TrainingRequestForm({ onSuccess, onCancel, initialValues }: TrainingRequestFormProps) {
   const qc = useQueryClient();
-  const [locationName, setLocationName] = useState("");
-  const [address, setAddress] = useState("");
-  const [requestorName, setRequestorName] = useState("");
-  const [requestorEmail, setRequestorEmail] = useState("");
-  const [requestorPhone, setRequestorPhone] = useState("");
+  const [locationName, setLocationName] = useState(initialValues?.locationName ?? "");
+  const [address, setAddress] = useState(initialValues?.address ?? "");
+  const [requestorName, setRequestorName] = useState(initialValues?.requestorName ?? "");
+  const [requestorEmail, setRequestorEmail] = useState(initialValues?.requestorEmail ?? "");
+  const [requestorPhone, setRequestorPhone] = useState(initialValues?.requestorPhone ?? "");
   const [certificationType, setCertificationType] =
-    useState<CertificationType>("cpr_aed_first_aid");
-  const [numberOfClasses, setNumberOfClasses] = useState(1);
-  const [attendeeCount, setAttendeeCount] = useState(10);
-  const [businessUnit, setBusinessUnit] = useState("");
-  const [notes, setNotes] = useState("");
-  const [sessions, setSessions] = useState<Session[]>([
-    { date: "", startTime: "09:00" },
-  ]);
+    useState<CertificationType>(initialValues?.certificationType ?? "cpr_aed_first_aid");
+  const [numberOfClasses, setNumberOfClasses] = useState(initialValues?.numberOfClasses ?? 1);
+  const [attendeeCount, setAttendeeCount] = useState(initialValues?.attendeeCount ?? 10);
+  const [businessUnit, setBusinessUnit] = useState(initialValues?.businessUnit ?? "");
+  const [notes, setNotes] = useState(initialValues?.notes ?? "");
+  const [sessions, setSessions] = useState<Session[]>(
+    initialValues?.sessions?.length ? initialValues.sessions : [{ date: "", startTime: "09:00" }],
+  );
 
   const resetForm = () => {
     setLocationName("");
