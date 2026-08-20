@@ -474,6 +474,9 @@
 </main>
 
 <script>
+  // ── Pre-fill data (injected at download time; do not remove this line) ────
+  var __PREFILL__ = /* __PREFILL_PLACEHOLDER__ */ {};
+
   // ── State ─────────────────────────────────────────────────────────────────
   let rowCount = 0;
   let lastPayload = null;
@@ -711,7 +714,11 @@
     document.getElementById("form-view").style.display = "";
   });
 
-  // ── Init: 10 blank rows ───────────────────────────────────────────────────
+  // ── Init: apply pre-fill then add 10 blank rows ──────────────────────────
+  if (__PREFILL__.classId)   document.getElementById("classId").value    = __PREFILL__.classId;
+  if (__PREFILL__.date)      document.getElementById("classDate").value  = __PREFILL__.date;
+  if (__PREFILL__.startTime) document.getElementById("startTime").value  = __PREFILL__.startTime;
+  if (__PREFILL__.title)     document.getElementById("classTitle").value = __PREFILL__.title;
   for (let i = 0; i < 10; i++) addRow();
 </script>
 </body>

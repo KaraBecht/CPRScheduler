@@ -389,12 +389,50 @@ export default function ClassRoster() {
           </Button>
           <span className="text-xs text-muted-foreground">.json (offline form) or .xlsx / .csv</span>
 
-          {/* Download offline roster form */}
-          <a href={`${import.meta.env.BASE_URL}cpr-roster-form.html`} download="CPR_Roster_Form.html">
-            <Button variant="outline" size="sm">
-              <Download className="h-3.5 w-3.5 mr-1.5" /> Offline roster form
-            </Button>
-          </a>
+          {/* Download offline roster form (pre-filled with this class's details) */}
+          <Button
+            variant="outline"
+            size="sm"
+            data-testid="button-offline-form"
+            onClick={async () => {
+              try {
+                const resp = await fetch(`${import.meta.env.BASE_URL}cpr-roster-form.html`);
+                if (!resp.ok) throw new Error(`Failed to fetch form template (${resp.status})`);
+                let html = await resp.text();
+                const prefill = {
+                  classId: cls.id,
+                  date: cls.date,
+                  startTime: cls.startTime,
+                  title: cls.title,
+                };
+                // Escape characters that would break an inline <script> block.
+                // JSON.stringify alone does not escape </script>, so we replace
+                // <, >, and & with their Unicode escape sequences, which are
+                // valid JSON and harmless to the JavaScript parser.
+                const safePrefill = JSON.stringify(prefill)
+                  .replace(/</g, "\\u003C")
+                  .replace(/>/g, "\\u003E")
+                  .replace(/&/g, "\\u0026");
+                html = html.replace(
+                  "/* __PREFILL_PLACEHOLDER__ */",
+                  safePrefill,
+                );
+                const blob = new Blob([html], { type: "text/html" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `CPR_Roster_Form_Class${cls.id}.html`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              } catch {
+                toast({ title: "Failed to download offline form", variant: "destructive" });
+              }
+            }}
+          >
+            <Download className="h-3.5 w-3.5 mr-1.5" /> Offline roster form
+          </Button>
 
           {/* Batch pass + card sent */}
           {filledCount > 0 && (
