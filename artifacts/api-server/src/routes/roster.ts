@@ -224,6 +224,8 @@ router.post("/roster/import", async (req, res) => {
     if (!name) { skipped++; continue; }
     const email = entry.email?.trim() ?? "";
     const phone = entry.phone?.trim() ?? "";
+    const result = (entry as { result?: string }).result?.trim() || null;
+    const cardSent = Boolean((entry as { cardSent?: boolean }).cardSent);
 
     const isDuplicate =
       existingNames.has(name.toLowerCase()) ||
@@ -233,7 +235,7 @@ router.post("/roster/import", async (req, res) => {
     const slot = findSlot();
     if (slot === -1) { skipped++; continue; }
 
-    await db.insert(classRosterTable).values({ classId: cls.id, position: slot, name, email, phone, result: null, cardSent: false });
+    await db.insert(classRosterTable).values({ classId: cls.id, position: slot, name, email, phone, result: result as "pass" | "fail" | null, cardSent });
     filledPositions.add(slot);
     existingNames.add(name.toLowerCase());
     if (email) existingEmails.add(email.toLowerCase());

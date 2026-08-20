@@ -11,9 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Upload, FileText, AlertTriangle, CheckCircle2 } from "lucide-react";
 
-interface ParsedEntry { name: string; email: string; phone: string }
+interface ParsedEntry { name: string; email: string; phone: string; result?: string | null; cardSent?: boolean }
 
-interface ParsedCsv {
+interface ParsedRoster {
   classId?: number;
   date?: string;
   startTime?: string;
@@ -21,7 +21,7 @@ interface ParsedCsv {
   entries: ParsedEntry[];
 }
 
-function parseCsv(text: string): ParsedCsv {
+function parseCsv(text: string): ParsedRoster {
   const lines = text.split(/\r?\n/);
   const meta: Record<string, string> = {};
   const entries: ParsedEntry[] = [];
@@ -59,6 +59,33 @@ function parseCsv(text: string): ParsedCsv {
   };
 }
 
+function parseRosterJson(text: string): ParsedRoster {
+  const data = JSON.parse(text) as Record<string, unknown>;
+  if (data["version"] !== "roster-v1") {
+    throw new Error("Unrecognized file format. Please use the CPR Roster Form to create this file.");
+  }
+  const rawEntries = data["entries"];
+  if (!Array.isArray(rawEntries) || rawEntries.length === 0) {
+    throw new Error("No attendee entries found in this file.");
+  }
+  const entries: ParsedEntry[] = (rawEntries as Record<string, unknown>[])
+    .filter((e) => typeof e["name"] === "string" && (e["name"] as string).trim())
+    .map((e) => ({
+      name: (e["name"] as string).trim(),
+      email: typeof e["email"] === "string" ? e["email"].trim() : "",
+      phone: typeof e["phone"] === "string" ? e["phone"].trim() : "",
+      result: typeof e["result"] === "string" ? e["result"] : null,
+      cardSent: Boolean(e["cardSent"]),
+    }));
+  return {
+    classId: typeof data["classId"] === "number" ? data["classId"] : undefined,
+    date: typeof data["date"] === "string" ? data["date"] : undefined,
+    startTime: typeof data["startTime"] === "string" ? data["startTime"] : undefined,
+    classTitle: typeof data["classTitle"] === "string" ? data["classTitle"] : undefined,
+    entries,
+  };
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -77,7 +104,7 @@ interface ImportResult {
 export function UploadRosterDialog({ open, onOpenChange, onImported }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState<Step>("pick");
-  const [parsed, setParsed] = useState<ParsedCsv | null>(null);
+  const [parsed, setParsed] = useState<ParsedRoster | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
@@ -104,16 +131,18 @@ export function UploadRosterDialog({ open, onOpenChange, onImported }: Props) {
     const reader = new FileReader();
     reader.onload = (ev) => {
       try {
-        const csv = parseCsv(ev.target?.result as string);
-        if (csv.entries.length === 0) {
-          setError("No names found in the file. Make sure it has at least one row with a name.");
+        const text = ev.target?.result as string;
+        const isJson = file.name.toLowerCase().endsWith(".json");
+        const roster = isJson ? parseRosterJson(text) : parseCsv(text);
+        if (roster.entries.length === 0) {
+          setError("No attendee names found in the file.");
           return;
         }
-        setParsed(csv);
+        setParsed(roster);
         setError(null);
         setStep("preview");
-      } catch {
-        setError("Could not read the file. Please use the CSV template downloaded from the sign-in sheet.");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Could not read the file.");
       }
     };
     reader.readAsText(file);
@@ -173,14 +202,14 @@ export function UploadRosterDialog({ open, onOpenChange, onImported }: Props) {
             onClick={() => fileRef.current?.click()}
           >
             <FileText className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
-            <p className="font-medium mb-1">Click to choose a CSV file</p>
+            <p className="font-medium mb-1">Click to choose a file</p>
             <p className="text-sm text-muted-foreground">
-              Use the template downloaded from a class sign-in sheet
+              JSON from the offline roster form, or CSV from a sign-in sheet
             </p>
             <input
               ref={fileRef}
               type="file"
-              accept=".csv,text/csv"
+              accept=".json,.csv,text/csv,application/json"
               className="hidden"
               onChange={handleFile}
             />
@@ -212,14 +241,26 @@ export function UploadRosterDialog({ open, onOpenChange, onImported }: Props) {
 
             <div>
               <p className="text-sm font-medium mb-2">
-                {parsed.entries.length} name{parsed.entries.length !== 1 ? "s" : ""} found
+                {parsed.entries.length} attendee{parsed.entries.length !== 1 ? "s" : ""} found
+                {parsed.entries.some((e) => e.result) && (
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">
+                    · {parsed.entries.filter((e) => e.result === "pass").length} pass
+                    {parsed.entries.filter((e) => e.result === "fail").length > 0 && `, ${parsed.entries.filter((e) => e.result === "fail").length} fail`}
+                    {parsed.entries.some((e) => e.cardSent) && `, ${parsed.entries.filter((e) => e.cardSent).length} card sent`}
+                  </span>
+                )}
               </p>
               <div className="max-h-52 overflow-y-auto rounded-lg border text-sm divide-y">
                 {parsed.entries.map((e, i) => (
                   <div key={i} className="px-3 py-2 flex items-center gap-3">
                     <span className="text-muted-foreground font-mono w-5 text-xs">{i + 1}</span>
                     <span className="font-medium flex-1">{e.name}</span>
-                    {e.email && <span className="text-muted-foreground text-xs truncate max-w-[160px]">{e.email}</span>}
+                    {e.result && (
+                      <span className={`text-xs font-medium ${e.result === "pass" ? "text-emerald-600" : "text-red-600"}`}>
+                        {e.result}
+                      </span>
+                    )}
+                    {e.email && <span className="text-muted-foreground text-xs truncate max-w-[140px]">{e.email}</span>}
                   </div>
                 ))}
               </div>

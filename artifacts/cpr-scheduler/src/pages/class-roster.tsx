@@ -26,6 +26,7 @@ import {
   Save,
   Upload,
   CheckSquare,
+  Download,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth-context";
@@ -305,9 +306,16 @@ export default function ClassRoster() {
             data-testid="button-import-roster"
           >
             <Upload className="h-3.5 w-3.5 mr-1.5" />
-            {importing ? "Reading file…" : "Import from spreadsheet"}
+            {importing ? "Reading file…" : "Import from file"}
           </Button>
-          <span className="text-xs text-muted-foreground">.xlsx or .csv — columns: Name, Email, Phone</span>
+          <span className="text-xs text-muted-foreground">.json (offline form) or .xlsx / .csv</span>
+
+          {/* Download offline roster form */}
+          <a href={`${import.meta.env.BASE_URL}cpr-roster-form.html`} download="CPR_Roster_Form.html">
+            <Button variant="outline" size="sm">
+              <Download className="h-3.5 w-3.5 mr-1.5" /> Offline roster form
+            </Button>
+          </a>
 
           {/* Batch pass + card sent */}
           {filledCount > 0 && (

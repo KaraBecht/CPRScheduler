@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CPR Class Roster — PulsePoint CPR Hub</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f1f5f9;
+      color: #111827;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      background: #1d4ed8;
+      color: #fff;
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .logo {
+      width: 40px; height: 40px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .logo svg { width: 22px; height: 22px; }
+    .brand-name { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
+    .brand-sub  { font-size: 11px; color: #bfdbfe; text-transform: uppercase; letter-spacing: 0.07em; margin-top: 1px; }
+
+    /* ── Layout ── */
+    main {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      padding: 36px 16px 60px;
+    }
+    .container { width: 100%; max-width: 860px; }
+
+    .page-title { font-size: 26px; font-weight: 700; letter-spacing: -0.4px; margin-bottom: 6px; }
+    .page-sub   { color: #6b7280; font-size: 14px; margin-bottom: 28px; }
+
+    /* ── Card ── */
+    .card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    /* ── Sections ── */
+    .section {
+      padding: 24px 28px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .section:last-child { border-bottom: none; }
+    .section-header {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #6b7280;
+      margin-bottom: 16px;
+    }
+
+    /* ── Form elements ── */
+    .field { margin-bottom: 14px; }
+    .field:last-child { margin-bottom: 0; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 5px;
+    }
+    label .req { color: #dc2626; margin-left: 2px; }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    input[type="number"],
+    input[type="date"],
+    input[type="time"],
+    select {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 7px;
+      font-size: 14px;
+      color: #111827;
+      background: #fff;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      font-family: inherit;
+    }
+    input:focus, select:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+    }
+    input::placeholder { color: #9ca3af; }
+
+    select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%236b7280' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 34px;
+    }
+
+    .hint { font-size: 12px; color: #6b7280; margin-top: 4px; }
+
+    /* ── Grid ── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
+    @media (max-width: 540px) {
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    }
+
+    /* ── Attendee table ── */
+    .attendee-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .attendee-table thead th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #6b7280;
+      padding: 0 6px 10px 6px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .attendee-table thead th.num-col { width: 36px; text-align: center; }
+    .attendee-table thead th.result-col { width: 100px; }
+    .attendee-table thead th.card-col { width: 76px; text-align: center; }
+    .attendee-table thead th.del-col { width: 38px; }
+
+    .attendee-table tbody tr { vertical-align: middle; }
+    .attendee-table tbody td {
+      padding: 5px 6px;
+    }
+    .attendee-table tbody td.num-cell {
+      text-align: center;
+      font-size: 12px;
+      color: #9ca3af;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+    .attendee-table tbody td.card-cell {
+      text-align: center;
+    }
+    .attendee-table tbody input[type="text"],
+    .attendee-table tbody input[type="email"],
+    .attendee-table tbody input[type="tel"] {
+      padding: 7px 10px;
+      font-size: 13px;
+    }
+    .attendee-table tbody select {
+      padding: 7px 30px 7px 10px;
+      font-size: 13px;
+    }
+
+    input[type="checkbox"] {
+      width: 16px; height: 16px;
+      accent-color: #1d4ed8;
+      cursor: pointer;
+    }
+
+    .btn-del-row {
+      width: 30px; height: 30px;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      background: #fff;
+      color: #9ca3af;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.12s, color 0.12s;
+      padding: 0;
+    }
+    .btn-del-row:hover { background: #fef2f2; color: #dc2626; border-color: #fca5a5; }
+
+    .btn-add {
+      margin-top: 14px;
+      padding: 8px 14px;
+      border: 1px dashed #d1d5db;
+      border-radius: 7px;
+      background: #f9fafb;
+      font-size: 13px;
+      font-weight: 500;
+      color: #374151;
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s;
+    }
+    .btn-add:hover { background: #f1f5f9; border-color: #9ca3af; }
+
+    /* ── Toolbar ── */
+    .row-toolbar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    .btn-toolbar {
+      padding: 6px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      background: #fff;
+      font-size: 12px;
+      font-weight: 500;
+      color: #374151;
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+    .btn-toolbar:hover { background: #f3f4f6; }
+    .btn-toolbar.green {
+      border-color: #86efac;
+      color: #15803d;
+    }
+    .btn-toolbar.green:hover { background: #f0fdf4; }
+    .count-badge {
+      font-size: 12px;
+      color: #6b7280;
+      margin-left: auto;
+    }
+
+    /* ── Submit bar ── */
+    .submit-bar {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 20px 28px;
+      background: #f9fafb;
+      border-top: 1px solid #e5e7eb;
+    }
+    .btn-submit {
+      padding: 11px 28px;
+      background: #1d4ed8;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-submit:hover { background: #1e40af; }
+    .btn-submit:disabled { background: #93c5fd; cursor: not-allowed; }
+
+    /* ── Success ── */
+    #success {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 16px;
+      padding: 60px 28px;
+    }
+    .success-icon {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: #d1fae5;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .success-icon svg { width: 32px; height: 32px; }
+    #success h2 { font-size: 22px; font-weight: 700; }
+    #success p  { color: #6b7280; font-size: 14px; max-width: 400px; }
+
+    .dl-btn {
+      padding: 11px 24px;
+      background: #1d4ed8;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .dl-btn:hover { background: #1e40af; }
+    .another-btn {
+      padding: 10px 20px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      background: #fff;
+      font-size: 14px;
+      font-weight: 500;
+      color: #374151;
+      cursor: pointer;
+    }
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+
+    /* ── Info note ── */
+    .info-note {
+      font-size: 13px;
+      color: #374151;
+      background: #eff6ff;
+      border: 1px solid #93c5fd;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-top: 20px;
+    }
+
+    /* ── Responsive table ── */
+    @media (max-width: 640px) {
+      .attendee-table { display: none; }
+      .mobile-rows { display: flex; flex-direction: column; gap: 10px; }
+    }
+    @media (min-width: 641px) {
+      .mobile-rows { display: none; }
+    }
+
+    .mobile-row {
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 12px;
+      background: #fafafa;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      position: relative;
+    }
+    .mobile-row-num {
+      position: absolute;
+      top: 10px; right: 10px;
+      font-size: 11px;
+      color: #9ca3af;
+      font-weight: 700;
+    }
+    .mobile-row .field { margin-bottom: 0; }
+    .mobile-row .full-col { grid-column: 1 / -1; }
+    .mobile-row .bottom-row {
+      grid-column: 1 / -1;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .mobile-row .bottom-row .field { flex: 1; margin: 0; }
+    .mobile-row .card-field {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      padding-top: 20px;
+    }
+    .mobile-row .del-field {
+      display: flex;
+      align-items: flex-end;
+      padding-bottom: 1px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+      <path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/>
+    </svg>
+  </div>
+  <div>
+    <div class="brand-name">PulsePoint</div>
+    <div class="brand-sub">CPR Training Hub</div>
+  </div>
+</header>
+
+<main>
+  <div class="container">
+    <div id="form-view">
+      <div class="page-title">Class Roster</div>
+      <p class="page-sub">Fill in class details and attendee information, then save as a JSON file to upload into the scheduler.</p>
+
+      <div class="card">
+        <form id="roster-form" novalidate>
+
+          <!-- CLASS INFO -->
+          <div class="section">
+            <div class="section-header">Class information</div>
+            <div class="grid-4" style="margin-bottom:12px">
+              <div class="field" style="margin-bottom:0">
+                <label for="classDate">Date <span class="req">*</span></label>
+                <input type="date" id="classDate" name="classDate" required />
+              </div>
+              <div class="field" style="margin-bottom:0">
+                <label for="startTime">Start time <span class="req">*</span></label>
+                <input type="time" id="startTime" name="startTime" value="09:00" required />
+              </div>
+              <div class="field" style="margin-bottom:0">
+                <label for="classId">Class ID <span style="font-weight:400;color:#9ca3af">(optional)</span></label>
+                <input type="number" id="classId" name="classId" placeholder="e.g. 42" min="1" />
+              </div>
+              <div class="field" style="margin-bottom:0">
+                <label for="classTitle">Class title <span style="font-weight:400;color:#9ca3af">(optional)</span></label>
+                <input type="text" id="classTitle" name="classTitle" placeholder="e.g. CPR/AED — Building 3" />
+              </div>
+            </div>
+            <div class="hint">The date and start time are used to match this roster to the correct class in the system. The class ID is more reliable if you have it.</div>
+          </div>
+
+          <!-- ATTENDEES -->
+          <div class="section">
+            <div class="section-header">Attendees</div>
+
+            <div class="row-toolbar">
+              <button type="button" class="btn-toolbar green" id="pass-all-btn">✓ Pass all &amp; mark cards sent</button>
+              <span class="count-badge" id="count-badge">0 attendees</span>
+            </div>
+
+            <!-- Desktop table -->
+            <table class="attendee-table" id="attendee-table">
+              <thead>
+                <tr>
+                  <th class="num-col">#</th>
+                  <th>Full name <span style="color:#dc2626">*</span></th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th class="result-col">Result</th>
+                  <th class="card-col">Card sent</th>
+                  <th class="del-col"></th>
+                </tr>
+              </thead>
+              <tbody id="attendee-tbody">
+              </tbody>
+            </table>
+
+            <!-- Mobile cards -->
+            <div class="mobile-rows" id="mobile-rows"></div>
+
+            <button type="button" class="btn-add" id="add-row-btn">+ Add row</button>
+          </div>
+
+          <!-- SUBMIT -->
+          <div class="submit-bar">
+            <button type="submit" class="btn-submit" id="submit-btn">Save roster as JSON</button>
+          </div>
+
+        </form>
+      </div>
+
+      <div class="info-note">
+        Upload the saved <strong>.json</strong> file at the class roster page in the scheduler, or email it to <strong>svc_medical@fox.com</strong>.
+      </div>
+    </div>
+
+    <!-- SUCCESS -->
+    <div class="card" id="success">
+      <div class="success-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 6 9 17l-5-5"/>
+        </svg>
+      </div>
+      <h2>Roster saved!</h2>
+      <p id="success-msg">Your roster has been packaged as a <strong>.json</strong> file. Upload it at the class roster page or email it to <strong>svc_medical@fox.com</strong>.</p>
+      <div class="btn-row">
+        <button class="dl-btn" id="download-btn">⬇ Download again</button>
+        <button class="another-btn" id="new-roster-btn">Fill another roster</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  // ── State ─────────────────────────────────────────────────────────────────
+  let rowCount = 0;
+  let lastPayload = null;
+
+  const tbody = document.getElementById("attendee-tbody");
+  const mobileRows = document.getElementById("mobile-rows");
+  const countBadge = document.getElementById("count-badge");
+
+  // ── Row management ────────────────────────────────────────────────────────
+
+  function resultOptions(selected) {
+    return `
+      <option value="" ${selected === "" ? "selected" : ""}>—</option>
+      <option value="pass" ${selected === "pass" ? "selected" : ""}>Pass</option>
+      <option value="fail" ${selected === "fail" ? "selected" : ""}>Fail</option>
+    `;
+  }
+
+  function addRow(data) {
+    rowCount++;
+    const id = rowCount;
+    const d = data || { name: "", email: "", phone: "", result: "", cardSent: false };
+
+    // Desktop TR
+    const tr = document.createElement("tr");
+    tr.dataset.rowId = id;
+    tr.innerHTML = `
+      <td class="num-cell" data-num></td>
+      <td><input type="text"  class="f-name"  placeholder="Full name" value="${esc(d.name)}" /></td>
+      <td><input type="email" class="f-email" placeholder="name@example.com" value="${esc(d.email)}" /></td>
+      <td><input type="tel"   class="f-phone" placeholder="(555) 123-4567" value="${esc(d.phone)}" /></td>
+      <td><select class="f-result">${resultOptions(d.result)}</select></td>
+      <td class="card-cell"><input type="checkbox" class="f-card" ${d.cardSent ? "checked" : ""} /></td>
+      <td>
+        <button type="button" class="btn-del-row" title="Remove row">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 6 6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </td>
+    `;
+    tr.querySelector(".btn-del-row").addEventListener("click", () => removeRow(id));
+    tbody.appendChild(tr);
+
+    // Mobile card
+    const div = document.createElement("div");
+    div.className = "mobile-row";
+    div.dataset.rowId = id;
+    div.innerHTML = `
+      <span class="mobile-row-num" data-num></span>
+      <div class="field full-col">
+        <label>Full name <span class="req">*</span></label>
+        <input type="text" class="f-name" placeholder="Full name" value="${esc(d.name)}" />
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" class="f-email" placeholder="name@example.com" value="${esc(d.email)}" />
+      </div>
+      <div class="field">
+        <label>Phone</label>
+        <input type="tel" class="f-phone" placeholder="(555) 123-4567" value="${esc(d.phone)}" />
+      </div>
+      <div class="bottom-row">
+        <div class="field">
+          <label>Result</label>
+          <select class="f-result">${resultOptions(d.result)}</select>
+        </div>
+        <div class="card-field">
+          <input type="checkbox" class="f-card" ${d.cardSent ? "checked" : ""} />
+          <span>Card sent</span>
+        </div>
+        <div class="del-field">
+          <button type="button" class="btn-del-row" title="Remove">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 6 6 18M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    `;
+    div.querySelector(".btn-del-row").addEventListener("click", () => removeRow(id));
+    mobileRows.appendChild(div);
+
+    // Keep inputs in sync between desktop and mobile
+    syncInputs(tr, div);
+
+    reNumber();
+    return id;
+  }
+
+  function syncInputs(tr, div) {
+    const fields = ["f-name", "f-email", "f-phone", "f-result", "f-card"];
+    for (const cls of fields) {
+      const a = tr.querySelector("." + cls);
+      const b = div.querySelector("." + cls);
+      if (!a || !b) continue;
+      const evt = (a.type === "checkbox") ? "change" : "input";
+      a.addEventListener(evt, () => {
+        if (a.type === "checkbox") b.checked = a.checked;
+        else b.value = a.value;
+      });
+      b.addEventListener(evt, () => {
+        if (b.type === "checkbox") a.checked = b.checked;
+        else a.value = b.value;
+      });
+    }
+  }
+
+  function removeRow(id) {
+    tbody.querySelector(`tr[data-row-id="${id}"]`)?.remove();
+    mobileRows.querySelector(`div[data-row-id="${id}"]`)?.remove();
+    reNumber();
+  }
+
+  function reNumber() {
+    const trs = tbody.querySelectorAll("tr");
+    trs.forEach((tr, i) => {
+      const cell = tr.querySelector("[data-num]");
+      if (cell) cell.textContent = i + 1;
+    });
+    const divs = mobileRows.querySelectorAll(".mobile-row");
+    divs.forEach((d, i) => {
+      const span = d.querySelector("[data-num]");
+      if (span) span.textContent = "#" + (i + 1);
+    });
+    const filled = Array.from(tbody.querySelectorAll("tr")).filter(r => r.querySelector(".f-name")?.value.trim()).length;
+    countBadge.textContent = `${filled} attendee${filled !== 1 ? "s" : ""}`;
+  }
+
+  function collectRows() {
+    return Array.from(tbody.querySelectorAll("tr")).map(tr => ({
+      name:     tr.querySelector(".f-name")?.value.trim() ?? "",
+      email:    tr.querySelector(".f-email")?.value.trim() ?? "",
+      phone:    tr.querySelector(".f-phone")?.value.trim() ?? "",
+      result:   tr.querySelector(".f-result")?.value || null,
+      cardSent: tr.querySelector(".f-card")?.checked ?? false,
+    }));
+  }
+
+  function esc(s) {
+    return String(s ?? "").replace(/&/g,"&amp;").replace(/"/g,"&quot;");
+  }
+
+  // ── Pass all ──────────────────────────────────────────────────────────────
+  document.getElementById("pass-all-btn").addEventListener("click", () => {
+    tbody.querySelectorAll("tr").forEach(tr => {
+      if (!tr.querySelector(".f-name")?.value.trim()) return;
+      const sel = tr.querySelector(".f-result");
+      const chk = tr.querySelector(".f-card");
+      if (sel) sel.value = "pass";
+      if (chk) chk.checked = true;
+    });
+    mobileRows.querySelectorAll(".mobile-row").forEach(div => {
+      if (!div.querySelector(".f-name")?.value.trim()) return;
+      const sel = div.querySelector(".f-result");
+      const chk = div.querySelector(".f-card");
+      if (sel) sel.value = "pass";
+      if (chk) chk.checked = true;
+    });
+    reNumber();
+  });
+
+  // ── Add row button ────────────────────────────────────────────────────────
+  document.getElementById("add-row-btn").addEventListener("click", () => addRow());
+
+  // ── Track name changes for count ─────────────────────────────────────────
+  tbody.addEventListener("input", reNumber);
+
+  // ── Download ──────────────────────────────────────────────────────────────
+  function downloadPayload() {
+    if (!lastPayload) return;
+    const title = (lastPayload.classTitle || lastPayload.date || "roster").replace(/[^a-z0-9]/gi, "_");
+    const filename = `CPR_Roster_${title}_${lastPayload.date || "unknown"}.json`;
+    const blob = new Blob([JSON.stringify(lastPayload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // ── Form submit ───────────────────────────────────────────────────────────
+  document.getElementById("roster-form").addEventListener("submit", function(e) {
+    e.preventDefault();
+
+    const date = document.getElementById("classDate").value;
+    const startTime = document.getElementById("startTime").value;
+
+    if (!date || !startTime) {
+      alert("Please fill in the class date and start time.");
+      return;
+    }
+
+    const rows = collectRows();
+    const filled = rows.filter(r => r.name);
+
+    if (filled.length === 0) {
+      alert("Please add at least one attendee name.");
+      return;
+    }
+
+    const classIdRaw = document.getElementById("classId").value;
+    const classTitle = document.getElementById("classTitle").value.trim();
+
+    lastPayload = {
+      version: "roster-v1",
+      classId: classIdRaw ? parseInt(classIdRaw) : undefined,
+      date,
+      startTime,
+      classTitle: classTitle || undefined,
+      entries: filled,
+    };
+
+    downloadPayload();
+
+    const successMsg = document.getElementById("success-msg");
+    successMsg.innerHTML = `<strong>${filled.length} attendee${filled.length !== 1 ? "s" : ""}</strong> saved for ${classTitle || date}. Download the file and upload it at the class roster page or email it to <strong>svc_medical@fox.com</strong>.`;
+
+    document.getElementById("form-view").style.display = "none";
+    const success = document.getElementById("success");
+    success.style.display = "flex";
+  });
+
+  document.getElementById("download-btn").addEventListener("click", downloadPayload);
+
+  document.getElementById("new-roster-btn").addEventListener("click", () => {
+    tbody.innerHTML = "";
+    mobileRows.innerHTML = "";
+    rowCount = 0;
+    document.getElementById("roster-form").reset();
+    for (let i = 0; i < 10; i++) addRow();
+    lastPayload = null;
+    document.getElementById("success").style.display = "none";
+    document.getElementById("form-view").style.display = "";
+  });
+
+  // ── Init: 10 blank rows ───────────────────────────────────────────────────
+  for (let i = 0; i < 10; i++) addRow();
+</script>
+</body>
+</html>
