@@ -5,9 +5,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { TrainingRequestForm } from "@/components/TrainingRequestForm";
-import { Upload, FileJson, AlertCircle, X } from "lucide-react";
+import { Upload, FileJson, AlertCircle, X, Clock } from "lucide-react";
 import type { CertificationType } from "@workspace/api-client-react";
 
 const CERT_TYPES: CertificationType[] = [
@@ -15,6 +14,30 @@ const CERT_TYPES: CertificationType[] = [
   "stop_the_bleed",
   "cpr_aed_first_aid_stop_the_bleed",
 ];
+
+/**
+ * Returns true only for real calendar dates in YYYY-MM-DD format.
+ * Uses Date.UTC so the result is timezone-independent — valid for any locale.
+ */
+export function isValidImportDate(s: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const [year, month, day] = s.split("-").map(Number);
+  // month is 1-based in the string, 0-based in Date
+  const d = new Date(Date.UTC(year, month - 1, day));
+  // If month/day overflow (e.g. 2025-99-99), Date.UTC rolls over and components won't match
+  return (
+    d.getUTCFullYear() === year &&
+    d.getUTCMonth() === month - 1 &&
+    d.getUTCDate() === day
+  );
+}
+
+// Returns true only for HH:mm times in 00:00–23:59
+function isValidTime(s: string): boolean {
+  if (!/^\d{2}:\d{2}$/.test(s)) return false;
+  const [hh, mm] = s.split(":").map(Number);
+  return hh >= 0 && hh <= 23 && mm >= 0 && mm <= 59;
+}
 
 interface ParsedRequest {
   locationName?: string;
@@ -30,52 +53,124 @@ interface ParsedRequest {
   sessions?: { date: string; startTime: string }[];
 }
 
-export function parseImportedJson(raw: unknown): ParsedRequest {
+interface ParseResult {
+  data: ParsedRequest;
+  submittedAt: string | null;
+  /** Errors that prevent advancing to the review step */
+  blockingErrors: string[];
+  /** Non-fatal issues shown as warnings in the review step */
+  warnings: string[];
+}
+
+export function parseImportedJson(raw: unknown): ParseResult {
   if (!raw || typeof raw !== "object") throw new Error("Not a valid JSON object");
   const obj = raw as Record<string, unknown>;
 
-  const certType = typeof obj.certificationType === "string" && CERT_TYPES.includes(obj.certificationType as CertificationType)
-    ? (obj.certificationType as CertificationType)
-    : "cpr_aed_first_aid";
+  const blockingErrors: string[] = [];
+  const warnings: string[] = [];
 
+  // --- Required fields ---
+  const locationName = typeof obj.locationName === "string" && obj.locationName.trim()
+    ? obj.locationName.trim()
+    : undefined;
+  if (!locationName) blockingErrors.push("Location name is missing or empty.");
+
+  const requestorName = typeof obj.requestorName === "string" && obj.requestorName.trim()
+    ? obj.requestorName.trim()
+    : undefined;
+  if (!requestorName) blockingErrors.push("Requestor name is missing or empty.");
+
+  const requestorEmail = typeof obj.requestorEmail === "string" && obj.requestorEmail.trim()
+    ? obj.requestorEmail.trim()
+    : undefined;
+  if (!requestorEmail) blockingErrors.push("Requestor email is missing or empty.");
+
+  // --- Sessions ---
   const sessions: { date: string; startTime: string }[] = [];
-  if (Array.isArray(obj.sessions)) {
-    for (const s of obj.sessions) {
-      if (s && typeof s === "object" && typeof (s as Record<string, unknown>).date === "string") {
-        sessions.push({
-          date: (s as Record<string, unknown>).date as string,
-          startTime: typeof (s as Record<string, unknown>).startTime === "string"
-            ? (s as Record<string, unknown>).startTime as string
-            : "09:00",
-        });
+  if (!Array.isArray(obj.sessions) || obj.sessions.length === 0) {
+    blockingErrors.push("No sessions found — the file may be from an older form version.");
+  } else {
+    for (let i = 0; i < obj.sessions.length; i++) {
+      const s = obj.sessions[i];
+      if (!s || typeof s !== "object") {
+        blockingErrors.push(`Session ${i + 1}: not a valid object — skipped.`);
+        continue;
       }
+      const rec = s as Record<string, unknown>;
+
+      // Date must be a real calendar date
+      const rawDate = typeof rec.date === "string" ? rec.date.trim() : "";
+      if (!isValidImportDate(rawDate)) {
+        blockingErrors.push(
+          `Session ${i + 1}: "${rawDate || "(missing)"}" is not a valid date — expected YYYY-MM-DD (e.g. 2026-03-15).`
+        );
+        continue;
+      }
+
+      // Time is optional; default to 09:00 if absent or malformed (non-blocking)
+      const rawTime = typeof rec.startTime === "string" ? rec.startTime.trim() : "";
+      let startTime = "09:00";
+      if (rawTime) {
+        if (isValidTime(rawTime)) {
+          startTime = rawTime;
+        } else {
+          warnings.push(
+            `Session ${i + 1}: start time "${rawTime}" is not a valid HH:mm value — defaulted to 09:00.`
+          );
+        }
+      }
+
+      sessions.push({ date: rawDate, startTime });
+    }
+
+    // If every session was invalid, ensure there's a blocking error
+    if (sessions.length === 0 && blockingErrors.every((e) => !e.startsWith("Session"))) {
+      blockingErrors.push("No sessions with valid dates found — the file may be from an older form version.");
     }
   }
 
-  // businessUnit may be a standalone field or embedded in notes as "Business Unit: X"
+  // --- certificationType ---
+  // Unknown value is a blocking error; absent field leaves it to the form to choose
+  let certType: CertificationType | undefined;
+  if (typeof obj.certificationType === "string") {
+    if (CERT_TYPES.includes(obj.certificationType as CertificationType)) {
+      certType = obj.certificationType as CertificationType;
+    } else {
+      blockingErrors.push(
+        `Unrecognised certification type "${obj.certificationType}" — expected one of: ${CERT_TYPES.join(", ")}.`
+      );
+    }
+  }
+
+  // --- Optional fields ---
   let businessUnit = typeof obj.businessUnit === "string" ? obj.businessUnit : "";
   let notes = typeof obj.notes === "string" ? obj.notes : "";
-
-  // Strip the "Business Unit: ..." prefix from notes if present (it was auto-prepended by the HTML form)
   const buInNotes = notes.match(/^Business Unit:\s*(.+?)(\n|$)/i);
   if (buInNotes) {
     if (!businessUnit) businessUnit = buInNotes[1]?.trim() ?? "";
     notes = notes.replace(/^Business Unit:\s*.+?(\n|$)/i, "").trim();
   }
 
-  return {
-    locationName: typeof obj.locationName === "string" ? obj.locationName : undefined,
-    address: typeof obj.address === "string" && obj.address ? obj.address : undefined,
-    requestorName: typeof obj.requestorName === "string" ? obj.requestorName : undefined,
-    requestorEmail: typeof obj.requestorEmail === "string" ? obj.requestorEmail : undefined,
-    requestorPhone: typeof obj.requestorPhone === "string" && obj.requestorPhone ? obj.requestorPhone : undefined,
+  // --- submittedAt ---
+  const submittedAt = typeof obj.submittedAt === "string" && obj.submittedAt.trim()
+    ? obj.submittedAt.trim()
+    : null;
+
+  const data: ParsedRequest = {
+    locationName,
+    address: typeof obj.address === "string" && obj.address.trim() ? obj.address.trim() : undefined,
+    requestorName,
+    requestorEmail,
+    requestorPhone: typeof obj.requestorPhone === "string" && obj.requestorPhone.trim() ? obj.requestorPhone.trim() : undefined,
     certificationType: certType,
     numberOfClasses: typeof obj.numberOfClasses === "number" ? obj.numberOfClasses : 1,
     attendeeCount: typeof obj.attendeeCount === "number" ? obj.attendeeCount : 10,
-    businessUnit: businessUnit || undefined,
-    notes: notes || undefined,
+    businessUnit: businessUnit.trim() || undefined,
+    notes: notes.trim() || undefined,
     sessions: sessions.length > 0 ? sessions : undefined,
   };
+
+  return { data, submittedAt, blockingErrors, warnings };
 }
 
 type Step = "drop" | "review";
@@ -88,14 +183,20 @@ interface ImportRequestModalProps {
 export function ImportRequestModal({ open, onOpenChange }: ImportRequestModalProps) {
   const [step, setStep] = useState<Step>("drop");
   const [parsed, setParsed] = useState<ParsedRequest | null>(null);
+  const [submittedAt, setSubmittedAt] = useState<string | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<string[]>([]);
+  const [reviewWarnings, setReviewWarnings] = useState<string[]>([]);
   const [dragging, setDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function reset() {
     setStep("drop");
     setParsed(null);
+    setSubmittedAt(null);
     setParseError(null);
+    setFieldErrors([]);
+    setReviewWarnings([]);
     setDragging(false);
   }
 
@@ -107,18 +208,31 @@ export function ImportRequestModal({ open, onOpenChange }: ImportRequestModalPro
   function readFile(file: File) {
     if (!file.name.endsWith(".json") && file.type !== "application/json") {
       setParseError("Please select a .json file generated by the CPR Training Request Form.");
+      setFieldErrors([]);
       return;
     }
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
         const raw = JSON.parse(e.target?.result as string);
-        const result = parseImportedJson(raw);
-        setParsed(result);
+        const { data, submittedAt: sat, blockingErrors, warnings } = parseImportedJson(raw);
+
+        if (blockingErrors.length > 0) {
+          setFieldErrors(blockingErrors);
+          setParseError(null);
+          setParsed(null);
+          return;
+        }
+
+        setParsed(data);
+        setSubmittedAt(sat);
+        setFieldErrors([]);
+        setReviewWarnings(warnings);
         setParseError(null);
         setStep("review");
       } catch {
         setParseError("Could not read the file. Make sure it's a JSON file exported from the offline request form.");
+        setFieldErrors([]);
       }
     };
     reader.readAsText(file);
@@ -202,11 +316,26 @@ export function ImportRequestModal({ open, onOpenChange }: ImportRequestModalPro
               />
             </div>
 
-            {/* Error */}
+            {/* Generic parse error */}
             {parseError && (
               <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive" data-testid="import-error">
                 <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
                 <span>{parseError}</span>
+              </div>
+            )}
+
+            {/* Per-field validation errors */}
+            {fieldErrors.length > 0 && (
+              <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive space-y-1" data-testid="import-field-errors">
+                <div className="flex items-center gap-2 font-medium">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>This file doesn't look like a CPR Training Request export:</span>
+                </div>
+                <ul className="list-disc list-inside pl-1 space-y-0.5">
+                  {fieldErrors.map((err, i) => (
+                    <li key={i}>{err}</li>
+                  ))}
+                </ul>
               </div>
             )}
           </div>
@@ -214,17 +343,52 @@ export function ImportRequestModal({ open, onOpenChange }: ImportRequestModalPro
 
         {step === "review" && parsed && (
           <div className="space-y-4">
+            {/* Success banner */}
             <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 dark:border-green-900/40 dark:bg-green-950/20 px-4 py-3 text-sm text-green-800 dark:text-green-300">
               <FileJson className="h-4 w-4 shrink-0" />
-              <span>File imported — review and edit the details below, then confirm to create the request.</span>
+              <div className="flex-1 min-w-0">
+                <span>File imported — review and edit the details below, then confirm to create the request.</span>
+                {submittedAt && (
+                  <div className="flex items-center gap-1 mt-0.5 text-green-700 dark:text-green-400 text-xs">
+                    <Clock className="h-3 w-3 shrink-0" />
+                    <span>
+                      Submitted {(() => {
+                        try {
+                          return new Date(submittedAt).toLocaleString(undefined, {
+                            dateStyle: "medium",
+                            timeStyle: "short",
+                          });
+                        } catch {
+                          return submittedAt;
+                        }
+                      })()}
+                    </span>
+                  </div>
+                )}
+              </div>
               <button
-                className="ml-auto text-green-600 hover:text-green-800 dark:text-green-400"
+                className="ml-auto text-green-600 hover:text-green-800 dark:text-green-400 shrink-0"
                 onClick={() => setStep("drop")}
                 title="Upload a different file"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
+
+            {/* Non-blocking warnings (e.g. some sessions skipped) */}
+            {reviewWarnings.length > 0 && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-900/40 dark:bg-amber-950/20 px-4 py-3 text-sm text-amber-800 dark:text-amber-300 space-y-1" data-testid="import-review-warnings">
+                <div className="flex items-center gap-2 font-medium">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>Some data was skipped:</span>
+                </div>
+                <ul className="list-disc list-inside pl-1 space-y-0.5">
+                  {reviewWarnings.map((w, i) => (
+                    <li key={i}>{w}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             <TrainingRequestForm
               initialValues={parsed}

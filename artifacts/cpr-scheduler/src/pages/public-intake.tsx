@@ -4,6 +4,7 @@ import { parseImportedJson } from "@/components/ImportRequestModal";
 import { HeartPulse, CheckCircle2, Upload, FileJson, AlertCircle, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import type { CertificationType } from "@workspace/api-client-react";
 
 interface ParsedRequest {
   locationName?: string;
@@ -11,7 +12,7 @@ interface ParsedRequest {
   requestorName?: string;
   requestorEmail?: string;
   requestorPhone?: string;
-  certificationType?: "cpr_aed_first_aid" | "stop_the_bleed" | "cpr_aed_first_aid_stop_the_bleed";
+  certificationType?: CertificationType;
   numberOfClasses?: number;
   attendeeCount?: number;
   businessUnit?: string;
@@ -62,9 +63,13 @@ function JsonUploadZone({
     reader.onload = (e) => {
       try {
         const raw = JSON.parse(e.target?.result as string);
-        const result = parseImportedJson(raw);
+        const { data, blockingErrors } = parseImportedJson(raw);
+        if (blockingErrors.length > 0) {
+          setError(blockingErrors[0]);
+          return;
+        }
         setError(null);
-        onParsed(result, file.name);
+        onParsed(data, file.name);
       } catch {
         setError(
           "Could not read the file. Make sure it's a JSON file exported from the offline request form."
