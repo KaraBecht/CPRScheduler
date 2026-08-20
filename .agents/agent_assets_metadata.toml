@@ -1,0 +1,9 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "FU_thvebKQO6q9dWkTmim"
+uri = "file://CPR_Training_Request_Form.docx"
+type = "word_document"
+title = "CPR Training Request Form"
+description = "Fillable Word version of the intake form — matches all fields from cprscheduler.replit.app/intake"
