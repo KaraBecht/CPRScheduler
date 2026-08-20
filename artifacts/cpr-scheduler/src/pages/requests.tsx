@@ -34,7 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth-context";
-import { Plus, Check, X, Send, Share2, Copy, CheckCheck, Trash2, CalendarDays, Download, Upload } from "lucide-react";
+import { Plus, Check, X, Share2, Copy, CheckCheck, Trash2, CalendarDays, Download, Upload, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { formatCertificationType, formatDate, timeAgo } from "@/lib/format";
@@ -287,7 +287,7 @@ function SendTrainingRequestDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" data-testid="button-send-training-request">
-          <Send className="h-4 w-4 mr-1.5" /> Send training request
+          <ClipboardList className="h-4 w-4 mr-1.5" /> Enter training request
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
