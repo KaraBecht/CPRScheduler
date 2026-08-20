@@ -140,6 +140,19 @@ export function parseImportedJson(raw: unknown): ParseResult {
     if (sessions.length === 0 && blockingErrors.every((e) => !e.startsWith("Session"))) {
       blockingErrors.push("No sessions with valid dates found — the file may be from an older form version.");
     }
+
+    // Warn about sessions that are already in the past (non-blocking)
+    if (sessions.length > 0) {
+      const todayStr = new Date().toISOString().slice(0, 10); // YYYY-MM-DD in local UTC
+      const pastCount = sessions.filter((s) => s.date < todayStr).length;
+      if (pastCount > 0) {
+        warnings.push(
+          pastCount === 1
+            ? "1 session is in the past — update the date before confirming."
+            : `${pastCount} sessions are in the past — update the dates before confirming.`
+        );
+      }
+    }
   }
 
   // --- certificationType ---
