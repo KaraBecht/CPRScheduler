@@ -62,6 +62,24 @@ function detectHeaderRow(rawRows: string[][]): number {
   return 0; // fallback: treat row 0 as headers
 }
 
+function parseRosterJson(text: string): { name: string; email: string; phone: string; result?: string | null; cardSent?: boolean }[] {
+  const data = JSON.parse(text) as Record<string, unknown>;
+  if (data["version"] !== "roster-v1") {
+    throw new Error("Unrecognized JSON format. Please use the offline roster form to create this file.");
+  }
+  const raw = data["entries"];
+  if (!Array.isArray(raw)) throw new Error("No entries found in file.");
+  return (raw as Record<string, unknown>[])
+    .filter((e) => typeof e["name"] === "string" && (e["name"] as string).trim())
+    .map((e) => ({
+      name: (e["name"] as string).trim(),
+      email: typeof e["email"] === "string" ? e["email"].trim() : "",
+      phone: typeof e["phone"] === "string" ? e["phone"].trim() : "",
+      result: typeof e["result"] === "string" ? e["result"] : null,
+      cardSent: Boolean(e["cardSent"]),
+    }));
+}
+
 async function parseSpreadsheet(
   file: File,
 ): Promise<{ name: string; email: string; phone: string }[]> {
@@ -207,17 +225,28 @@ export default function ClassRoster() {
     toast({ title: "All attendees marked as passed + card sent" });
   }
 
-  // ── Import from XLSX / CSV ────────────────────────────────────────────────
+  // ── Import from JSON / XLSX / CSV ────────────────────────────────────────
   async function handleFileChange(ev: React.ChangeEvent<HTMLInputElement>) {
     const file = ev.target.files?.[0];
     if (!file) return;
     setImporting(true);
     try {
-      const parsed = await parseSpreadsheet(file);
+      const isJson = file.name.toLowerCase().endsWith(".json");
+      let parsed: { name: string; email: string; phone: string; result?: string | null; cardSent?: boolean }[];
+
+      if (isJson) {
+        const text = await file.text();
+        parsed = parseRosterJson(text);
+      } else {
+        parsed = await parseSpreadsheet(file);
+      }
+
       if (parsed.length === 0) {
         toast({
           title: "No valid rows found",
-          description: "Make sure the file has Name, Email, and/or Phone columns.",
+          description: isJson
+            ? "No attendee entries found in the file."
+            : "Make sure the file has Name, Email, and/or Phone columns.",
           variant: "destructive",
         });
         return;
@@ -231,7 +260,14 @@ export default function ClassRoster() {
       for (let i = 0; i < next.length && pi < parsed.length; i++) {
         if (!next[i]!.name.trim()) {
           const p = parsed[pi++]!;
-          next[i] = { ...next[i]!, name: p.name, email: p.email, phone: p.phone };
+          next[i] = {
+            ...next[i]!,
+            name: p.name,
+            email: p.email,
+            phone: p.phone,
+            ...(p.result !== undefined ? { result: p.result as RosterResult } : {}),
+            ...(p.cardSent !== undefined ? { cardSent: p.cardSent } : {}),
+          };
           newDirty.add(next[i]!.position);
           imported++;
         }
@@ -248,8 +284,12 @@ export default function ClassRoster() {
             ? `${remaining} row${remaining !== 1 ? "s" : ""} skipped (roster full or already filled)`
             : `From ${file.name}`,
       });
-    } catch {
-      toast({ title: "Failed to read file", variant: "destructive" });
+    } catch (err) {
+      toast({
+        title: "Failed to read file",
+        description: err instanceof Error ? err.message : undefined,
+        variant: "destructive",
+      });
     } finally {
       setImporting(false);
       ev.target.value = "";
@@ -294,7 +334,7 @@ export default function ClassRoster() {
           <input
             ref={fileInputRef}
             type="file"
-            accept=".xlsx,.xls,.csv"
+            accept=".json,.xlsx,.xls,.csv"
             className="hidden"
             onChange={handleFileChange}
           />

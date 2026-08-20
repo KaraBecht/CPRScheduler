@@ -392,29 +392,6 @@ export default function ClassDetail() {
                 <ClipboardList className="h-4 w-4 mr-1.5" /> Roster
               </Button>
             </Link>
-            <Badge variant="outline">
-              {formatCertificationType(cls.certificationType)}
-            </Badge>
-            <Badge
-              variant={
-                cls.status === "confirmed" || cls.status === "scheduled"
-                  ? "default"
-                  : cls.status === "completed"
-                    ? "secondary"
-                    : cls.status === "cancelled"
-                      ? "destructive"
-                      : "outline"
-              }
-            >
-              {{
-                being_scheduled: "Being scheduled",
-                pending_schedule: "Pending schedule",
-                confirmed: "Confirmed",
-                completed: "Completed",
-                cancelled: "Cancelled",
-                scheduled: "Scheduled",
-              }[cls.status] ?? cls.status}
-            </Badge>
           </div>
         }
       />
