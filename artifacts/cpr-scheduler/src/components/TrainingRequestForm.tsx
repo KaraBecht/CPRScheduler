@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2 } from "lucide-react";
+import { AlertCircle, Plus, Trash2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { formatCertificationType, certificationDuration } from "@/lib/format";
 
@@ -265,6 +265,17 @@ export function TrainingRequestForm({ onSuccess, onCancel, initialValues }: Trai
             <Plus className="h-4 w-4 mr-1" /> Add date
           </Button>
         </div>
+        {sessions.length === 0 && (
+          <div
+            className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+            data-testid="sessions-required-error"
+          >
+            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+            <span>
+              At least one session date is required. Add a date above, or go back and fix the source file.
+            </span>
+          </div>
+        )}
         <div className="space-y-2">
           {sessions.map((s, i) => (
             <div

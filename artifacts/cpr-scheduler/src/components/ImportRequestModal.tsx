@@ -434,6 +434,18 @@ export function ImportRequestModal({ open, onOpenChange }: ImportRequestModalPro
               </div>
             )}
 
+            {(!parsed.sessions || parsed.sessions.length === 0) && (
+              <div
+                className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+                data-testid="import-no-sessions-error"
+              >
+                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                <span>
+                  No valid sessions were found in this file. Go back and fix the source file, or add session dates manually in the form below.
+                </span>
+              </div>
+            )}
+
             <TrainingRequestForm
               initialValues={parsed}
               onSuccess={() => {
