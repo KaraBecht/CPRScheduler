@@ -11,7 +11,9 @@ interface EmailPayload {
 
 const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
 
-async function sendEmailOnce(payload: EmailPayload, log: Logger): Promise<boolean> {
+type SendResult = "delivered" | "rate_limited" | "error";
+
+async function sendEmailOnce(payload: EmailPayload, log: Logger): Promise<SendResult> {
   // ReplitConnectors must not be cached — tokens expire
   const connectors = new ReplitConnectors();
   const res = await connectors.proxy("outlook", "/v1.0/me/sendMail", {
@@ -29,37 +31,46 @@ async function sendEmailOnce(payload: EmailPayload, log: Logger): Promise<boolea
 
   if (res.status === 202) {
     log.info({ to: payload.to }, "Email sent");
-    return true;
+    return "delivered";
   }
   if (res.status === 429) {
-    return false; // caller will retry
+    return "rate_limited";
   }
   const detail = await res.text().catch(() => "");
   log.error({ status: res.status, detail }, "Outlook sendMail error");
-  return true; // non-retryable, stop trying
+  return "error";
 }
 
-export async function sendEmail(payload: EmailPayload, log: Logger): Promise<void> {
+/**
+ * Send an email via Outlook.
+ * Returns true when the message was accepted for delivery (HTTP 202) or when
+ * emails are disabled in this environment (dev-mode no-op).
+ * Returns false when the connector returned an error or a connector exception
+ * was thrown — callers can use this to decide whether to retry later.
+ */
+export async function sendEmail(payload: EmailPayload, log: Logger): Promise<boolean> {
   if (!payload.to) {
     log.warn("No recipient address provided — skipping email notification");
-    return;
+    return false;
   }
 
   if (!EMAILS_ENABLED) {
     log.info({ to: payload.to, subject: payload.subject }, "[EMAIL DISABLED] Would have sent email");
-    return;
+    return true; // dev-mode no-op — treat as handled so callers don't retry
   }
 
   try {
     // Retry once after 2 s on 429 (Outlook MailboxConcurrency throttle)
-    const ok = await sendEmailOnce(payload, log);
-    if (!ok) {
+    const result = await sendEmailOnce(payload, log);
+    if (result === "rate_limited") {
       log.warn({ to: payload.to }, "Outlook 429 — retrying after 2 s");
       await sleep(2000);
-      await sendEmailOnce(payload, log);
+      return (await sendEmailOnce(payload, log)) === "delivered";
     }
+    return result === "delivered";
   } catch (err) {
     log.error({ err }, "Failed to send email via Outlook");
+    return false;
   }
 }
 

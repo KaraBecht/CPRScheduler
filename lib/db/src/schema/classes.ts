@@ -39,6 +39,7 @@ export const classesTable = pgTable("classes", {
   description: text("description"),
   businessUnit: text("business_unit"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  completionEmailSentAt: timestamp("completion_email_sent_at"),
 });
 
 export type ClassRow = typeof classesTable.$inferSelect;
