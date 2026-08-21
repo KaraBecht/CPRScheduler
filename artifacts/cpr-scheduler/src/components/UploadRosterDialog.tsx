@@ -99,6 +99,7 @@ interface ImportResult {
   classDate: string;
   imported: number;
   updated: number;
+  contactUpdated: number;
   skipped: number;
 }
 
@@ -165,7 +166,7 @@ export function UploadRosterDialog({ open, onOpenChange, onImported }: Props) {
           entries: parsed.entries,
         }),
       });
-      const data = await res.json() as { classId?: number; classTitle?: string; classDate?: string; imported?: number; updated?: number; skipped?: number; error?: string };
+      const data = await res.json() as { classId?: number; classTitle?: string; classDate?: string; imported?: number; updated?: number; contactUpdated?: number; skipped?: number; error?: string };
       if (!res.ok) {
         setError(data.error ?? "Import failed");
         setLoading(false);
@@ -176,6 +177,7 @@ export function UploadRosterDialog({ open, onOpenChange, onImported }: Props) {
         classDate: data.classDate ?? "",
         imported: data.imported ?? 0,
         updated: data.updated ?? 0,
+        contactUpdated: data.contactUpdated ?? 0,
         skipped: data.skipped ?? 0,
       });
       if (data.classId) onImported?.(data.classId);
@@ -289,7 +291,12 @@ export function UploadRosterDialog({ open, onOpenChange, onImported }: Props) {
               )}
               {result.updated > 0 && (
                 <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-sm px-3 py-1">
-                  {result.updated} updated
+                  {result.updated} result{result.updated !== 1 ? "s" : ""} updated
+                </Badge>
+              )}
+              {result.contactUpdated > 0 && (
+                <Badge variant="outline" className="bg-violet-50 text-violet-700 border-violet-200 text-sm px-3 py-1">
+                  {result.contactUpdated} contact{result.contactUpdated !== 1 ? "s" : ""} refreshed
                 </Badge>
               )}
               {result.skipped > 0 && (

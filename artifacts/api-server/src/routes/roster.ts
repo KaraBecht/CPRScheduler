@@ -206,6 +206,7 @@ router.post("/roster/import", async (req, res) => {
       position: classRosterTable.position,
       name: classRosterTable.name,
       email: classRosterTable.email,
+      phone: classRosterTable.phone,
       result: classRosterTable.result,
       cardSent: classRosterTable.cardSent,
     })
@@ -228,6 +229,7 @@ router.post("/roster/import", async (req, res) => {
 
   let imported = 0;
   let updated = 0;
+  let contactUpdated = 0;
   let skipped = 0;
 
   for (const entry of entries) {
@@ -244,13 +246,21 @@ router.post("/roster/import", async (req, res) => {
       (email ? existingByEmail.get(email.toLowerCase()) : undefined);
 
     if (matchedRow) {
-      // Only update if the incoming entry actually carries result or cardSent data
-      if (result !== null || cardSent) {
+      const hasResultData = result !== null || cardSent;
+      // A name correction is only possible when matched by email (different stored name)
+      const nameChanged = name !== matchedRow.name;
+      const emailChanged = Boolean(email && email !== (matchedRow.email ?? ""));
+      const phoneChanged = Boolean(phone && phone !== (matchedRow.phone ?? ""));
+      const hasContactUpdate = nameChanged || emailChanged || phoneChanged;
+
+      if (hasResultData || hasContactUpdate) {
         await db
           .update(classRosterTable)
           .set({
-            result: result as "pass" | "fail" | null,
-            cardSent,
+            ...(hasResultData ? { result: result as "pass" | "fail" | null, cardSent } : {}),
+            ...(nameChanged ? { name } : {}),
+            ...(emailChanged ? { email } : {}),
+            ...(phoneChanged ? { phone } : {}),
           })
           .where(
             and(
@@ -258,7 +268,8 @@ router.post("/roster/import", async (req, res) => {
               eq(classRosterTable.position, matchedRow.position),
             ),
           );
-        updated++;
+        if (hasResultData) updated++;
+        if (hasContactUpdate) contactUpdated++;
       } else {
         skipped++;
       }
@@ -270,12 +281,12 @@ router.post("/roster/import", async (req, res) => {
 
     await db.insert(classRosterTable).values({ classId: cls.id, position: slot, name, email, phone, result: result as "pass" | "fail" | null, cardSent });
     filledPositions.add(slot);
-    existingByName.set(name.toLowerCase(), { position: slot, name, email, result: result as "pass" | "fail" | null, cardSent });
-    if (email) existingByEmail.set(email.toLowerCase(), { position: slot, name, email, result: result as "pass" | "fail" | null, cardSent });
+    existingByName.set(name.toLowerCase(), { position: slot, name, email, phone, result: result as "pass" | "fail" | null, cardSent });
+    if (email) existingByEmail.set(email.toLowerCase(), { position: slot, name, email, phone, result: result as "pass" | "fail" | null, cardSent });
     imported++;
   }
 
-  res.json({ classId: cls.id, classTitle: cls.title, classDate: cls.date, imported, updated, skipped });
+  res.json({ classId: cls.id, classTitle: cls.title, classDate: cls.date, imported, updated, contactUpdated, skipped });
 });
 
 router.get("/public/classes/:classId/calendar.ics", async (req, res) => {
