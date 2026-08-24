@@ -471,7 +471,7 @@ export default function ClassDetail() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pending_schedule">Pending</SelectItem>
+                    <SelectItem value="pending_schedule">Inquiry</SelectItem>
                     <SelectItem value="being_scheduled">Scheduling</SelectItem>
                     <SelectItem value="confirmed">Confirmed</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
@@ -967,7 +967,7 @@ export default function ClassDetail() {
                     </Badge>
                   )}
                   {inv.status === "pending" && (
-                    <Badge variant="secondary">Pending</Badge>
+                    <Badge variant="secondary">Inquiry</Badge>
                   )}
                 </div>
               ))}
