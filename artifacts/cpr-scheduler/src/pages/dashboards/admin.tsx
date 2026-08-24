@@ -430,7 +430,7 @@ export function AdminDashboardPage() {
                           completed: "Completed",
                           cancelled: "Cancelled",
                           being_scheduled: "Scheduling",
-                          pending_schedule: "Pending",
+                          pending_schedule: "Inquiry",
                           scheduled: "Scheduled",
                         }[r.classStatus] ?? r.classStatus)
                       : r.status}

@@ -1020,7 +1020,7 @@ function ScheduleClassDialog({
 }
 
 const STATUS_OPTIONS = [
-  { value: "pending_schedule", label: "Pending" },
+  { value: "pending_schedule", label: "Inquiry" },
   { value: "being_scheduled",  label: "Scheduling" },
   { value: "confirmed",        label: "Confirmed" },
   { value: "completed",        label: "Completed" },

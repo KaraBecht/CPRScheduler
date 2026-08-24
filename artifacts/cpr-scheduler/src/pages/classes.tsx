@@ -419,7 +419,7 @@ const STATUS_CHIP: Record<string, string> = {
 
 const STATUS_LABEL: Record<string, string> = {
   being_scheduled: "Scheduling",
-  pending_schedule: "Pending",
+  pending_schedule: "Inquiry",
   confirmed:        "Confirmed",
   completed:        "Completed",
   cancelled:        "Cancelled",
@@ -428,7 +428,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 /** Canonical status options used in every class create/edit form across the app. */
 export const CLASS_STATUS_OPTIONS = [
-  { value: "pending_schedule", label: "Pending" },
+  { value: "pending_schedule", label: "Inquiry" },
   { value: "being_scheduled",  label: "Scheduling" },
   { value: "confirmed",        label: "Confirmed" },
   { value: "completed",        label: "Completed" },
@@ -571,7 +571,7 @@ function CalendarView({ classes }: { classes: ClassSession[] }) {
       <div className="flex items-center gap-4 px-5 py-3 border-t border-border bg-muted/20 flex-wrap">
         {[
           { label: "Being scheduled", cls: "bg-amber-400" },
-          { label: "Pending schedule", cls: "bg-orange-400" },
+          { label: "Inquiry", cls: "bg-orange-400" },
           { label: "Confirmed", cls: "bg-emerald-500" },
           { label: "Completed", cls: "bg-muted-foreground/40" },
           { label: "Cancelled", cls: "bg-destructive/50" },

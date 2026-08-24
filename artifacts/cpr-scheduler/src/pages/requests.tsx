@@ -318,7 +318,7 @@ type SessionRow = { date: string; startTime: string; status: string; included: b
 
 const SESSION_STATUS_OPTIONS = [
   { value: "confirmed",       label: "Confirmed" },
-  { value: "pending_schedule", label: "Pending" },
+  { value: "pending_schedule", label: "Inquiry" },
   { value: "being_scheduled", label: "Scheduling" },
   { value: "completed",       label: "Completed" },
 ];
