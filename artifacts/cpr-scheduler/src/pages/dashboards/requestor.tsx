@@ -33,7 +33,7 @@ export function RequestorDashboardPage() {
       />
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <StatCard
-          label="Pending"
+          label="Inquiries"
           value={dash.pendingCount}
           icon={Inbox}
           tone="warning"

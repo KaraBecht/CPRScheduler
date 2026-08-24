@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatCertificationType, formatDate, timeAgo } from "@/lib/format";
 
 const STATUS_LABEL: Record<string, string> = {
-  pending: "Pending review",
+  pending: "Inquiry",
   approved: "Approved",
   rejected: "Not approved",
   scheduled: "Scheduled",

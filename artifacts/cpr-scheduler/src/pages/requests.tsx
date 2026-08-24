@@ -588,7 +588,7 @@ export default function Requests() {
                               : "secondary"
                         }
                       >
-                        {r.status}
+                        {r.status === "pending" ? "Inquiry" : r.status}
                       </Badge>
                       <Badge variant="outline">
                         {formatCertificationType(r.certificationType)}

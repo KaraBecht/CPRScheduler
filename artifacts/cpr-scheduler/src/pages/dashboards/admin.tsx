@@ -198,7 +198,7 @@ export function AdminDashboardPage() {
           testId="stat-upcoming-classes"
         />
         <StatCard
-          label="Pending requests"
+          label="Inquiries"
           value={dash.pendingRequests}
           icon={Inbox}
           tone="accent"
