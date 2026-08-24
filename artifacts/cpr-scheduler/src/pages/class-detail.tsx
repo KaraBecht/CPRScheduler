@@ -931,17 +931,26 @@ export default function ClassDetail() {
           </CardContent>
         </Card>
       </div>
-      {canManage && cls.trainerInvitations && cls.trainerInvitations.length > 0 && (
+      {canManage && (() => {
+        // Once a class is confirmed/scheduled and a trainer is assigned, hide
+        // pending invitations — they no longer reflect actionable state.
+        const hasAssignedTrainer =
+          (cls.instructors && cls.instructors.length > 0) || !!cls.instructorId;
+        const classIsLocked = ["confirmed", "scheduled", "completed"].includes(cls.status);
+        const visibleInvitations = (cls.trainerInvitations ?? []).filter(
+          (inv) => !(classIsLocked && hasAssignedTrainer && inv.status === "pending"),
+        );
+        return visibleInvitations.length > 0 ? (
         <Card className="mt-6">
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <UserIcon className="h-4 w-4" />
-              Trainer Responses · {cls.trainerInvitations.length}
+              Trainer Responses · {visibleInvitations.length}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="divide-y divide-border">
-              {cls.trainerInvitations.map((inv) => (
+              {visibleInvitations.map((inv) => (
                 <div key={inv.id} className="flex items-center gap-3 py-3">
                   <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold shrink-0">
                     {inv.trainerName.split(" ").map((s: string) => s[0]).slice(0, 2).join("")}
@@ -965,7 +974,8 @@ export default function ClassDetail() {
             </div>
           </CardContent>
         </Card>
-      )}
+        ) : null;
+      })()}
 
       <UploadRosterDialog
         open={uploadOpen}
