@@ -112,6 +112,9 @@ async function serializeClass(row: typeof classesTable.$inferSelect) {
     instructors,
     description: row.description,
     businessUnit: row.businessUnit,
+    contactName: row.contactName,
+    contactPhone: row.contactPhone,
+    contactEmail: row.contactEmail,
   };
 }
 

@@ -12,6 +12,13 @@ const MIGRATIONS: { name: string; sql: string }[] = [
     sql: `ALTER TABLE locations ADD COLUMN IF NOT EXISTS business_unit text`,
   },
   {
+    name: "add_classes_contact_fields",
+    sql: `ALTER TABLE classes
+          ADD COLUMN IF NOT EXISTS contact_name  text,
+          ADD COLUMN IF NOT EXISTS contact_phone text,
+          ADD COLUMN IF NOT EXISTS contact_email text`,
+  },
+  {
     name: "backfill_locations_business_unit_from_notes",
     sql: `UPDATE locations
           SET business_unit = (regexp_match(notes, 'Business Unit:\\s*(.+)'))[1]

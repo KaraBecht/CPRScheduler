@@ -38,6 +38,9 @@ export const classesTable = pgTable("classes", {
   instructorId: integer("instructor_id").references(() => usersTable.id),
   description: text("description"),
   businessUnit: text("business_unit"),
+  contactName: text("contact_name"),
+  contactPhone: text("contact_phone"),
+  contactEmail: text("contact_email"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   completionEmailSentAt: timestamp("completion_email_sent_at"),
 });

@@ -72,6 +72,8 @@ import {
   Link2,
   Check,
   ExternalLink,
+  Phone,
+  Mail,
 } from "lucide-react";
 import { UploadRosterDialog } from "@/components/UploadRosterDialog";
 import { openSigninSheet } from "@/lib/generate-signin-sheet";
@@ -142,6 +144,9 @@ export default function ClassDetail() {
     instructorIds: [] as number[],
     description: "",
     businessUnit: "",
+    contactName: "",
+    contactPhone: "",
+    contactEmail: "",
     status: "confirmed" as "being_scheduled" | "pending_schedule" | "confirmed" | "completed" | "cancelled" | "scheduled",
   });
   const [extraSlots, setExtraSlots] = useState<ExtraSlot[]>([]);
@@ -217,6 +222,9 @@ export default function ClassDetail() {
       instructorIds: ids,
       description: cls.description ?? "",
       businessUnit: (cls as any).businessUnit ?? "",
+      contactName: (cls as any).contactName ?? "",
+      contactPhone: (cls as any).contactPhone ?? "",
+      contactEmail: (cls as any).contactEmail ?? "",
       status: cls.status as "being_scheduled" | "pending_schedule" | "confirmed" | "completed" | "cancelled" | "scheduled",
     });
     setExtraSlots([]);
@@ -239,6 +247,9 @@ export default function ClassDetail() {
           instructorIds: editForm.instructorIds,
           description: editForm.description || undefined,
           businessUnit: editForm.businessUnit || undefined,
+          contactName: editForm.contactName || undefined,
+          contactPhone: editForm.contactPhone || undefined,
+          contactEmail: editForm.contactEmail || undefined,
           status: editForm.status,
         },
       });
@@ -648,6 +659,41 @@ export default function ClassDetail() {
               </Select>
             </div>
 
+            {/* Contact person */}
+            <div className="border-t pt-3">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Contact person</p>
+              <div className="space-y-2">
+                <div>
+                  <Label>Name</Label>
+                  <Input
+                    placeholder="Full name"
+                    value={editForm.contactName}
+                    onChange={(e) => setEditForm((f) => ({ ...f, contactName: e.target.value }))}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Phone</Label>
+                    <Input
+                      type="tel"
+                      placeholder="(555) 000-0000"
+                      value={editForm.contactPhone}
+                      onChange={(e) => setEditForm((f) => ({ ...f, contactPhone: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label>Email</Label>
+                    <Input
+                      type="email"
+                      placeholder="name@example.com"
+                      value={editForm.contactEmail}
+                      onChange={(e) => setEditForm((f) => ({ ...f, contactEmail: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Additional sessions */}
             <div className="border-t pt-3">
               <div className="flex items-center justify-between mb-2">
@@ -756,6 +802,29 @@ export default function ClassDetail() {
                 {remaining > 0 ? ` · ${remaining} seats open` : " · full"}
               </span>
             </div>
+            {((cls as any).contactName || (cls as any).contactPhone || (cls as any).contactEmail) && (
+              <div className="border-t pt-3 mt-1 space-y-1">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Contact</p>
+                {(cls as any).contactName && (
+                  <div className="flex items-center gap-2">
+                    <UserIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span>{(cls as any).contactName}</span>
+                  </div>
+                )}
+                {(cls as any).contactPhone && (
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <a href={`tel:${(cls as any).contactPhone}`} className="hover:underline">{(cls as any).contactPhone}</a>
+                  </div>
+                )}
+                {(cls as any).contactEmail && (
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <a href={`mailto:${(cls as any).contactEmail}`} className="hover:underline">{(cls as any).contactEmail}</a>
+                  </div>
+                )}
+              </div>
+            )}
             {role === "student" && (cls.status === "confirmed" || cls.status === "scheduled") && (
               <Button
                 className="w-full"
