@@ -53,6 +53,20 @@ export async function sendSevenDayReminders(): Promise<void> {
       startTime: cls.startTime,
     };
 
+    // Warn when a class has a location but no business unit — EHS routing will
+    // fall back to notifying ALL EHS users instead of the correct contact.
+    if (cls.location && !cls.businessUnit) {
+      logger.warn(
+        { classId: cls.id, location: cls.location },
+        "7-day reminder: class has a location but no businessUnit — EHS will fall back to all EHS users",
+      );
+    } else {
+      logger.debug(
+        { classId: cls.id, businessUnit: cls.businessUnit },
+        "7-day reminder: businessUnit resolved for EHS routing",
+      );
+    }
+
     const req = requestByClassId.get(cls.id);
     const requestorInfo: RequestorInfo | null = req
       ? {
@@ -63,7 +77,7 @@ export async function sendSevenDayReminders(): Promise<void> {
         }
       : null;
 
-    await sendClassNotifications(clsInfo, requestorInfo, "reminder", logger).catch(err =>
+    await sendClassNotifications(clsInfo, requestorInfo, "reminder", logger, cls.businessUnit).catch(err =>
       logger.error({ err, classId: cls.id }, "7-day reminder send failed"),
     );
   }
