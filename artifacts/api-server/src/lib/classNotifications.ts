@@ -135,6 +135,7 @@ function buildRequestorEmail(
   const reminderNote = `Please note: classes are 3.5–4 hours long. We recommend bringing water and wearing non-restrictive clothing that allows for practice of CPR skills.`;
 
   const cal = buildCalendarLinks({ classId: cls.id, title: cls.title, certificationType: cls.certificationType, date: cls.date, startTime: cls.startTime, endTime: cls.endTime, location: cls.location }, appBaseUrl());
+  const classUrl = `${appBaseUrl()}/classes/${cls.id}`;
 
   const text = [
     `Hi ${requestor.name},`,
@@ -149,6 +150,8 @@ function buildRequestorEmail(
     cls.location ? `  Address:       ${cls.location}` : null,
     ``,
     isReminder ? reminderNote : `Our team will follow up shortly with the instructor and location details if not yet confirmed.`,
+    ``,
+    `View your class: ${classUrl}`,
     ``,
     `Thank you for choosing PulsePoint CPR Hub.`,
     ``,
@@ -179,7 +182,10 @@ function buildRequestorEmail(
       <p style="margin:0;color:#1e40af;font-size:14px"><strong>Please note:</strong> Classes are 3.5–4 hours long. We recommend bringing water and wearing non-restrictive clothing that allows for practice of CPR skills.</p>
     </div>`
       : `<p style="margin:0 0 8px;color:#374151">Our team will follow up shortly with the instructor and location details if not yet confirmed.</p>`}
-    <p style="margin:0 0 0;color:#374151">Thank you for choosing <strong>PulsePoint CPR Hub</strong>.</p>
+    <p style="margin:0 0 16px;color:#374151">Thank you for choosing <strong>PulsePoint CPR Hub</strong>.</p>
+    <div style="margin-bottom:20px">
+      <a href="${classUrl}" style="display:inline-block;padding:10px 20px;background:#111827;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;font-size:13px">View Your Class →</a>
+    </div>
     ${calendarHtml(cal)}
   </div>
 </div>`.trim();
@@ -208,6 +214,8 @@ export function buildStaffEmail(
 
   const cal = buildCalendarLinks({ classId: cls.id, title: cls.title, certificationType: cls.certificationType, date: cls.date, startTime: cls.startTime, endTime: cls.endTime, location: cls.location }, appBaseUrl());
 
+  const classUrl = `${appBaseUrl()}/classes/${cls.id}`;
+
   const text = [
     `Hi ${recipientName},`,
     ``,
@@ -227,6 +235,8 @@ export function buildStaffEmail(
     cls.title    ? `  Location:      ${cls.title}` : null,
     cls.location ? `  Address:       ${cls.location}` : null,
     businessUnit ? `  Business Unit: ${businessUnit}` : null,
+    ``,
+    `View class in app: ${classUrl}`,
     ``,
     isCoordinator && !isReminder ? `ACTION REQUIRED — ACCOMMODATIONS` : null,
     isCoordinator && !isReminder ? `Please arrange hotel/travel accommodations for the assigned instructor.` : null,
@@ -284,6 +294,10 @@ export function buildStaffEmail(
       </p>
       <a href="${supplyUrl}" style="display:inline-block;padding:10px 20px;background:#1d4ed8;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;font-size:13px">Track &amp; Confirm Supplies →</a>
     </div>` : ""}
+
+    <div style="margin-top:24px;padding-top:20px;border-top:1px solid #e5e7eb">
+      <a href="${classUrl}" style="display:inline-block;padding:10px 20px;background:#111827;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;font-size:13px">View Class in App →</a>
+    </div>
 
     ${calendarHtml(cal)}
   </div>

@@ -38,6 +38,15 @@ function apiBaseUrl(): string {
   return `http://localhost${API_PATH_PREFIX}`;
 }
 
+function appBaseUrl(): string {
+  const domains = process.env["REPLIT_DOMAINS"];
+  if (domains) {
+    const first = domains.split(",")[0]?.trim();
+    if (first) return `https://${first}`;
+  }
+  return "http://localhost";
+}
+
 function formatDate(dateStr: string): string {
   const [y, m, d] = dateStr.split("-").map(Number);
   return new Intl.DateTimeFormat("en-US", {
@@ -80,6 +89,7 @@ function buildTrainerInviteEmail(
     { classId: cls.id, title: cls.title, certificationType: cls.certificationType, date: cls.date, startTime: cls.startTime, endTime: cls.endTime, location: cls.location },
     apiBaseUrl(),
   );
+  const classUrl = `${appBaseUrl()}/classes/${cls.id}`;
 
   const text = [
     `Hi ${trainerName},`,
@@ -96,6 +106,8 @@ function buildTrainerInviteEmail(
     ``,
     `✓ ACCEPT this class:  ${acceptUrl}`,
     `✗ DECLINE this class: ${declineUrl}`,
+    ``,
+    `View class in app: ${classUrl}`,
     ``,
     calendarText(cal),
     ``,
@@ -132,6 +144,10 @@ function buildTrainerInviteEmail(
       <td style="padding-right:12px">${btn(acceptUrl, "#16a34a", "✓ Accept")}</td>
       <td>${btn(declineUrl, "#dc2626", "✗ Decline")}</td>
     </tr></table>
+
+    <div style="margin-top:20px">
+      <a href="${classUrl}" style="display:inline-block;padding:10px 20px;background:#111827;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;font-size:13px">View Class in App →</a>
+    </div>
 
     ${calendarHtml(cal)}
 
@@ -322,14 +338,14 @@ export async function recordTrainerResponse(
   token: string,
   decision: "accepted" | "declined",
   log: Logger,
-): Promise<{ found: boolean; alreadyResponded: boolean }> {
+): Promise<{ found: boolean; alreadyResponded: boolean; classId?: number }> {
   const [invite] = await db
     .select()
     .from(trainerInvitationsTable)
     .where(eq(trainerInvitationsTable.token, token));
 
   if (!invite) return { found: false, alreadyResponded: false };
-  if (invite.status !== "pending") return { found: true, alreadyResponded: true };
+  if (invite.status !== "pending") return { found: true, alreadyResponded: true, classId: invite.classId };
 
   // Update status
   await db
@@ -376,5 +392,5 @@ export async function recordTrainerResponse(
     "Trainer response recorded and admins notified",
   );
 
-  return { found: true, alreadyResponded: false };
+  return { found: true, alreadyResponded: false, classId: invite.classId };
 }

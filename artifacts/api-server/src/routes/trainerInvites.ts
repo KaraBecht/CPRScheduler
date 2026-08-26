@@ -3,7 +3,21 @@ import { recordTrainerResponse } from "../lib/trainerNotifications";
 
 const router: IRouter = Router();
 
-function responsePage(title: string, message: string, color: string): string {
+function appBaseUrl(): string {
+  const domains = process.env["REPLIT_DOMAINS"];
+  if (domains) {
+    const first = domains.split(",")[0]?.trim();
+    if (first) return `https://${first}`;
+  }
+  return "http://localhost";
+}
+
+function responsePage(title: string, message: string, color: string, classId?: number): string {
+  const icon = color === "#16a34a" ? "✅" : color === "#dc2626" ? "❌" : "ℹ️";
+  const appLink = classId != null
+    ? `<a href="${appBaseUrl()}/classes/${classId}" style="display:inline-block;margin-top:24px;padding:11px 28px;border-radius:8px;font-weight:600;font-size:14px;text-decoration:none;color:#fff;background:#111827">Open Class in App →</a>`
+    : `<a href="${appBaseUrl()}" style="display:inline-block;margin-top:24px;padding:11px 28px;border-radius:8px;font-weight:600;font-size:14px;text-decoration:none;color:#fff;background:#111827">Open PulsePoint CPR Hub →</a>`;
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -22,10 +36,12 @@ function responsePage(title: string, message: string, color: string): string {
 </head>
 <body>
   <div class="card">
-    <div class="icon">${color === "#16a34a" ? "✅" : color === "#dc2626" ? "❌" : "ℹ️"}</div>
+    <div class="icon">${icon}</div>
     <h1>${title}</h1>
     <p>${message}</p>
     <div class="badge">${title}</div>
+    <br>
+    ${appLink}
   </div>
 </body>
 </html>`;
@@ -44,13 +60,13 @@ router.get("/trainer-invite/:token/accept", async (req, res) => {
 
   if (result.alreadyResponded) {
     res.send(
-      responsePage("Already Responded", "You have already responded to this class invitation. Your response has been recorded.", "#6b7280"),
+      responsePage("Already Responded", "You have already responded to this class invitation. Your response has been recorded.", "#6b7280", result.classId),
     );
     return;
   }
 
   res.send(
-    responsePage("Class Accepted", "Thank you! Your acceptance has been recorded and our scheduling team has been notified. We will follow up with more details soon.", "#16a34a"),
+    responsePage("Class Accepted", "Thank you! Your acceptance has been recorded and our scheduling team has been notified. We will follow up with more details soon.", "#16a34a", result.classId),
   );
 });
 
@@ -67,13 +83,13 @@ router.get("/trainer-invite/:token/decline", async (req, res) => {
 
   if (result.alreadyResponded) {
     res.send(
-      responsePage("Already Responded", "You have already responded to this class invitation. Your response has been recorded.", "#6b7280"),
+      responsePage("Already Responded", "You have already responded to this class invitation. Your response has been recorded.", "#6b7280", result.classId),
     );
     return;
   }
 
   res.send(
-    responsePage("Class Declined", "Thank you for letting us know. Your response has been recorded and we will find another instructor for this class.", "#dc2626"),
+    responsePage("Class Declined", "Thank you for letting us know. Your response has been recorded and we will find another instructor for this class.", "#dc2626", result.classId),
   );
 });
 
