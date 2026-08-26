@@ -73,7 +73,7 @@ async function getStaffRecipients(
     db
       .select({ businessUnit: locationsTable.businessUnit })
       .from(locationsTable)
-      .where(ilike(locationsTable.name, `%${classTitle.trim()}%`))
+      .where(ilike(locationsTable.name, classTitle.trim()))
       .limit(1),
   ]);
 
