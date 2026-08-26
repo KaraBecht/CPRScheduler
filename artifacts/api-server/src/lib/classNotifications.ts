@@ -54,7 +54,12 @@ interface Recipient {
   email: string;
 }
 
-async function getStaffRecipients(classLocation: string): Promise<{
+async function getStaffRecipients(
+  /** The class title — used as the location name for the lookup */
+  classTitle: string,
+  /** Business unit already set on the class record; takes precedence over the location lookup */
+  classBusinessUnit?: string | null,
+): Promise<{
   admins: Recipient[];
   coordinators: Recipient[];
   ehsUsers: Recipient[];
@@ -68,11 +73,12 @@ async function getStaffRecipients(classLocation: string): Promise<{
     db
       .select({ businessUnit: locationsTable.businessUnit })
       .from(locationsTable)
-      .where(ilike(locationsTable.name, classLocation))
+      .where(ilike(locationsTable.name, `%${classTitle.trim()}%`))
       .limit(1),
   ]);
 
-  const businessUnit = locationRow[0]?.businessUnit ?? null;
+  // Prefer the explicit class business unit; fall back to the location card's value
+  const businessUnit = classBusinessUnit ?? locationRow[0]?.businessUnit ?? null;
 
   const admins     = allAdminUsers.filter(u => u.adminRole === "admin");
   const coordinators = allAdminUsers.filter(u => u.adminRole === "coordinator");
@@ -298,7 +304,7 @@ export async function sendClassNotifications(
   classBusinessUnit?: string | null,
 ): Promise<void> {
   const { admins, coordinators, ehsUsers, businessUnit } =
-    await getStaffRecipients(cls.location);
+    await getStaffRecipients(cls.title, classBusinessUnit);
 
   const staffRecipients = [...admins, ...coordinators, ...ehsUsers];
 

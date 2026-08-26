@@ -12,7 +12,7 @@ async function getLocationBusinessUnit(locationName: string): Promise<string | n
   const [loc] = await db
     .select({ businessUnit: locationsTable.businessUnit })
     .from(locationsTable)
-    .where(ilike(locationsTable.name, locationName))
+    .where(ilike(locationsTable.name, `%${locationName.trim()}%`))
     .limit(1);
   return loc?.businessUnit ?? null;
 }
@@ -126,8 +126,8 @@ export async function sendRenewalReminders(): Promise<number> {
     const renewalBy = isoDate(addMonths(new Date(cls.date), MONTHS + 2));
     const subject = `CPR Renewal Planning: "${cls.title}" is due for renewal`;
 
-    // Resolve EHS recipients for this class's location
-    const businessUnit = await getLocationBusinessUnit(cls.location);
+    // Resolve EHS recipients for this class's location (match by title = location name)
+    const businessUnit = await getLocationBusinessUnit(cls.title);
     let ehsRecipients = allEhs;
     if (businessUnit) {
       const buLower = businessUnit.toLowerCase();
