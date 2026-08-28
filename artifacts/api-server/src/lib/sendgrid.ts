@@ -271,6 +271,73 @@ export function buildRequestEmail(data: {
   };
 }
 
+export function buildRequestConfirmationEmail(data: {
+  requestorName: string;
+  locationName: string;
+  certificationType: string;
+  sessions: { date: string; startTime: string }[];
+}): Pick<EmailPayload, "subject" | "text" | "html"> {
+  const certLabel: Record<string, string> = {
+    cpr_aed_first_aid: "CPR / AED / First Aid",
+    stop_the_bleed: "Stop the Bleed",
+  };
+  const cert = certLabel[data.certificationType] ?? data.certificationType;
+  const sessionLines = data.sessions
+    .map((s) => `  • ${s.date} @ ${s.startTime}`)
+    .join("\n");
+
+  const text = [
+    `Hi ${data.requestorName},`,
+    "",
+    "Thanks for submitting a CPR training request with PulsePoint CPR Hub — we've received it!",
+    "",
+    "REQUEST DETAILS",
+    `  Organization:  ${data.locationName}`,
+    `  Certification: ${cert}`,
+    "",
+    "REQUESTED DATE(S) & TIME(S)",
+    sessionLines,
+    "",
+    "Our team will review your request and follow up shortly to finalize the schedule.",
+    "",
+    "Thank you for choosing PulsePoint CPR Hub.",
+  ].join("\n");
+
+  const row = (label: string, value: string) =>
+    `<tr><td style="padding:4px 12px 4px 0;color:#6b7280;white-space:nowrap">${label}</td><td style="padding:4px 0"><strong>${value}</strong></td></tr>`;
+
+  const html = `
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#111827">
+  <div style="background:#1d4ed8;padding:20px 24px;border-radius:8px 8px 0 0">
+    <h1 style="margin:0;color:#fff;font-size:18px">Request Received!</h1>
+    <p style="margin:4px 0 0;color:#bfdbfe;font-size:13px">PulsePoint CPR Hub</p>
+  </div>
+  <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px">
+    <p style="margin:0 0 20px">Hi <strong>${data.requestorName}</strong>,</p>
+    <p style="margin:0 0 20px">Thanks for submitting a CPR training request with PulsePoint CPR Hub — we've received it! We'll follow up shortly to finalize the schedule.</p>
+
+    <h2 style="font-size:14px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin:0 0 8px">Request Details</h2>
+    <table style="border-collapse:collapse;margin-bottom:20px">
+      ${row("Organization", data.locationName)}
+      ${row("Certification", cert)}
+    </table>
+
+    <h2 style="font-size:14px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin:0 0 8px">Requested Date(s) &amp; Time(s)</h2>
+    <ul style="margin:0 0 20px;padding-left:18px">
+      ${data.sessions.map((s) => `<li style="margin-bottom:4px">${s.date} &nbsp;@&nbsp; ${s.startTime}</li>`).join("")}
+    </ul>
+
+    <p style="margin:0;color:#374151">Thank you for choosing <strong>PulsePoint CPR Hub</strong>.</p>
+  </div>
+</div>`;
+
+  return {
+    subject: "We've received your CPR training request",
+    text,
+    html,
+  };
+}
+
 export function buildSigninNotificationEmail(data: {
   name: string;
   email?: string | null;
