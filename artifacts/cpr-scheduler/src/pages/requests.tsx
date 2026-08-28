@@ -749,8 +749,8 @@ export default function Requests() {
                 <Upload className="h-4 w-4 mr-1.5" /> Import request
               </Button>
             )}
-            {role === "administrator" && <NewInterestDialog />}
             <SendTrainingRequestDialog />
+            {role === "administrator" && <NewInterestDialog />}
             {canCreate ? <NewRequestDialog requestorId={userId!} /> : null}
           </div>
         }
