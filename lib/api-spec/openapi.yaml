@@ -1162,10 +1162,11 @@ components:
 
     TrainingInquiryPerson:
       type: object
-      required: [name, phone]
+      required: [name, phone, email]
       properties:
         name: { type: string, minLength: 1 }
         phone: { type: string, minLength: 1 }
+        email: { type: string, format: email, minLength: 1 }
 
     TrainingInquiryInput:
       type: object

@@ -1,1 +1,1 @@
-- [Training inquiry records](training-inquiries.md) — Keep preliminary inquiries separate from full class requests until scheduling details are known.
+- [Training interest records](training-inquiries.md) — Keep preliminary interests separate from full class requests until scheduling details are known.

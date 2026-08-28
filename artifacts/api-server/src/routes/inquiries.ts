@@ -6,10 +6,15 @@ import { CreateInquiryBody } from "@workspace/api-zod";
 const router: IRouter = Router();
 
 function serializeInquiry(row: typeof trainingInquiriesTable.$inferSelect) {
-  const people =
+  const rawPeople =
     Array.isArray(row.people) && row.people.length > 0
       ? row.people
-      : [{ name: row.name, phone: row.phone }];
+      : [{ name: row.name, phone: row.phone, email: "" }];
+  const people = rawPeople.map((person) => ({
+    name: person.name,
+    phone: person.phone,
+    email: "email" in person && typeof person.email === "string" ? person.email : "",
+  }));
 
   return {
     id: row.id,
@@ -38,14 +43,15 @@ router.post("/inquiries", async (req, res): Promise<void> => {
   }
 
   const people: TrainingInquiryPerson[] = (parsed.data.people ?? [
-    { name: parsed.data.name, phone: parsed.data.phone },
+    { name: parsed.data.name, phone: parsed.data.phone, email: "" },
   ]).map((person) => ({
     name: person.name.trim(),
     phone: person.phone.trim(),
+    email: person.email.trim(),
   }));
 
-  if (people.some((person) => !person.name || !person.phone)) {
-    res.status(400).json({ error: "Every person must have a name and phone number" });
+  if (people.some((person) => !person.name || !person.phone || !person.email)) {
+    res.status(400).json({ error: "Every person must have a name, phone number, and email" });
     return;
   }
 

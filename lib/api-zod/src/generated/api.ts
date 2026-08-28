@@ -499,6 +499,7 @@ export const CreateRequestBody = zod.object({
 
 
 
+
 export const ListInquiriesResponseItem = zod.object({
   "id": zod.number(),
   "name": zod.string(),
@@ -507,11 +508,13 @@ export const ListInquiriesResponseItem = zod.object({
   "location": zod.string(),
   "people": zod.array(zod.object({
   "name": zod.string().min(1),
-  "phone": zod.string().min(1)
+  "phone": zod.string().min(1),
+  "email": zod.string().email().min(1)
 })).min(1),
   "createdAt": zod.string()
 })
 export const ListInquiriesResponse = zod.array(ListInquiriesResponseItem)
+
 
 
 
@@ -530,7 +533,8 @@ export const CreateInquiryBody = zod.object({
   "location": zod.string().min(1),
   "people": zod.array(zod.object({
   "name": zod.string().min(1),
-  "phone": zod.string().min(1)
+  "phone": zod.string().min(1),
+  "email": zod.string().email().min(1)
 })).min(1).optional()
 })
 

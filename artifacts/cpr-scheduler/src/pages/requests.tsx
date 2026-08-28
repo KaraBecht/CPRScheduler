@@ -38,7 +38,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth-context";
-import { Plus, Check, X, Share2, Copy, CheckCheck, Trash2, CalendarDays, Download, Upload, ClipboardList, Phone, Building2, MapPin } from "lucide-react";
+import { Plus, Check, X, Share2, Copy, CheckCheck, Trash2, CalendarDays, Download, Upload, ClipboardList, Phone, Mail, Building2, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { formatCertificationType, formatDate, timeAgo } from "@/lib/format";
@@ -318,11 +318,11 @@ function SendTrainingRequestDialog() {
   );
 }
 
-function NewInquiryDialog() {
+function NewInterestDialog() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
-    people: [{ name: "", phone: "" }],
+    people: [{ name: "", phone: "", email: "" }],
     division: "",
     location: "",
   });
@@ -331,23 +331,25 @@ function NewInquiryDialog() {
     mutation: {
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: getListInquiriesQueryKey() });
-        setForm({ people: [{ name: "", phone: "" }], division: "", location: "" });
+        setForm({ people: [{ name: "", phone: "", email: "" }], division: "", location: "" });
         setOpen(false);
-        toast({ title: "Inquiry saved" });
+        toast({ title: "Interest saved" });
       },
       onError: () =>
-        toast({ title: "Could not save inquiry", variant: "destructive" }),
+        toast({ title: "Could not save interest", variant: "destructive" }),
     },
   });
 
   const canSave =
     form.people.length > 0 &&
-    form.people.every((person) => person.name.trim() && person.phone.trim()) &&
+    form.people.every(
+      (person) => person.name.trim() && person.phone.trim() && person.email.trim(),
+    ) &&
     form.division.trim() &&
     form.location.trim() &&
     !create.isPending;
 
-  function updatePerson(index: number, field: "name" | "phone", value: string) {
+  function updatePerson(index: number, field: "name" | "phone" | "email", value: string) {
     setForm((current) => ({
       ...current,
       people: current.people.map((person, personIndex) =>
@@ -359,15 +361,15 @@ function NewInquiryDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button data-testid="button-new-inquiry">
-          <Plus className="h-4 w-4 mr-1.5" /> New inquiry
+        <Button data-testid="button-new-interest">
+          <Plus className="h-4 w-4 mr-1.5" /> New interest
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>New training inquiry</DialogTitle>
+          <DialogTitle>New training interest</DialogTitle>
           <DialogDescription>
-            Save the caller's contact details so the team can follow up and create a full training request later.
+            Save contact details so the team can follow up and create a full training request later.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
@@ -378,11 +380,11 @@ function NewInquiryDialog() {
                 type="button"
                 variant="outline"
                 size="sm"
-                data-testid="button-add-inquiry-person"
+                data-testid="button-add-interest-person"
                 onClick={() =>
                   setForm((current) => ({
                     ...current,
-                    people: [...current.people, { name: "", phone: "" }],
+                    people: [...current.people, { name: "", phone: "", email: "" }],
                   }))
                 }
               >
@@ -399,7 +401,7 @@ function NewInquiryDialog() {
                       variant="ghost"
                       size="sm"
                       aria-label={`Remove person ${index + 1}`}
-                      data-testid={`button-remove-inquiry-person-${index}`}
+                      data-testid={`button-remove-interest-person-${index}`}
                       onClick={() =>
                         setForm((current) => ({
                           ...current,
@@ -415,7 +417,7 @@ function NewInquiryDialog() {
                   <Label htmlFor={`inquiry-name-${index}`}>Name</Label>
                   <Input
                     id={`inquiry-name-${index}`}
-                    data-testid={index === 0 ? "input-inquiry-name" : `input-inquiry-name-${index}`}
+                    data-testid={index === 0 ? "input-interest-name" : `input-interest-name-${index}`}
                     placeholder="Contact name"
                     value={person.name}
                     onChange={(e) => updatePerson(index, "name", e.target.value)}
@@ -426,10 +428,21 @@ function NewInquiryDialog() {
                   <Input
                     id={`inquiry-phone-${index}`}
                     type="tel"
-                    data-testid={index === 0 ? "input-inquiry-phone" : `input-inquiry-phone-${index}`}
+                    data-testid={index === 0 ? "input-interest-phone" : `input-interest-phone-${index}`}
                     placeholder="(555) 555-5555"
                     value={person.phone}
                     onChange={(e) => updatePerson(index, "phone", e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor={`interest-email-${index}`}>Email</Label>
+                  <Input
+                    id={`interest-email-${index}`}
+                    type="email"
+                    data-testid={index === 0 ? "input-interest-email" : `input-interest-email-${index}`}
+                    placeholder="name@company.com"
+                    value={person.email}
+                    onChange={(e) => updatePerson(index, "email", e.target.value)}
                   />
                 </div>
               </div>
@@ -461,7 +474,7 @@ function NewInquiryDialog() {
             Cancel
           </Button>
           <Button
-            data-testid="button-save-inquiry"
+            data-testid="button-save-interest"
             disabled={!canSave}
             onClick={() =>
               create.mutate({
@@ -473,12 +486,13 @@ function NewInquiryDialog() {
                   people: form.people.map((person) => ({
                     name: person.name.trim(),
                     phone: person.phone.trim(),
+                    email: person.email.trim(),
                   })),
                 },
               })
             }
           >
-            {create.isPending ? "Saving…" : "Save inquiry"}
+            {create.isPending ? "Saving…" : "Save interest"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -735,7 +749,7 @@ export default function Requests() {
                 <Upload className="h-4 w-4 mr-1.5" /> Import request
               </Button>
             )}
-            {role === "administrator" && <NewInquiryDialog />}
+            {role === "administrator" && <NewInterestDialog />}
             <SendTrainingRequestDialog />
             {canCreate ? <NewRequestDialog requestorId={userId!} /> : null}
           </div>
@@ -746,14 +760,14 @@ export default function Requests() {
           <div className="flex items-center justify-between mb-3">
             <div>
               <h2 id="inquiries-heading" className="text-lg font-semibold">
-                Training inquiries
+                Training interests
               </h2>
               <p className="text-sm text-muted-foreground">
                 Contact details saved for follow-up before a full request is created.
               </p>
             </div>
             <span className="text-sm text-muted-foreground">
-              {inquiries.length} {inquiries.length === 1 ? "inquiry" : "inquiries"}
+              {inquiries.length} {inquiries.length === 1 ? "interest" : "interests"}
             </span>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
@@ -767,13 +781,23 @@ export default function Requests() {
                       </h3>
                       <div className="mt-2 space-y-1.5">
                         {inquiry.people.map((person, index) => (
-                          <p key={`${person.phone}-${index}`} className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                            <Phone className="h-3.5 w-3.5 shrink-0" />
-                            <span>{person.name}</span>
-                            <a className="hover:underline" href={`tel:${person.phone}`}>
-                              {person.phone}
-                            </a>
-                          </p>
+                          <div key={`${person.phone}-${index}`} className="space-y-0.5 text-sm text-muted-foreground">
+                            <p className="flex items-center gap-1.5">
+                              <Phone className="h-3.5 w-3.5 shrink-0" />
+                              <span>{person.name}</span>
+                              <a className="hover:underline" href={`tel:${person.phone}`}>
+                                {person.phone}
+                              </a>
+                            </p>
+                            {person.email && (
+                              <p className="flex items-center gap-1.5 pl-5">
+                                <Mail className="h-3.5 w-3.5 shrink-0" />
+                                <a className="hover:underline" href={`mailto:${person.email}`}>
+                                  {person.email}
+                                </a>
+                              </p>
+                            )}
+                          </div>
                         ))}
                       </div>
                     </div>

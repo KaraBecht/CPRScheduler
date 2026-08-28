@@ -370,6 +370,8 @@ export interface TrainingInquiryPerson {
   name: string;
   /** @minLength 1 */
   phone: string;
+  /** @minLength 1 */
+  email: string;
 }
 
 export interface TrainingInquiry {

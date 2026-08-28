@@ -3,6 +3,7 @@ import { pgTable, jsonb, serial, text, timestamp } from "drizzle-orm/pg-core";
 export type TrainingInquiryPerson = {
   name: string;
   phone: string;
+  email: string;
 };
 
 export const trainingInquiriesTable = pgTable("training_inquiries", {
