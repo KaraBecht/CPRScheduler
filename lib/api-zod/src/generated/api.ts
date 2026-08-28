@@ -711,6 +711,11 @@ export const UpdateRequestBody = zod.object({
   "date": zod.string(),
   "startTime": zod.string(),
   "status": zod.string().optional()
+})).optional(),
+  "selectedSessions": zod.array(zod.object({
+  "date": zod.string(),
+  "startTime": zod.string(),
+  "status": zod.string().optional()
 })).optional()
 })
 

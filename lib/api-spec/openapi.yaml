@@ -1204,6 +1204,15 @@ components:
               date: { type: string }
               startTime: { type: string }
               status: { type: string }
+        selectedSessions:
+          type: array
+          items:
+            type: object
+            required: [date, startTime]
+            properties:
+              date: { type: string }
+              startTime: { type: string }
+              status: { type: string }
 
     TrainingInquiry:
       type: object

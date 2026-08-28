@@ -5,6 +5,7 @@
  * CPR class scheduling platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { ClassRequestUpdateSelectedSessionsItem } from './classRequestUpdateSelectedSessionsItem';
 import type { ClassRequestUpdateSessionsItem } from './classRequestUpdateSessionsItem';
 import type { RequestStatus } from './requestStatus';
 
@@ -13,4 +14,5 @@ export interface ClassRequestUpdate {
   classId?: number;
   notes?: string;
   sessions?: ClassRequestUpdateSessionsItem[];
+  selectedSessions?: ClassRequestUpdateSelectedSessionsItem[];
 }

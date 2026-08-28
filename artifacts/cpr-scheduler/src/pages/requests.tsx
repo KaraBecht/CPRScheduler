@@ -865,9 +865,11 @@ const SESSION_STATUS_OPTIONS = [
 function ApproveRequestDialog({
   request,
   onApprove,
+  isPending,
 }: {
   request: ClassRequest;
-  onApprove: (sessions: { date: string; startTime: string; status: string }[]) => void;
+  onApprove: (selectedSessions: { date: string; startTime: string; status: string }[]) => void;
+  isPending: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [rows, setRows] = useState<SessionRow[]>([]);
@@ -909,7 +911,11 @@ function ApproveRequestDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button size="sm" data-testid={`button-approve-${request.id}`}>
+        <Button
+          size="sm"
+          data-testid={`button-approve-${request.id}`}
+          disabled={isPending}
+        >
           <Check className="h-3 w-3 mr-1" /> Approve
         </Button>
       </DialogTrigger>
@@ -1038,7 +1044,7 @@ function ApproveRequestDialog({
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={confirm} disabled={approved.length === 0}>
+          <Button onClick={confirm} disabled={approved.length === 0 || isPending}>
             <Check className="h-3.5 w-3.5 mr-1.5" />
             Approve{approved.length > 0 ? ` (${approved.length})` : ""}
           </Button>
@@ -1054,7 +1060,10 @@ export default function Requests() {
   const params = role === "requestor" && userId ? { requestorId: userId } : undefined;
   const { data: allRequests = [] } = useListRequests(params);
   const { data: inquiries = [] } = useListInquiries({
-    query: { enabled: role === "administrator" },
+    query: {
+      enabled: role === "administrator",
+      queryKey: getListInquiriesQueryKey(),
+    },
   });
   const SCHEDULING_CLASS_STATUSES = ["pending_schedule", "being_scheduled"];
   const requests =
@@ -1343,10 +1352,11 @@ export default function Requests() {
                     <div className="flex flex-col gap-1">
                       <ApproveRequestDialog
                         request={r}
-                        onApprove={(sessions) =>
+                        isPending={update.isPending}
+                        onApprove={(selectedSessions) =>
                           update.mutate({
                             requestId: r.id,
-                            data: { status: "approved", sessions },
+                            data: { status: "approved", selectedSessions },
                           })
                         }
                       />

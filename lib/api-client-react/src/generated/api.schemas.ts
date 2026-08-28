@@ -358,11 +358,18 @@ export type ClassRequestUpdateSessionsItem = {
   status?: string;
 };
 
+export type ClassRequestUpdateSelectedSessionsItem = {
+  date: string;
+  startTime: string;
+  status?: string;
+};
+
 export interface ClassRequestUpdate {
   status?: RequestStatus;
   classId?: number;
   notes?: string;
   sessions?: ClassRequestUpdateSessionsItem[];
+  selectedSessions?: ClassRequestUpdateSelectedSessionsItem[];
 }
 
 export type TrainingInquiryPersonStatus = typeof TrainingInquiryPersonStatus[keyof typeof TrainingInquiryPersonStatus];

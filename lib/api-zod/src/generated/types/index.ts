@@ -22,6 +22,7 @@ export * from './classRequestInput';
 export * from './classRequestInputSessionsItem';
 export * from './classRequestSessionsItem';
 export * from './classRequestUpdate';
+export * from './classRequestUpdateSelectedSessionsItem';
 export * from './classRequestUpdateSessionsItem';
 export * from './classRoster';
 export * from './classRosterEntry';

@@ -168,14 +168,16 @@ router.patch("/requests/:requestId", async (req, res) => {
       .where(eq(requestsTable.id, id));
     if (!existing) { res.status(404).json({ error: "Request not found" }); return; }
 
-    // Use admin-provided sessions from the approval payload if present,
-    // otherwise fall back to the requestor's proposed sessions, then preferredDate.
-    const sessions: { date: string; startTime: string }[] =
-      body.sessions && body.sessions.length > 0
-        ? body.sessions
-        : existing.sessions && existing.sessions.length > 0
-          ? (existing.sessions as { date: string; startTime: string }[])
-          : [{ date: existing.preferredDate, startTime: "09:00" }];
+    // Prefer the sessions explicitly selected in the approval dialog. Keep
+    // supporting the editable sessions payload used by the richer approval flow.
+    const sessions: { date: string; startTime: string; status?: string }[] =
+      body.selectedSessions && body.selectedSessions.length > 0
+        ? body.selectedSessions
+        : body.sessions && body.sessions.length > 0
+          ? body.sessions
+          : existing.sessions && existing.sessions.length > 0
+            ? (existing.sessions as { date: string; startTime: string }[])
+            : [{ date: existing.preferredDate, startTime: "09:00" }];
     const locationName = existing.organizationName;
     const [existingLoc] = await db
       .select()
@@ -194,7 +196,7 @@ router.patch("/requests/:requestId", async (req, res) => {
             startTime: session.startTime,
             location: locationName,
             capacity: existing.attendeeCount,
-            status: ((session as { date: string; startTime: string; status?: string }).status ?? "confirmed") as "being_scheduled" | "pending_schedule" | "confirmed" | "completed" | "cancelled" | "scheduled",
+            status: (session.status ?? "confirmed") as "being_scheduled" | "pending_schedule" | "confirmed" | "completed" | "cancelled" | "scheduled",
           })
           .returning();
         if (cls) insertedClasses.push(cls);
