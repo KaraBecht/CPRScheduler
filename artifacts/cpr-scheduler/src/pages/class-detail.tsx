@@ -231,6 +231,14 @@ export default function ClassDetail() {
     setEditOpen(true);
   }
 
+  useEffect(() => {
+    const shouldOpenEdit =
+      new URLSearchParams(window.location.search).get("edit") === "1";
+    if (role === "administrator" && cls && shouldOpenEdit) {
+      openEdit();
+    }
+  }, [cls?.id, role]);
+
   async function submitEdit() {
     const validExtra = extraSlots.filter((s) => s.date && s.startTime);
     try {

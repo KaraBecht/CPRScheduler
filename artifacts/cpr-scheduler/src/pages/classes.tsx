@@ -57,7 +57,7 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth-context";
 import { useListUsers } from "@workspace/api-client-react";
-import { Plus, Trash2, LayoutGrid, CalendarDays, ChevronLeft, ChevronRight, X, Search, SlidersHorizontal, ClipboardList, MapPin, Clock } from "lucide-react";
+import { Plus, Trash2, LayoutGrid, CalendarDays, ChevronLeft, ChevronRight, X, Search, SlidersHorizontal, ClipboardList, MapPin, Clock, TriangleAlert } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { formatCertificationType, certificationDuration, formatDate, formatTime } from "@/lib/format";
 import { Link } from "wouter";
@@ -688,6 +688,16 @@ export default function Classes() {
   const [filterOpen, setFilterOpen] = useState(false);
 
   const { data: allClasses = [], isLoading } = useListClasses();
+  const isAdmin = role === "administrator";
+  const today = new Date().toISOString().split("T")[0]!;
+  const incompleteUpcoming = isAdmin
+    ? allClasses.filter(
+        (c) =>
+          ["confirmed", "scheduled"].includes(String(c.status)) &&
+          c.date >= today &&
+          (!c.location || c.location === "TBD" || !c.instructorName),
+      )
+    : [];
   const qc = useQueryClient();
   const deleteClass = useDeleteClass({
     mutation: {
@@ -782,6 +792,22 @@ export default function Classes() {
         }
       />
       <OverdueClassesBanner classes={allClasses} />
+      {isAdmin && incompleteUpcoming.length > 0 && (
+        <div
+          className="flex items-start gap-3 rounded-lg border px-4 py-3 mb-4 text-sm"
+          style={{ background: "#FFFBEB", borderColor: "#FCD34D", color: "#78350F" }}
+          data-testid="banner-incomplete-classes"
+        >
+          <TriangleAlert className="h-4 w-4 shrink-0 mt-0.5" style={{ color: "#D97706" }} />
+          <span>
+            <strong>
+              {incompleteUpcoming.length}{" "}
+              {incompleteUpcoming.length === 1 ? "upcoming class is" : "upcoming classes are"}
+            </strong>{" "}
+            missing a location or instructor. Find them below — each card shows exactly what is needed.
+          </span>
+        </div>
+      )}
 
       {/* My Schedule — shown to instructors with a known userId */}
       {role === "instructor" && userId !== null && (
@@ -909,6 +935,7 @@ export default function Classes() {
                   <ClassCard
                     key={c.id}
                     session={c}
+                    showIncompleteWarning={isAdmin}
                     onDelete={role === "administrator" ? () => setDeletingClass(c) : undefined}
                   />
                 ))}

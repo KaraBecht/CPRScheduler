@@ -9,6 +9,7 @@ import {
   Users,
   User as UserIcon,
   Trash2,
+  TriangleAlert,
 } from "lucide-react";
 import {
   formatCertificationType,
@@ -33,9 +34,14 @@ const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
 interface ClassCardProps {
   session: ClassSession;
   onDelete?: () => void;
+  showIncompleteWarning?: boolean;
 }
 
-export function ClassCard({ session, onDelete }: ClassCardProps) {
+export function ClassCard({
+  session,
+  onDelete,
+  showIncompleteWarning = false,
+}: ClassCardProps) {
   const remaining = session.capacity - session.enrolledCount;
   const full = remaining <= 0;
   const accent = CERT_COLOR[session.certificationType] ?? DEFAULT_ACCENT;
@@ -46,11 +52,25 @@ export function ClassCard({ session, onDelete }: ClassCardProps) {
   const locationDisplay = session.location && session.location !== "TBD"
     ? session.location
     : <span className="italic text-muted-foreground/60">Location TBD</span>;
+  const locationMissing = !session.location || session.location === "TBD";
+  const instructorMissing = !session.instructorName;
+  const isIncomplete =
+    showIncompleteWarning &&
+    ["confirmed", "scheduled"].includes(String(session.status)) &&
+    (locationMissing || instructorMissing);
+  const missingParts = [
+    locationMissing ? "location" : null,
+    instructorMissing ? "instructor" : null,
+  ].filter(Boolean) as string[];
 
   return (
     <div className="relative group">
       <Link
-        href={`/classes/${session.id}`}
+        href={
+          isIncomplete
+            ? `/classes/${session.id}?edit=1`
+            : `/classes/${session.id}`
+        }
         data-testid={`card-class-${session.id}`}
       >
         <div
@@ -106,6 +126,19 @@ export function ClassCard({ session, onDelete }: ClassCardProps) {
                 </div>
               )}
             </div>
+
+            {isIncomplete && (
+              <div
+                className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[11px] font-medium"
+                style={{ background: "#FEF3C7", color: "#92400E" }}
+                data-testid={`warning-incomplete-${session.id}`}
+              >
+                <TriangleAlert className="h-3 w-3 shrink-0" />
+                <span>
+                  Missing {missingParts.join(" & ")} — click to edit
+                </span>
+              </div>
+            )}
 
             {/* Enrollment progress */}
             <div className="mt-auto pt-3" style={{ borderTop: "1px solid hsl(200 18% 90%)" }}>

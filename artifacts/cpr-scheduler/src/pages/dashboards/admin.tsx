@@ -20,6 +20,7 @@ import {
   X,
   ChevronDown,
   ChevronUp,
+  TriangleAlert,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ClassCard } from "@/components/ClassCard";
@@ -381,6 +382,33 @@ export function AdminDashboardPage() {
             View all classes →
           </Link>
         </div>
+        {(() => {
+          const today = new Date().toISOString().split("T")[0]!;
+          const incompleteCount = dash.upcomingSchedule.filter(
+            (s) =>
+              ["confirmed", "scheduled"].includes(String(s.status)) &&
+              s.date >= today &&
+              (!s.location || s.location === "TBD" || !s.instructorName),
+          ).length;
+          return incompleteCount > 0 ? (
+            <div
+              className="flex items-start gap-3 rounded-lg border px-4 py-3 mb-4 text-sm"
+              style={{ background: "#FFFBEB", borderColor: "#FCD34D", color: "#78350F" }}
+              data-testid="dashboard-banner-incomplete-classes"
+            >
+              <TriangleAlert className="h-4 w-4 shrink-0 mt-0.5" style={{ color: "#D97706" }} />
+              <span>
+                <strong>
+                  {incompleteCount} {incompleteCount === 1 ? "class" : "classes"}
+                </strong>{" "}
+                {incompleteCount === 1 ? "is" : "are"} missing a location or instructor.{" "}
+                <Link href="/classes" className="underline font-semibold hover:opacity-80">
+                  Go to Classes to complete them →
+                </Link>
+              </span>
+            </div>
+          ) : null;
+        })()}
         {dash.upcomingSchedule.length === 0 ? (
           <Card>
             <CardContent className="pt-6 text-sm text-muted-foreground text-center">
@@ -390,7 +418,7 @@ export function AdminDashboardPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {dash.upcomingSchedule.slice(0, 6).map((s) => (
-              <ClassCard key={s.id} session={s} />
+              <ClassCard key={s.id} session={s} showIncompleteWarning />
             ))}
           </div>
         )}
