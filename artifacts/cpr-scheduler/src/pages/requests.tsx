@@ -12,6 +12,7 @@ import {
   getGetRequestorDashboardQueryKey,
   type CertificationType,
   type ClassRequest,
+  type TrainingInquiry,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
@@ -42,6 +43,7 @@ import { Plus, Check, X, Share2, Copy, CheckCheck, Trash2, CalendarDays, Downloa
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { formatCertificationType, formatDate, timeAgo } from "@/lib/format";
+import { downloadCsv } from "@/lib/export-csv";
 import { TrainingRequestForm } from "@/components/TrainingRequestForm";
 import { ImportRequestModal } from "@/components/ImportRequestModal";
 import { QRCodeSVG } from "qrcode.react";
@@ -502,6 +504,123 @@ function NewInterestDialog() {
   );
 }
 
+const INTEREST_EXPORT_HEADERS = [
+  "Person name",
+  "Phone",
+  "Email",
+  "Division",
+  "Location",
+  "Saved at",
+];
+
+function exportTrainingInterests(interests: TrainingInquiry[], filename: string) {
+  downloadCsv(
+    filename,
+    INTEREST_EXPORT_HEADERS,
+    interests.flatMap((interest) =>
+      interest.people.map((person) => [
+        person.name,
+        person.phone,
+        person.email,
+        interest.division,
+        interest.location,
+        interest.createdAt,
+      ]),
+    ),
+  );
+}
+
+function TrainingInterestDialog({
+  interest,
+  onOpenChange,
+}: {
+  interest: TrainingInquiry | null;
+  onOpenChange: (open: boolean) => void;
+}) {
+  return (
+    <Dialog open={interest !== null} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg max-h-[calc(100vh-2rem)] flex flex-col overflow-hidden">
+        {interest && (
+          <>
+            <DialogHeader>
+              <DialogTitle>Training interest</DialogTitle>
+              <DialogDescription>
+                Review the people and shared details saved for this interest.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold">
+                    {interest.people.length} {interest.people.length === 1 ? "person" : "people"}
+                  </h3>
+                  <span className="text-xs text-muted-foreground">
+                    {timeAgo(interest.createdAt)}
+                  </span>
+                </div>
+                <div className="space-y-3">
+                  {interest.people.map((person, index) => (
+                    <div key={`${person.phone}-${index}`} className="rounded-md border p-3 space-y-2">
+                      <p className="text-sm font-medium">Person {index + 1}</p>
+                      <div className="grid gap-2 sm:grid-cols-2 text-sm">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Name</p>
+                          <p>{person.name}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Phone number</p>
+                          <a className="hover:underline" href={`tel:${person.phone}`}>
+                            {person.phone}
+                          </a>
+                        </div>
+                        <div className="sm:col-span-2">
+                          <p className="text-xs text-muted-foreground">Email</p>
+                          {person.email ? (
+                            <a className="hover:underline" href={`mailto:${person.email}`}>
+                              {person.email}
+                            </a>
+                          ) : (
+                            <p className="text-muted-foreground">Not provided</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-md bg-muted/50 p-3">
+                    <p className="text-xs text-muted-foreground">Division</p>
+                    <p className="text-sm font-medium mt-1">{interest.division}</p>
+                  </div>
+                  <div className="rounded-md bg-muted/50 p-3">
+                    <p className="text-xs text-muted-foreground">Location</p>
+                    <p className="text-sm font-medium mt-1">{interest.location}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <DialogFooter className="shrink-0">
+              <Button
+                variant="outline"
+                onClick={() =>
+                  exportTrainingInterests(
+                    [interest],
+                    `training-interest-${interest.id}-${interest.createdAt.slice(0, 10)}.csv`,
+                  )
+                }
+                data-testid="button-export-interest"
+              >
+                <Download className="h-4 w-4 mr-1.5" /> Export CSV
+              </Button>
+              <Button onClick={() => onOpenChange(false)}>Close</Button>
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 type SessionRow = { date: string; startTime: string; status: string; included: boolean };
 
 const SESSION_STATUS_OPTIONS = [
@@ -726,10 +845,17 @@ export default function Requests() {
   });
 
   const [importOpen, setImportOpen] = useState(false);
+  const [selectedInterest, setSelectedInterest] = useState<TrainingInquiry | null>(null);
   const canCreate = role === "requestor" && userId;
   return (
     <>
       <ImportRequestModal open={importOpen} onOpenChange={setImportOpen} />
+      <TrainingInterestDialog
+        interest={selectedInterest}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setSelectedInterest(null);
+        }}
+      />
       <PageHeader
         title={role === "requestor" ? "My requests" : "Training requests"}
         subtitle={
@@ -768,13 +894,42 @@ export default function Requests() {
                 Contact details saved for follow-up before a full request is created.
               </p>
             </div>
-            <span className="text-sm text-muted-foreground">
-              {inquiries.length} {inquiries.length === 1 ? "interest" : "interests"}
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground">
+                {inquiries.length} {inquiries.length === 1 ? "interest" : "interests"}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  exportTrainingInterests(
+                    inquiries,
+                    `training-interests-${new Date().toISOString().slice(0, 10)}.csv`,
+                  )
+                }
+                data-testid="button-export-interests"
+              >
+                <Download className="h-4 w-4 mr-1.5" /> Export CSV
+              </Button>
+            </div>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             {inquiries.map((inquiry) => (
-              <Card key={inquiry.id} data-testid={`card-inquiry-${inquiry.id}`}>
+              <Card
+                key={inquiry.id}
+                className="cursor-pointer transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                data-testid={`card-inquiry-${inquiry.id}`}
+                role="button"
+                tabIndex={0}
+                aria-label={`Open training interest with ${inquiry.people.length} ${inquiry.people.length === 1 ? "person" : "people"}`}
+                onClick={() => setSelectedInterest(inquiry)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    setSelectedInterest(inquiry);
+                  }
+                }}
+              >
                 <CardContent className="pt-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -787,14 +942,22 @@ export default function Requests() {
                             <p className="flex items-center gap-1.5">
                               <Phone className="h-3.5 w-3.5 shrink-0" />
                               <span>{person.name}</span>
-                              <a className="hover:underline" href={`tel:${person.phone}`}>
+                              <a
+                                className="hover:underline"
+                                href={`tel:${person.phone}`}
+                                onClick={(event) => event.stopPropagation()}
+                              >
                                 {person.phone}
                               </a>
                             </p>
                             {person.email && (
                               <p className="flex items-center gap-1.5 pl-5">
                                 <Mail className="h-3.5 w-3.5 shrink-0" />
-                                <a className="hover:underline" href={`mailto:${person.email}`}>
+                                <a
+                                  className="hover:underline"
+                                  href={`mailto:${person.email}`}
+                                  onClick={(event) => event.stopPropagation()}
+                                >
                                   {person.email}
                                 </a>
                               </p>

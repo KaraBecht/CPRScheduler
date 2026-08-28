@@ -14,3 +14,9 @@ The multi-person interest dialog must constrain itself to the viewport and scrol
 **Why:** Adding several contacts makes the form taller than common browser viewports.
 
 **How to apply:** Keep the dialog height viewport-limited, use an internal scroll region for the people and shared fields, and keep the footer from shrinking away.
+
+Saved training interests can be reopened from their cards and exported as CSV, either individually or as a complete list. Each exported row represents one person and repeats the shared interest details.
+
+**Why:** Admins need to review submitted contact groups later and move the collected information into other workflows.
+
+**How to apply:** Preserve the grouped-person CSV shape when extending interest exports, and keep both per-interest and all-interest exports available to administrators.
