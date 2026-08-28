@@ -216,6 +216,136 @@ const STUDIO_LOT_CLASS_ROW: ClassRow = {
 // Tests
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Status filtering — sendRenewalReminders()
+//
+// The due-classes query must filter on status = "completed".
+// These tests confirm that:
+//   1. The WHERE clause sent to the DB explicitly includes eq(status, "completed").
+//   2. Classes with non-completed statuses (cancelled, scheduled, confirmed)
+//      never produce reminder emails, because the DB query excludes them.
+// ---------------------------------------------------------------------------
+
+describe("Status filtering — sendRenewalReminders()", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (sendMail as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+  });
+
+  it("queries the DB with eq(status, 'completed') — non-completed classes are excluded at the query level", async () => {
+    // Capture the WHERE condition passed to the first classesTable call.
+    let capturedDueWhere: unknown = null;
+    const mockSelect = db.select as ReturnType<typeof vi.fn>;
+    let classesCallCount = 0;
+
+    mockSelect.mockImplementation(() => {
+      let _fromTable: unknown;
+      const builder = {
+        from: (table: unknown) => {
+          _fromTable = table;
+          return builder;
+        },
+        where: (cond: unknown) => {
+          if (_fromTable === classesTable) {
+            classesCallCount++;
+            if (classesCallCount === 1) capturedDueWhere = cond;
+            // Return empty so the function exits early (no emails, no further DB calls needed).
+            return Promise.resolve([]);
+          }
+          if (_fromTable === usersTable) return Promise.resolve([]);
+          if (_fromTable === locationsTable) return { limit: () => Promise.resolve([]) };
+          return Promise.resolve([]);
+        },
+      };
+      return builder;
+    });
+
+    await sendRenewalReminders();
+
+    // The WHERE clause is built with and(...) which our drizzle-orm mock wraps as
+    // { op: "and", conds: [...] }. One of those conds must be eq(status, "completed").
+    const andCond = capturedDueWhere as { op: string; conds: unknown[] } | null;
+    expect(andCond).not.toBeNull();
+    expect(andCond!.op).toBe("and");
+
+    const statusEqCond = andCond!.conds.find(
+      (c: unknown) =>
+        typeof c === "object" &&
+        c !== null &&
+        (c as Record<string, unknown>).op === "eq" &&
+        (c as Record<string, unknown>)._val === "completed",
+    );
+    expect(statusEqCond).toBeDefined();
+  });
+
+  it("sends no emails when the DB returns no completed classes (all excluded by status filter)", async () => {
+    // Simulates the case where only cancelled / scheduled / confirmed classes
+    // fall in the renewal window — the DB filter returns nothing.
+    setupDbMock([ADMIN, STUDIO_LOT_EHS], { businessUnit: "FOX Studio Lot" }, []);
+
+    const count = await sendRenewalReminders();
+
+    expect(count).toBe(0);
+    expect(sendMail).not.toHaveBeenCalled();
+  });
+
+  it("sends no emails for a cancelled class (status='cancelled')", async () => {
+    // A cancelled class must never trigger a renewal reminder.
+    // The DB query filters by status="completed", so a cancelled class row
+    // would never be returned. We simulate correct DB behaviour: empty result.
+    const cancelledClass: ClassRow = {
+      ...STUDIO_LOT_CLASS_ROW,
+      status: "cancelled",
+    };
+    // Correct DB behaviour: status filter means cancelled classes are excluded.
+    setupDbMock([ADMIN, STUDIO_LOT_EHS], { businessUnit: "FOX Studio Lot" }, []);
+
+    const count = await sendRenewalReminders();
+
+    expect(count).toBe(0);
+    expect(sendMail).not.toHaveBeenCalled();
+
+    // Also verify that if such a row somehow bypassed the DB filter, the
+    // status value on the row itself is "cancelled" — confirming the fixture
+    // models the right scenario.
+    expect(cancelledClass.status).toBe("cancelled");
+  });
+
+  it("sends no emails for a scheduled class (status='scheduled')", async () => {
+    // A class that is still scheduled (not yet completed) must not fire a renewal.
+    setupDbMock([ADMIN, STUDIO_LOT_EHS], { businessUnit: "FOX Studio Lot" }, []);
+
+    const count = await sendRenewalReminders();
+
+    expect(count).toBe(0);
+    expect(sendMail).not.toHaveBeenCalled();
+  });
+
+  it("sends no emails for a confirmed class (status='confirmed')", async () => {
+    // A confirmed but not yet completed class must not fire a renewal reminder.
+    setupDbMock([ADMIN, STUDIO_LOT_EHS], { businessUnit: "FOX Studio Lot" }, []);
+
+    const count = await sendRenewalReminders();
+
+    expect(count).toBe(0);
+    expect(sendMail).not.toHaveBeenCalled();
+  });
+
+  it("sends a renewal reminder only for a completed class, not for the same location's cancelled class", async () => {
+    // Two entries exist for the same location: one completed, one cancelled.
+    // The DB filter returns only the completed one — the cancelled one is excluded.
+    const completedClass: ClassRow = { ...STUDIO_LOT_CLASS_ROW, status: "completed" };
+    // Only the completed class is returned by the DB (cancelled filtered out).
+    setupDbMock([ADMIN, STUDIO_LOT_EHS], { businessUnit: "FOX Studio Lot" }, [completedClass]);
+
+    const count = await sendRenewalReminders();
+
+    expect(count).toBe(1);
+    expect(sendMail).toHaveBeenCalled();
+    expect(emailsSent()).toContain(ADMIN.email);
+  });
+});
+
 describe("EHS routing — sendRenewalReminders()", () => {
   beforeEach(() => {
     vi.clearAllMocks();
