@@ -966,9 +966,10 @@ export default function Requests() {
                         ))}
                       </div>
                     </div>
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">
-                      {timeAgo(inquiry.createdAt)}
-                    </span>
+                    <div className="text-right text-xs whitespace-nowrap">
+                      <div>{formatDate(inquiry.createdAt)}</div>
+                      <div className="text-muted-foreground mt-0.5">{timeAgo(inquiry.createdAt)}</div>
+                    </div>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
                     <span className="inline-flex items-center gap-1.5">
