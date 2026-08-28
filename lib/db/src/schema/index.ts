@@ -7,3 +7,4 @@ export * from "./roster";
 export * from "./locations";
 export * from "./reminders";
 export * from "./trainerInvitations";
+export * from "./trainingInquiries";

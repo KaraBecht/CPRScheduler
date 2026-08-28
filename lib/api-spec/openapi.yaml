@@ -394,6 +394,32 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ClassRequest" }
+  /inquiries:
+    get:
+      operationId: listInquiries
+      tags: [inquiries]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/TrainingInquiry" }
+    post:
+      operationId: createInquiry
+      tags: [inquiries]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TrainingInquiryInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TrainingInquiry" }
   /training-requests:
     post:
       operationId: submitTrainingRequest
@@ -1118,6 +1144,26 @@ components:
               date: { type: string }
               startTime: { type: string }
               status: { type: string }
+
+    TrainingInquiry:
+      type: object
+      required: [id, name, phone, division, location, createdAt]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        phone: { type: string }
+        division: { type: string }
+        location: { type: string }
+        createdAt: { type: string }
+
+    TrainingInquiryInput:
+      type: object
+      required: [name, phone, division, location]
+      properties:
+        name: { type: string, minLength: 1 }
+        phone: { type: string, minLength: 1 }
+        division: { type: string, minLength: 1 }
+        location: { type: string, minLength: 1 }
 
     Certificate:
       type: object

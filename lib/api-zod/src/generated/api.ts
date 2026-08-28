@@ -36,6 +36,9 @@ export const ListUsersResponseItem = zod.object({
 export const ListUsersResponse = zod.array(ListUsersResponseItem)
 
 
+
+
+
 export const CreateUserBody = zod.object({
   "name": zod.string().min(1),
   "email": zod.string(),
@@ -71,6 +74,8 @@ export const GetUserResponse = zod.object({
 export const UpdateUserParams = zod.object({
   "userId": zod.coerce.number()
 })
+
+
 
 
 export const UpdateUserBody = zod.object({
@@ -135,6 +140,10 @@ export const ListClassesResponseItem = zod.object({
 export const ListClassesResponse = zod.array(ListClassesResponseItem)
 
 
+
+
+
+
 export const CreateClassBody = zod.object({
   "title": zod.string().min(1),
   "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
@@ -146,10 +155,7 @@ export const CreateClassBody = zod.object({
   "instructorIds": zod.array(zod.number()).optional(),
   "status": zod.enum(['being_scheduled', 'pending_schedule', 'confirmed', 'completed', 'cancelled', 'scheduled']).optional(),
   "description": zod.string().optional(),
-  "businessUnit": zod.string().optional(),
-  "contactName": zod.string().optional(),
-  "contactPhone": zod.string().optional(),
-  "contactEmail": zod.string().optional()
+  "businessUnit": zod.string().optional()
 })
 
 
@@ -175,10 +181,7 @@ export const GetClassResponse = zod.object({
   "name": zod.string()
 })).optional(),
   "description": zod.string().nullish(),
-  "businessUnit": zod.string().nullish(),
-  "contactName": zod.string().nullish(),
-  "contactPhone": zod.string().nullish(),
-  "contactEmail": zod.string().nullish()
+  "businessUnit": zod.string().nullish()
 }).and(zod.object({
   "enrollments": zod.array(zod.object({
   "id": zod.number(),
@@ -215,10 +218,7 @@ export const UpdateClassBody = zod.object({
   "instructorIds": zod.array(zod.number()).optional(),
   "description": zod.string().optional(),
   "businessUnit": zod.string().optional(),
-  "status": zod.enum(['being_scheduled', 'pending_schedule', 'confirmed', 'completed', 'cancelled', 'scheduled']).optional(),
-  "contactName": zod.string().optional(),
-  "contactPhone": zod.string().optional(),
-  "contactEmail": zod.string().optional()
+  "status": zod.enum(['being_scheduled', 'pending_schedule', 'confirmed', 'completed', 'cancelled', 'scheduled']).optional()
 })
 
 export const UpdateClassResponse = zod.object({
@@ -239,10 +239,7 @@ export const UpdateClassResponse = zod.object({
   "name": zod.string()
 })).optional(),
   "description": zod.string().nullish(),
-  "businessUnit": zod.string().nullish(),
-  "contactName": zod.string().nullish(),
-  "contactPhone": zod.string().nullish(),
-  "contactEmail": zod.string().nullish()
+  "businessUnit": zod.string().nullish()
 })
 
 
@@ -473,6 +470,11 @@ export const ListRequestsResponseItem = zod.object({
 export const ListRequestsResponse = zod.array(ListRequestsResponseItem)
 
 
+
+
+
+
+
 export const CreateRequestBody = zod.object({
   "requestorId": zod.number(),
   "organizationName": zod.string().min(1),
@@ -492,12 +494,41 @@ export const CreateRequestBody = zod.object({
 })
 
 
+export const ListInquiriesResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "phone": zod.string(),
+  "division": zod.string(),
+  "location": zod.string(),
+  "createdAt": zod.string()
+})
+export const ListInquiriesResponse = zod.array(ListInquiriesResponseItem)
+
+
+
+
+
+
+
+
+export const CreateInquiryBody = zod.object({
+  "name": zod.string().min(1),
+  "phone": zod.string().min(1),
+  "division": zod.string().min(1),
+  "location": zod.string().min(1)
+})
+
+
 /**
  * Public-style intake form. Creates (or reuses by email) a requestor and submits a training request.
  */
 
 
 export const submitTrainingRequestBodyRequestorEmailMin = 3;
+
+
+
+
 
 
 export const SubmitTrainingRequestBody = zod.object({
@@ -1090,6 +1121,7 @@ export const ListLocationsResponse = zod.array(ListLocationsResponseItem)
  */
 
 
+
 export const CreateLocationBody = zod.object({
   "name": zod.string().min(1),
   "address": zod.string().optional(),
@@ -1155,6 +1187,8 @@ export const UpdateLocationParams = zod.object({
 })
 
 
+
+
 export const UpdateLocationBody = zod.object({
   "name": zod.string().min(1).optional(),
   "address": zod.string().optional(),
@@ -1218,6 +1252,8 @@ export const DeleteLocationParams = zod.object({
 export const CreateLocationNoteParams = zod.object({
   "locationId": zod.coerce.number()
 })
+
+
 
 
 export const CreateLocationNoteBody = zod.object({
@@ -1316,3 +1352,5 @@ export const UpdateReminderResponse = zod.object({
   "businessUnit": zod.string().nullish()
 })
 })
+
+

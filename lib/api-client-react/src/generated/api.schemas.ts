@@ -365,6 +365,26 @@ export interface ClassRequestUpdate {
   sessions?: ClassRequestUpdateSessionsItem[];
 }
 
+export interface TrainingInquiry {
+  id: number;
+  name: string;
+  phone: string;
+  division: string;
+  location: string;
+  createdAt: string;
+}
+
+export interface TrainingInquiryInput {
+  /** @minLength 1 */
+  name: string;
+  /** @minLength 1 */
+  phone: string;
+  /** @minLength 1 */
+  division: string;
+  /** @minLength 1 */
+  location: string;
+}
+
 export interface Certificate {
   id: number;
   studentId: number;
@@ -636,3 +656,4 @@ export const ListRemindersStatus = {
   sent: 'sent',
   dismissed: 'dismissed',
 } as const;
+

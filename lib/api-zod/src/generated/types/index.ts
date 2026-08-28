@@ -62,6 +62,8 @@ export * from './rosterResult';
 export * from './studentDashboard';
 export * from './trainerInvitation';
 export * from './trainerInviteStatus';
+export * from './trainingInquiry';
+export * from './trainingInquiryInput';
 export * from './trainingRequestInput';
 export * from './trainingRequestInputSessionsItem';
 export * from './user';

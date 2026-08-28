@@ -57,6 +57,8 @@ import type {
   RequestorDashboard,
   RosterAttendee,
   StudentDashboard,
+  TrainingInquiry,
+  TrainingInquiryInput,
   TrainingRequestInput,
   User,
   UserInput,
@@ -1602,6 +1604,142 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getCreateRequestMutationOptions(options));
+    }
+
+export const getListInquiriesUrl = () => {
+
+
+
+
+  return `/api/inquiries`
+}
+
+export const listInquiries = async ( options?: RequestInit): Promise<TrainingInquiry[]> => {
+
+  return customFetch<TrainingInquiry[]>(getListInquiriesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListInquiriesQueryKey = () => {
+    return [
+    `/api/inquiries`
+    ] as const;
+    }
+
+
+export const getListInquiriesQueryOptions = <TData = Awaited<ReturnType<typeof listInquiries>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listInquiries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListInquiriesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listInquiries>>> = ({ signal }) => listInquiries({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listInquiries>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListInquiriesQueryResult = NonNullable<Awaited<ReturnType<typeof listInquiries>>>
+export type ListInquiriesQueryError = ErrorType<unknown>
+
+
+
+export function useListInquiries<TData = Awaited<ReturnType<typeof listInquiries>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listInquiries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListInquiriesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateInquiryUrl = () => {
+
+
+
+
+  return `/api/inquiries`
+}
+
+export const createInquiry = async (trainingInquiryInput: TrainingInquiryInput, options?: RequestInit): Promise<TrainingInquiry> => {
+
+  return customFetch<TrainingInquiry>(getCreateInquiryUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      trainingInquiryInput,)
+  }
+);}
+
+
+
+
+export const getCreateInquiryMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInquiry>>, TError,{data: BodyType<TrainingInquiryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createInquiry>>, TError,{data: BodyType<TrainingInquiryInput>}, TContext> => {
+
+const mutationKey = ['createInquiry'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createInquiry>>, {data: BodyType<TrainingInquiryInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createInquiry(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateInquiryMutationResult = NonNullable<Awaited<ReturnType<typeof createInquiry>>>
+    export type CreateInquiryMutationBody = BodyType<TrainingInquiryInput>
+    export type CreateInquiryMutationError = ErrorType<unknown>
+
+    export const useCreateInquiry = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInquiry>>, TError,{data: BodyType<TrainingInquiryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createInquiry>>,
+        TError,
+        {data: BodyType<TrainingInquiryInput>},
+        TContext
+      > => {
+      return useMutation(getCreateInquiryMutationOptions(options));
     }
 
 export const getSubmitTrainingRequestUrl = () => {

@@ -24,6 +24,17 @@ const MIGRATIONS: { name: string; sql: string }[] = [
           SET business_unit = (regexp_match(notes, 'Business Unit:\\s*(.+)'))[1]
           WHERE business_unit IS NULL AND notes LIKE '%Business Unit:%'`,
   },
+  {
+    name: "create_training_inquiries",
+    sql: `CREATE TABLE IF NOT EXISTS training_inquiries (
+      id serial PRIMARY KEY,
+      name text NOT NULL,
+      phone text NOT NULL,
+      division text NOT NULL,
+      location text NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now()
+    )`,
+  },
 ];
 
 export async function applyMigrations(): Promise<void> {

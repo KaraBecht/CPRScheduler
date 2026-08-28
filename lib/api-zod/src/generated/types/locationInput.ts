@@ -14,4 +14,5 @@ export interface LocationInput {
   contactEmail?: string;
   contactPhone?: string;
   notes?: string;
+  businessUnit?: string;
 }

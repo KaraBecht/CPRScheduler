@@ -14,4 +14,5 @@ export interface LocationUpdate {
   contactEmail?: string;
   contactPhone?: string;
   notes?: string;
+  businessUnit?: string;
 }

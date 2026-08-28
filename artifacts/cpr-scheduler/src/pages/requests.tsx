@@ -2,8 +2,11 @@ import { useState } from "react";
 import {
   useListRequests,
   useCreateRequest,
+  useListInquiries,
+  useCreateInquiry,
   useUpdateRequest,
   getListRequestsQueryKey,
+  getListInquiriesQueryKey,
   getListClassesQueryKey,
   getGetAdminDashboardQueryKey,
   getGetRequestorDashboardQueryKey,
@@ -21,6 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -34,7 +38,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth-context";
-import { Plus, Check, X, Share2, Copy, CheckCheck, Trash2, CalendarDays, Download, Upload, ClipboardList } from "lucide-react";
+import { Plus, Check, X, Share2, Copy, CheckCheck, Trash2, CalendarDays, Download, Upload, ClipboardList, Phone, Building2, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { formatCertificationType, formatDate, timeAgo } from "@/lib/format";
@@ -314,6 +318,119 @@ function SendTrainingRequestDialog() {
   );
 }
 
+function NewInquiryDialog() {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({
+    name: "",
+    phone: "",
+    division: "",
+    location: "",
+  });
+
+  const create = useCreateInquiry({
+    mutation: {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: getListInquiriesQueryKey() });
+        setForm({ name: "", phone: "", division: "", location: "" });
+        setOpen(false);
+        toast({ title: "Inquiry saved" });
+      },
+      onError: () =>
+        toast({ title: "Could not save inquiry", variant: "destructive" }),
+    },
+  });
+
+  const canSave =
+    form.name.trim() &&
+    form.phone.trim() &&
+    form.division.trim() &&
+    form.location.trim() &&
+    !create.isPending;
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button data-testid="button-new-inquiry">
+          <Plus className="h-4 w-4 mr-1.5" /> New inquiry
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>New training inquiry</DialogTitle>
+          <DialogDescription>
+            Save the caller's contact details so the team can follow up and create a full training request later.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="inquiry-name">Name</Label>
+            <Input
+              id="inquiry-name"
+              data-testid="input-inquiry-name"
+              placeholder="Contact name"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+            />
+          </div>
+          <div>
+            <Label htmlFor="inquiry-phone">Phone number</Label>
+            <Input
+              id="inquiry-phone"
+              type="tel"
+              data-testid="input-inquiry-phone"
+              placeholder="(555) 555-5555"
+              value={form.phone}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            />
+          </div>
+          <div>
+            <Label htmlFor="inquiry-division">Division</Label>
+            <Input
+              id="inquiry-division"
+              data-testid="input-inquiry-division"
+              placeholder="e.g. FOX Sports"
+              value={form.division}
+              onChange={(e) => setForm({ ...form, division: e.target.value })}
+            />
+          </div>
+          <div>
+            <Label htmlFor="inquiry-location">Location</Label>
+            <Input
+              id="inquiry-location"
+              data-testid="input-inquiry-location"
+              placeholder="Site or facility"
+              value={form.location}
+              onChange={(e) => setForm({ ...form, location: e.target.value })}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            data-testid="button-save-inquiry"
+            disabled={!canSave}
+            onClick={() =>
+              create.mutate({
+                data: {
+                  name: form.name.trim(),
+                  phone: form.phone.trim(),
+                  division: form.division.trim(),
+                  location: form.location.trim(),
+                },
+              })
+            }
+          >
+            {create.isPending ? "Saving…" : "Save inquiry"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 type SessionRow = { date: string; startTime: string; status: string; included: boolean };
 
 const SESSION_STATUS_OPTIONS = [
@@ -514,6 +631,9 @@ export default function Requests() {
   const { role, userId } = useAuth();
   const params = role === "requestor" && userId ? { requestorId: userId } : undefined;
   const { data: allRequests = [] } = useListRequests(params);
+  const { data: inquiries = [] } = useListInquiries({
+    query: { enabled: role === "administrator" },
+  });
   const SCHEDULING_CLASS_STATUSES = ["pending_schedule", "being_scheduled"];
   const requests =
     role === "administrator"
@@ -560,11 +680,61 @@ export default function Requests() {
                 <Upload className="h-4 w-4 mr-1.5" /> Import request
               </Button>
             )}
+            {role === "administrator" && <NewInquiryDialog />}
             <SendTrainingRequestDialog />
             {canCreate ? <NewRequestDialog requestorId={userId!} /> : null}
           </div>
         }
       />
+      {role === "administrator" && inquiries.length > 0 && (
+        <section className="mb-6" aria-labelledby="inquiries-heading">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h2 id="inquiries-heading" className="text-lg font-semibold">
+                Training inquiries
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Contact details saved for follow-up before a full request is created.
+              </p>
+            </div>
+            <span className="text-sm text-muted-foreground">
+              {inquiries.length} {inquiries.length === 1 ? "inquiry" : "inquiries"}
+            </span>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            {inquiries.map((inquiry) => (
+              <Card key={inquiry.id} data-testid={`card-inquiry-${inquiry.id}`}>
+                <CardContent className="pt-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="font-semibold truncate">{inquiry.name}</h3>
+                      <p className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1">
+                        <Phone className="h-3.5 w-3.5 shrink-0" />
+                        <a className="hover:underline" href={`tel:${inquiry.phone}`}>
+                          {inquiry.phone}
+                        </a>
+                      </p>
+                    </div>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      {timeAgo(inquiry.createdAt)}
+                    </span>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                    <span className="inline-flex items-center gap-1.5">
+                      <Building2 className="h-3.5 w-3.5" />
+                      {inquiry.division}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <MapPin className="h-3.5 w-3.5" />
+                      {inquiry.location}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
       {requests.length === 0 ? (
         <Card>
           <CardContent className="pt-6 text-sm text-muted-foreground text-center">
