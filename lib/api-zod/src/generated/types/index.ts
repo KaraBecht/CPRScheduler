@@ -64,6 +64,7 @@ export * from './trainerInvitation';
 export * from './trainerInviteStatus';
 export * from './trainingInquiry';
 export * from './trainingInquiryInput';
+export * from './trainingInquiryPerson';
 export * from './trainingRequestInput';
 export * from './trainingRequestInputSessionsItem';
 export * from './user';

@@ -1,4 +1,9 @@
-import { pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, jsonb, serial, text, timestamp } from "drizzle-orm/pg-core";
+
+export type TrainingInquiryPerson = {
+  name: string;
+  phone: string;
+};
 
 export const trainingInquiriesTable = pgTable("training_inquiries", {
   id: serial("id").primaryKey(),
@@ -6,6 +11,7 @@ export const trainingInquiriesTable = pgTable("training_inquiries", {
   phone: text("phone").notNull(),
   division: text("division").notNull(),
   location: text("location").notNull(),
+  people: jsonb("people").$type<TrainingInquiryPerson[]>().notNull().default([]),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

@@ -322,8 +322,7 @@ function NewInquiryDialog() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
-    name: "",
-    phone: "",
+    people: [{ name: "", phone: "" }],
     division: "",
     location: "",
   });
@@ -332,7 +331,7 @@ function NewInquiryDialog() {
     mutation: {
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: getListInquiriesQueryKey() });
-        setForm({ name: "", phone: "", division: "", location: "" });
+        setForm({ people: [{ name: "", phone: "" }], division: "", location: "" });
         setOpen(false);
         toast({ title: "Inquiry saved" });
       },
@@ -342,11 +341,20 @@ function NewInquiryDialog() {
   });
 
   const canSave =
-    form.name.trim() &&
-    form.phone.trim() &&
+    form.people.length > 0 &&
+    form.people.every((person) => person.name.trim() && person.phone.trim()) &&
     form.division.trim() &&
     form.location.trim() &&
     !create.isPending;
+
+  function updatePerson(index: number, field: "name" | "phone", value: string) {
+    setForm((current) => ({
+      ...current,
+      people: current.people.map((person, personIndex) =>
+        personIndex === index ? { ...person, [field]: value } : person,
+      ),
+    }));
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -363,26 +371,69 @@ function NewInquiryDialog() {
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
-          <div>
-            <Label htmlFor="inquiry-name">Name</Label>
-            <Input
-              id="inquiry-name"
-              data-testid="input-inquiry-name"
-              placeholder="Contact name"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-            />
-          </div>
-          <div>
-            <Label htmlFor="inquiry-phone">Phone number</Label>
-            <Input
-              id="inquiry-phone"
-              type="tel"
-              data-testid="input-inquiry-phone"
-              placeholder="(555) 555-5555"
-              value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-            />
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>People</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                data-testid="button-add-inquiry-person"
+                onClick={() =>
+                  setForm((current) => ({
+                    ...current,
+                    people: [...current.people, { name: "", phone: "" }],
+                  }))
+                }
+              >
+                <Plus className="h-3.5 w-3.5 mr-1.5" /> Add person
+              </Button>
+            </div>
+            {form.people.map((person, index) => (
+              <div key={index} className="rounded-md border p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Person {index + 1}</span>
+                  {form.people.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      aria-label={`Remove person ${index + 1}`}
+                      data-testid={`button-remove-inquiry-person-${index}`}
+                      onClick={() =>
+                        setForm((current) => ({
+                          ...current,
+                          people: current.people.filter((_, personIndex) => personIndex !== index),
+                        }))
+                      }
+                    >
+                      Remove
+                    </Button>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor={`inquiry-name-${index}`}>Name</Label>
+                  <Input
+                    id={`inquiry-name-${index}`}
+                    data-testid={index === 0 ? "input-inquiry-name" : `input-inquiry-name-${index}`}
+                    placeholder="Contact name"
+                    value={person.name}
+                    onChange={(e) => updatePerson(index, "name", e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor={`inquiry-phone-${index}`}>Phone number</Label>
+                  <Input
+                    id={`inquiry-phone-${index}`}
+                    type="tel"
+                    data-testid={index === 0 ? "input-inquiry-phone" : `input-inquiry-phone-${index}`}
+                    placeholder="(555) 555-5555"
+                    value={person.phone}
+                    onChange={(e) => updatePerson(index, "phone", e.target.value)}
+                  />
+                </div>
+              </div>
+            ))}
           </div>
           <div>
             <Label htmlFor="inquiry-division">Division</Label>
@@ -415,10 +466,14 @@ function NewInquiryDialog() {
             onClick={() =>
               create.mutate({
                 data: {
-                  name: form.name.trim(),
-                  phone: form.phone.trim(),
+                  name: form.people[0].name.trim(),
+                  phone: form.people[0].phone.trim(),
                   division: form.division.trim(),
                   location: form.location.trim(),
+                  people: form.people.map((person) => ({
+                    name: person.name.trim(),
+                    phone: person.phone.trim(),
+                  })),
                 },
               })
             }
@@ -707,13 +762,20 @@ export default function Requests() {
                 <CardContent className="pt-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <h3 className="font-semibold truncate">{inquiry.name}</h3>
-                      <p className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1">
-                        <Phone className="h-3.5 w-3.5 shrink-0" />
-                        <a className="hover:underline" href={`tel:${inquiry.phone}`}>
-                          {inquiry.phone}
-                        </a>
-                      </p>
+                      <h3 className="font-semibold">
+                        {inquiry.people.length} {inquiry.people.length === 1 ? "person" : "people"}
+                      </h3>
+                      <div className="mt-2 space-y-1.5">
+                        {inquiry.people.map((person, index) => (
+                          <p key={`${person.phone}-${index}`} className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                            <Phone className="h-3.5 w-3.5 shrink-0" />
+                            <span>{person.name}</span>
+                            <a className="hover:underline" href={`tel:${person.phone}`}>
+                              {person.phone}
+                            </a>
+                          </p>
+                        ))}
+                      </div>
                     </div>
                     <span className="text-xs text-muted-foreground whitespace-nowrap">
                       {timeAgo(inquiry.createdAt)}

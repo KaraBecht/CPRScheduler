@@ -32,8 +32,14 @@ const MIGRATIONS: { name: string; sql: string }[] = [
       phone text NOT NULL,
       division text NOT NULL,
       location text NOT NULL,
+      people jsonb NOT NULL DEFAULT '[]'::jsonb,
       created_at timestamptz NOT NULL DEFAULT now()
     )`,
+  },
+  {
+    name: "add_training_inquiries_people",
+    sql: `ALTER TABLE training_inquiries
+          ADD COLUMN IF NOT EXISTS people jsonb NOT NULL DEFAULT '[]'::jsonb`,
   },
 ];
 

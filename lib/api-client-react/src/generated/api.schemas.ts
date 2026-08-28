@@ -365,12 +365,21 @@ export interface ClassRequestUpdate {
   sessions?: ClassRequestUpdateSessionsItem[];
 }
 
+export interface TrainingInquiryPerson {
+  /** @minLength 1 */
+  name: string;
+  /** @minLength 1 */
+  phone: string;
+}
+
 export interface TrainingInquiry {
   id: number;
   name: string;
   phone: string;
   division: string;
   location: string;
+  /** @minItems 1 */
+  people: TrainingInquiryPerson[];
   createdAt: string;
 }
 
@@ -383,6 +392,8 @@ export interface TrainingInquiryInput {
   division: string;
   /** @minLength 1 */
   location: string;
+  /** @minItems 1 */
+  people?: TrainingInquiryPerson[];
 }
 
 export interface Certificate {
