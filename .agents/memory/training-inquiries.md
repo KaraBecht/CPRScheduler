@@ -8,3 +8,9 @@ Display preliminary records as training “interests,” while retaining the exi
 **Why:** Admins need to capture calls and early interest before enough scheduling information exists to create a complete training request, and several contacts from the same division and location may be involved.
 
 **How to apply:** Use “interest” in user-facing copy. Preserve grouped contacts with individual email/phone details and shared division/location, separate from the approval and scheduling workflow.
+
+The multi-person interest dialog must constrain itself to the viewport and scroll its form body independently, leaving the save/cancel actions reachable.
+
+**Why:** Adding several contacts makes the form taller than common browser viewports.
+
+**How to apply:** Keep the dialog height viewport-limited, use an internal scroll region for the people and shared fields, and keep the footer from shrinking away.

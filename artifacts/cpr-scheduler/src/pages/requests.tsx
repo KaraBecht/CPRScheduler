@@ -365,14 +365,15 @@ function NewInterestDialog() {
           <Plus className="h-4 w-4 mr-1.5" /> New interest
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md flex max-h-[calc(100vh-2rem)] flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>New training interest</DialogTitle>
           <DialogDescription>
             Save contact details so the team can follow up and create a full training request later.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
+          <div className="space-y-4">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label>People</Label>
@@ -468,8 +469,9 @@ function NewInterestDialog() {
               onChange={(e) => setForm({ ...form, location: e.target.value })}
             />
           </div>
+          </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="shrink-0">
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>
