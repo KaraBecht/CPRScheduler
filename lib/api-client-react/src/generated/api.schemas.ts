@@ -365,6 +365,16 @@ export interface ClassRequestUpdate {
   sessions?: ClassRequestUpdateSessionsItem[];
 }
 
+export type TrainingInquiryPersonStatus = typeof TrainingInquiryPersonStatus[keyof typeof TrainingInquiryPersonStatus];
+
+
+export const TrainingInquiryPersonStatus = {
+  interested: 'interested',
+  scheduled: 'scheduled',
+  completed: 'completed',
+  not_interested: 'not_interested',
+} as const;
+
 export interface TrainingInquiryPerson {
   /** @minLength 1 */
   name: string;
@@ -372,6 +382,7 @@ export interface TrainingInquiryPerson {
   phone: string;
   /** @minLength 1 */
   email: string;
+  status: TrainingInquiryPersonStatus;
 }
 
 export interface TrainingInquiry {
@@ -383,7 +394,46 @@ export interface TrainingInquiry {
   note: string;
   /** @minItems 1 */
   people: TrainingInquiryPerson[];
+  archivedAt: string | null;
   createdAt: string;
+}
+
+export type TrainingInquiryPersonStatusUpdateStatus = typeof TrainingInquiryPersonStatusUpdateStatus[keyof typeof TrainingInquiryPersonStatusUpdateStatus];
+
+
+export const TrainingInquiryPersonStatusUpdateStatus = {
+  interested: 'interested',
+  scheduled: 'scheduled',
+  completed: 'completed',
+  not_interested: 'not_interested',
+} as const;
+
+export interface TrainingInquiryPersonStatusUpdate {
+  status: TrainingInquiryPersonStatusUpdateStatus;
+}
+
+export interface TrainingInquiryUpdate {
+  archived: boolean;
+}
+
+export type TrainingInquiryDeleteConfirmationConfirm = typeof TrainingInquiryDeleteConfirmationConfirm[keyof typeof TrainingInquiryDeleteConfirmationConfirm];
+
+
+export const TrainingInquiryDeleteConfirmationConfirm = {
+  DELETE: 'DELETE',
+} as const;
+
+export interface TrainingInquiryDeleteConfirmation {
+  confirm: TrainingInquiryDeleteConfirmationConfirm;
+}
+
+export interface TrainingInquiryPersonInput {
+  /** @minLength 1 */
+  name: string;
+  /** @minLength 1 */
+  phone: string;
+  /** @minLength 1 */
+  email: string;
 }
 
 export interface TrainingInquiryInput {
@@ -397,7 +447,7 @@ export interface TrainingInquiryInput {
   location: string;
   note?: string;
   /** @minItems 1 */
-  people?: TrainingInquiryPerson[];
+  people?: TrainingInquiryPersonInput[];
 }
 
 export interface Certificate {

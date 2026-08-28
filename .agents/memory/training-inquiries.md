@@ -26,3 +26,9 @@ Each interest may also include an optional shared note for follow-up context.
 **Why:** Early contacts often need context that does not belong to a specific person.
 
 **How to apply:** Keep the note optional, show it on list/detail views when present, and include it in exports.
+
+Training interests retain people instead of deleting them when their follow-up outcome changes. Each person has an independent Interested, Scheduled, Completed, or No longer interested status. Whole interests can be archived and restored.
+
+**Why:** People grouped on one interest can reach different outcomes, and administrators need historical context without cluttering the active list.
+
+**How to apply:** Hide archived interests from the default Active view, provide an explicit Archived filter, require confirmation for permanent deletion, and include lifecycle state in exports.

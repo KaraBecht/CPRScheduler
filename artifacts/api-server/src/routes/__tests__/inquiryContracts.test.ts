@@ -1,0 +1,28 @@
+import { describe, expect, it } from "vitest";
+import { CreateInquiryBody, DeleteInquiryBody } from "@workspace/api-zod";
+
+describe("training interest API contracts", () => {
+  it("accepts legacy person input without a lifecycle status", () => {
+    const result = CreateInquiryBody.safeParse({
+      name: "Legacy Contact",
+      phone: "555-0100",
+      division: "FOX Sports",
+      location: "Studio Lot",
+      people: [
+        {
+          name: "Legacy Contact",
+          phone: "555-0100",
+          email: "legacy@example.com",
+        },
+      ],
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("requires explicit confirmation before permanent deletion", () => {
+    expect(DeleteInquiryBody.safeParse({}).success).toBe(false);
+    expect(DeleteInquiryBody.safeParse({ confirm: "delete" }).success).toBe(false);
+    expect(DeleteInquiryBody.safeParse({ confirm: "DELETE" }).success).toBe(true);
+  });
+});

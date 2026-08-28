@@ -16,5 +16,6 @@ export interface TrainingInquiry {
   note: string;
   /** @minItems 1 */
   people: TrainingInquiryPerson[];
+  archivedAt: string | null;
   createdAt: string;
 }

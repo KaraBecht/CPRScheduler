@@ -58,7 +58,10 @@ import type {
   RosterAttendee,
   StudentDashboard,
   TrainingInquiry,
+  TrainingInquiryDeleteConfirmation,
   TrainingInquiryInput,
+  TrainingInquiryPersonStatusUpdate,
+  TrainingInquiryUpdate,
   TrainingRequestInput,
   User,
   UserInput,
@@ -1740,6 +1743,206 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getCreateInquiryMutationOptions(options));
+    }
+
+export const getUpdateInquiryUrl = (inquiryId: number,) => {
+
+
+
+
+  return `/api/inquiries/${inquiryId}`
+}
+
+export const updateInquiry = async (inquiryId: number,
+    trainingInquiryUpdate: TrainingInquiryUpdate, options?: RequestInit): Promise<TrainingInquiry> => {
+
+  return customFetch<TrainingInquiry>(getUpdateInquiryUrl(inquiryId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      trainingInquiryUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateInquiryMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateInquiry>>, TError,{inquiryId: number;data: BodyType<TrainingInquiryUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateInquiry>>, TError,{inquiryId: number;data: BodyType<TrainingInquiryUpdate>}, TContext> => {
+
+const mutationKey = ['updateInquiry'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateInquiry>>, {inquiryId: number;data: BodyType<TrainingInquiryUpdate>}> = (props) => {
+          const {inquiryId,data} = props ?? {};
+
+          return  updateInquiry(inquiryId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateInquiryMutationResult = NonNullable<Awaited<ReturnType<typeof updateInquiry>>>
+    export type UpdateInquiryMutationBody = BodyType<TrainingInquiryUpdate>
+    export type UpdateInquiryMutationError = ErrorType<unknown>
+
+    export const useUpdateInquiry = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateInquiry>>, TError,{inquiryId: number;data: BodyType<TrainingInquiryUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateInquiry>>,
+        TError,
+        {inquiryId: number;data: BodyType<TrainingInquiryUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateInquiryMutationOptions(options));
+    }
+
+export const getDeleteInquiryUrl = (inquiryId: number,) => {
+
+
+
+
+  return `/api/inquiries/${inquiryId}`
+}
+
+export const deleteInquiry = async (inquiryId: number,
+    trainingInquiryDeleteConfirmation: TrainingInquiryDeleteConfirmation, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteInquiryUrl(inquiryId),
+  {
+    ...options,
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      trainingInquiryDeleteConfirmation,)
+  }
+);}
+
+
+
+
+export const getDeleteInquiryMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteInquiry>>, TError,{inquiryId: number;data: BodyType<TrainingInquiryDeleteConfirmation>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteInquiry>>, TError,{inquiryId: number;data: BodyType<TrainingInquiryDeleteConfirmation>}, TContext> => {
+
+const mutationKey = ['deleteInquiry'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteInquiry>>, {inquiryId: number;data: BodyType<TrainingInquiryDeleteConfirmation>}> = (props) => {
+          const {inquiryId,data} = props ?? {};
+
+          return  deleteInquiry(inquiryId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteInquiryMutationResult = NonNullable<Awaited<ReturnType<typeof deleteInquiry>>>
+    export type DeleteInquiryMutationBody = BodyType<TrainingInquiryDeleteConfirmation>
+    export type DeleteInquiryMutationError = ErrorType<unknown>
+
+    export const useDeleteInquiry = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteInquiry>>, TError,{inquiryId: number;data: BodyType<TrainingInquiryDeleteConfirmation>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteInquiry>>,
+        TError,
+        {inquiryId: number;data: BodyType<TrainingInquiryDeleteConfirmation>},
+        TContext
+      > => {
+      return useMutation(getDeleteInquiryMutationOptions(options));
+    }
+
+export const getUpdateInquiryPersonStatusUrl = (inquiryId: number,
+    personIndex: number,) => {
+
+
+
+
+  return `/api/inquiries/${inquiryId}/people/${personIndex}`
+}
+
+export const updateInquiryPersonStatus = async (inquiryId: number,
+    personIndex: number,
+    trainingInquiryPersonStatusUpdate: TrainingInquiryPersonStatusUpdate, options?: RequestInit): Promise<TrainingInquiry> => {
+
+  return customFetch<TrainingInquiry>(getUpdateInquiryPersonStatusUrl(inquiryId,personIndex),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      trainingInquiryPersonStatusUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateInquiryPersonStatusMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateInquiryPersonStatus>>, TError,{inquiryId: number;personIndex: number;data: BodyType<TrainingInquiryPersonStatusUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateInquiryPersonStatus>>, TError,{inquiryId: number;personIndex: number;data: BodyType<TrainingInquiryPersonStatusUpdate>}, TContext> => {
+
+const mutationKey = ['updateInquiryPersonStatus'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateInquiryPersonStatus>>, {inquiryId: number;personIndex: number;data: BodyType<TrainingInquiryPersonStatusUpdate>}> = (props) => {
+          const {inquiryId,personIndex,data} = props ?? {};
+
+          return  updateInquiryPersonStatus(inquiryId,personIndex,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateInquiryPersonStatusMutationResult = NonNullable<Awaited<ReturnType<typeof updateInquiryPersonStatus>>>
+    export type UpdateInquiryPersonStatusMutationBody = BodyType<TrainingInquiryPersonStatusUpdate>
+    export type UpdateInquiryPersonStatusMutationError = ErrorType<unknown>
+
+    export const useUpdateInquiryPersonStatus = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateInquiryPersonStatus>>, TError,{inquiryId: number;personIndex: number;data: BodyType<TrainingInquiryPersonStatusUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateInquiryPersonStatus>>,
+        TError,
+        {inquiryId: number;personIndex: number;data: BodyType<TrainingInquiryPersonStatusUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateInquiryPersonStatusMutationOptions(options));
     }
 
 export const getSubmitTrainingRequestUrl = () => {

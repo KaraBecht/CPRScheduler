@@ -46,6 +46,11 @@ const MIGRATIONS: { name: string; sql: string }[] = [
     sql: `ALTER TABLE training_inquiries
           ADD COLUMN IF NOT EXISTS note text NOT NULL DEFAULT ''`,
   },
+  {
+    name: "add_training_inquiries_archived_at",
+    sql: `ALTER TABLE training_inquiries
+          ADD COLUMN IF NOT EXISTS archived_at timestamptz`,
+  },
 ];
 
 export async function applyMigrations(): Promise<void> {

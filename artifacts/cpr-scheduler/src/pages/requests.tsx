@@ -4,6 +4,9 @@ import {
   useCreateRequest,
   useListInquiries,
   useCreateInquiry,
+  useUpdateInquiry,
+  useUpdateInquiryPersonStatus,
+  useDeleteInquiry,
   useUpdateRequest,
   getListRequestsQueryKey,
   getListInquiriesQueryKey,
@@ -13,6 +16,7 @@ import {
   type CertificationType,
   type ClassRequest,
   type TrainingInquiry,
+  type TrainingInquiryPersonStatus,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
@@ -32,6 +36,17 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -39,7 +54,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth-context";
-import { Plus, Check, X, Share2, Copy, CheckCheck, Trash2, CalendarDays, Download, Upload, ClipboardList, Phone, Mail, Building2, MapPin } from "lucide-react";
+import { Plus, Check, X, Share2, Copy, CheckCheck, Trash2, CalendarDays, Download, Upload, ClipboardList, Phone, Mail, Building2, MapPin, Archive, ArchiveRestore } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { formatCertificationType, formatDate, timeAgo } from "@/lib/format";
@@ -324,7 +339,7 @@ function NewInterestDialog() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
-    people: [{ name: "", phone: "", email: "" }],
+    people: [{ name: "", phone: "", email: "", status: "interested" as const }],
     division: "",
     location: "",
     note: "",
@@ -335,7 +350,7 @@ function NewInterestDialog() {
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: getListInquiriesQueryKey() });
         setForm({
-          people: [{ name: "", phone: "", email: "" }],
+          people: [{ name: "", phone: "", email: "", status: "interested" as const }],
           division: "",
           location: "",
           note: "",
@@ -393,7 +408,10 @@ function NewInterestDialog() {
                 onClick={() =>
                   setForm((current) => ({
                     ...current,
-                    people: [...current.people, { name: "", phone: "", email: "" }],
+                    people: [
+                      ...current.people,
+                      { name: "", phone: "", email: "", status: "interested" as const },
+                    ],
                   }))
                 }
               >
@@ -524,13 +542,50 @@ function NewInterestDialog() {
   );
 }
 
+const INTEREST_PERSON_STATUS_OPTIONS: {
+  value: TrainingInquiryPersonStatus;
+  label: string;
+}[] = [
+  { value: "interested", label: "Interested" },
+  { value: "scheduled", label: "Scheduled" },
+  { value: "completed", label: "Completed" },
+  { value: "not_interested", label: "No longer interested" },
+];
+
+type InterestFilter = "active" | TrainingInquiryPersonStatus | "archived";
+
+const INTEREST_FILTER_OPTIONS: { value: InterestFilter; label: string }[] = [
+  { value: "active", label: "Active" },
+  { value: "interested", label: "Interested" },
+  { value: "scheduled", label: "Scheduled" },
+  { value: "completed", label: "Completed" },
+  { value: "not_interested", label: "No longer interested" },
+  { value: "archived", label: "Archived" },
+];
+
+function interestStatusLabel(status: TrainingInquiryPersonStatus): string {
+  return (
+    INTEREST_PERSON_STATUS_OPTIONS.find((option) => option.value === status)?.label ??
+    status
+  );
+}
+
+function getInterestStatusCounts(interest: TrainingInquiry) {
+  return INTEREST_PERSON_STATUS_OPTIONS.map((option) => ({
+    ...option,
+    count: interest.people.filter((person) => person.status === option.value).length,
+  })).filter((option) => option.count > 0);
+}
+
 const INTEREST_EXPORT_HEADERS = [
   "Person name",
   "Phone",
   "Email",
+  "Person status",
   "Division",
   "Location",
   "Note",
+  "Archived",
   "Saved at",
 ];
 
@@ -543,9 +598,11 @@ function exportTrainingInterests(interests: TrainingInquiry[], filename: string)
         person.name,
         person.phone,
         person.email,
+        interestStatusLabel(person.status),
         interest.division,
         interest.location,
         interest.note,
+        interest.archivedAt ? "Yes" : "No",
         interest.createdAt,
       ]),
     ),
@@ -555,10 +612,88 @@ function exportTrainingInterests(interests: TrainingInquiry[], filename: string)
 function TrainingInterestDialog({
   interest,
   onOpenChange,
+  onInterestUpdated,
+  onDeleted,
 }: {
   interest: TrainingInquiry | null;
   onOpenChange: (open: boolean) => void;
+  onInterestUpdated: (interest: TrainingInquiry) => void;
+  onDeleted: () => void;
 }) {
+  const qc = useQueryClient();
+  const updatePersonStatus = useUpdateInquiryPersonStatus({
+    mutation: {
+      onError: () =>
+        toast({ title: "Could not update person status", variant: "destructive" }),
+    },
+  });
+  const updateInterest = useUpdateInquiry({
+    mutation: {
+      onError: () =>
+        toast({ title: "Could not update interest", variant: "destructive" }),
+    },
+  });
+  const deleteInterest = useDeleteInquiry({
+    mutation: {
+      onError: () =>
+        toast({ title: "Could not delete interest", variant: "destructive" }),
+    },
+  });
+
+  function refreshInterest(updated: TrainingInquiry) {
+    onInterestUpdated(updated);
+    qc.invalidateQueries({ queryKey: getListInquiriesQueryKey() });
+  }
+
+  function changePersonStatus(personIndex: number, status: TrainingInquiryPersonStatus) {
+    if (!interest) return;
+    updatePersonStatus.mutate(
+      {
+        inquiryId: interest.id,
+        personIndex,
+        data: { status },
+      },
+      {
+        onSuccess: (updated) => {
+          refreshInterest(updated);
+          toast({ title: `Person marked ${interestStatusLabel(status).toLowerCase()}` });
+        },
+      },
+    );
+  }
+
+  function toggleArchived() {
+    if (!interest) return;
+    const willArchive = !interest.archivedAt;
+    updateInterest.mutate(
+      {
+        inquiryId: interest.id,
+        data: { archived: willArchive },
+      },
+      {
+        onSuccess: (updated) => {
+          refreshInterest(updated);
+          toast({ title: willArchive ? "Interest archived" : "Interest restored" });
+          if (willArchive) onOpenChange(false);
+        },
+      },
+    );
+  }
+
+  function permanentlyDelete() {
+    if (!interest) return;
+    deleteInterest.mutate(
+      { inquiryId: interest.id, data: { confirm: "DELETE" } },
+      {
+        onSuccess: () => {
+          qc.invalidateQueries({ queryKey: getListInquiriesQueryKey() });
+          onDeleted();
+          toast({ title: "Interest deleted" });
+        },
+      },
+    );
+  }
+
   return (
     <Dialog open={interest !== null} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[calc(100vh-2rem)] flex flex-col overflow-hidden">
@@ -573,9 +708,12 @@ function TrainingInterestDialog({
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-semibold">
-                    {interest.people.length} {interest.people.length === 1 ? "person" : "people"}
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold">
+                      {interest.people.length} {interest.people.length === 1 ? "person" : "people"}
+                    </h3>
+                    {interest.archivedAt && <Badge variant="secondary">Archived</Badge>}
+                  </div>
                   <span className="text-xs text-muted-foreground">
                     {timeAgo(interest.createdAt)}
                   </span>
@@ -583,7 +721,30 @@ function TrainingInterestDialog({
                 <div className="space-y-3">
                   {interest.people.map((person, index) => (
                     <div key={`${person.phone}-${index}`} className="rounded-md border p-3 space-y-2">
-                      <p className="text-sm font-medium">Person {index + 1}</p>
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-medium">Person {index + 1}</p>
+                        <Select
+                          value={person.status}
+                          onValueChange={(value) =>
+                            changePersonStatus(index, value as TrainingInquiryPersonStatus)
+                          }
+                          disabled={updatePersonStatus.isPending}
+                        >
+                          <SelectTrigger
+                            className="h-8 w-44"
+                            data-testid={`select-interest-person-status-${index}`}
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {INTEREST_PERSON_STATUS_OPTIONS.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                       <div className="grid gap-2 sm:grid-cols-2 text-sm">
                         <div>
                           <p className="text-xs text-muted-foreground">Name</p>
@@ -627,7 +788,7 @@ function TrainingInterestDialog({
                 )}
               </div>
             </div>
-            <DialogFooter className="shrink-0">
+            <DialogFooter className="shrink-0 flex-wrap">
               <Button
                 variant="outline"
                 onClick={() =>
@@ -640,6 +801,49 @@ function TrainingInterestDialog({
               >
                 <Download className="h-4 w-4 mr-1.5" /> Export CSV
               </Button>
+              <Button
+                variant="outline"
+                onClick={toggleArchived}
+                disabled={updateInterest.isPending}
+                data-testid={interest.archivedAt ? "button-restore-interest" : "button-archive-interest"}
+              >
+                {interest.archivedAt ? (
+                  <ArchiveRestore className="h-4 w-4 mr-1.5" />
+                ) : (
+                  <Archive className="h-4 w-4 mr-1.5" />
+                )}
+                {interest.archivedAt ? "Restore" : "Archive"}
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="destructive"
+                    disabled={deleteInterest.isPending}
+                    data-testid="button-delete-interest"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1.5" /> Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete this training interest?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This permanently deletes the interest and every person on it. This action
+                      cannot be undone. Archive it instead if you may need the record later.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={permanentlyDelete}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      data-testid="button-confirm-delete-interest"
+                    >
+                      Permanently delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
               <Button onClick={() => onOpenChange(false)}>Close</Button>
             </DialogFooter>
           </>
@@ -874,6 +1078,14 @@ export default function Requests() {
 
   const [importOpen, setImportOpen] = useState(false);
   const [selectedInterest, setSelectedInterest] = useState<TrainingInquiry | null>(null);
+  const [interestFilter, setInterestFilter] = useState<InterestFilter>("active");
+  const filteredInquiries = inquiries.filter((inquiry) => {
+    if (interestFilter === "archived") return inquiry.archivedAt !== null;
+    if (inquiry.archivedAt !== null) return false;
+    if (interestFilter === "active") return true;
+    return inquiry.people.some((person) => person.status === interestFilter);
+  });
+  const archivedInterestCount = inquiries.filter((inquiry) => inquiry.archivedAt !== null).length;
   const canCreate = role === "requestor" && userId;
   return (
     <>
@@ -883,6 +1095,8 @@ export default function Requests() {
         onOpenChange={(isOpen) => {
           if (!isOpen) setSelectedInterest(null);
         }}
+        onInterestUpdated={setSelectedInterest}
+        onDeleted={() => setSelectedInterest(null)}
       />
       <PageHeader
         title={role === "requestor" ? "My requests" : "Training requests"}
@@ -924,8 +1138,31 @@ export default function Requests() {
             </div>
             <div className="flex items-center gap-3">
               <span className="text-sm text-muted-foreground">
-                {inquiries.length} {inquiries.length === 1 ? "interest" : "interests"}
+                {filteredInquiries.length}{" "}
+                {filteredInquiries.length === 1 ? "interest" : "interests"}
               </span>
+              <Select
+                value={interestFilter}
+                onValueChange={(value) => setInterestFilter(value as InterestFilter)}
+              >
+                <SelectTrigger
+                  className="h-9 w-48"
+                  data-testid="select-interest-filter"
+                  aria-label="Filter training interests"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {INTEREST_FILTER_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                      {option.value === "archived" && archivedInterestCount > 0
+                        ? ` (${archivedInterestCount})`
+                        : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Button
                 variant="outline"
                 size="sm"
@@ -941,8 +1178,15 @@ export default function Requests() {
               </Button>
             </div>
           </div>
+          {filteredInquiries.length === 0 ? (
+            <Card>
+              <CardContent className="pt-6 text-sm text-muted-foreground text-center">
+                No {INTEREST_FILTER_OPTIONS.find((option) => option.value === interestFilter)?.label.toLowerCase()} training interests.
+              </CardContent>
+            </Card>
+          ) : (
           <div className="grid gap-3 md:grid-cols-2">
-            {inquiries.map((inquiry) => (
+            {filteredInquiries.map((inquiry) => (
               <Card
                 key={inquiry.id}
                 className="cursor-pointer transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -964,6 +1208,14 @@ export default function Requests() {
                       <h3 className="font-semibold">
                         {inquiry.people.length} {inquiry.people.length === 1 ? "person" : "people"}
                       </h3>
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        {inquiry.archivedAt && <Badge variant="secondary">Archived</Badge>}
+                        {getInterestStatusCounts(inquiry).map((status) => (
+                          <Badge key={status.value} variant="outline">
+                            {status.count} {status.label.toLowerCase()}
+                          </Badge>
+                        ))}
+                      </div>
                       <div className="mt-2 space-y-1.5">
                         {inquiry.people.map((person, index) => (
                           <div key={`${person.phone}-${index}`} className="space-y-0.5 text-sm text-muted-foreground">
@@ -1018,6 +1270,7 @@ export default function Requests() {
               </Card>
             ))}
           </div>
+          )}
         </section>
       )}
       {requests.length === 0 ? (

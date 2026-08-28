@@ -510,8 +510,10 @@ export const ListInquiriesResponseItem = zod.object({
   "people": zod.array(zod.object({
   "name": zod.string().min(1),
   "phone": zod.string().min(1),
-  "email": zod.string().email().min(1)
+  "email": zod.string().email().min(1),
+  "status": zod.enum(['interested', 'scheduled', 'completed', 'not_interested'])
 })).min(1),
+  "archivedAt": zod.string().nullable(),
   "createdAt": zod.string()
 })
 export const ListInquiriesResponse = zod.array(ListInquiriesResponseItem)
@@ -538,6 +540,84 @@ export const CreateInquiryBody = zod.object({
   "phone": zod.string().min(1),
   "email": zod.string().email().min(1)
 })).min(1).optional()
+})
+
+
+export const UpdateInquiryParams = zod.object({
+  "inquiryId": zod.coerce.number()
+})
+
+export const UpdateInquiryBody = zod.object({
+  "archived": zod.boolean()
+})
+
+
+
+
+
+
+
+export const UpdateInquiryResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "phone": zod.string(),
+  "division": zod.string(),
+  "location": zod.string(),
+  "note": zod.string(),
+  "people": zod.array(zod.object({
+  "name": zod.string().min(1),
+  "phone": zod.string().min(1),
+  "email": zod.string().email().min(1),
+  "status": zod.enum(['interested', 'scheduled', 'completed', 'not_interested'])
+})).min(1),
+  "archivedAt": zod.string().nullable(),
+  "createdAt": zod.string()
+})
+
+
+export const DeleteInquiryParams = zod.object({
+  "inquiryId": zod.coerce.number()
+})
+
+export const DeleteInquiryBody = zod.object({
+  "confirm": zod.enum(['DELETE'])
+})
+
+
+export const updateInquiryPersonStatusPathPersonIndexMin = 0;
+
+
+
+export const UpdateInquiryPersonStatusParams = zod.object({
+  "inquiryId": zod.coerce.number(),
+  "personIndex": zod.coerce.number().min(updateInquiryPersonStatusPathPersonIndexMin)
+})
+
+export const UpdateInquiryPersonStatusBody = zod.object({
+  "status": zod.enum(['interested', 'scheduled', 'completed', 'not_interested'])
+})
+
+
+
+
+
+
+
+export const UpdateInquiryPersonStatusResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "phone": zod.string(),
+  "division": zod.string(),
+  "location": zod.string(),
+  "note": zod.string(),
+  "people": zod.array(zod.object({
+  "name": zod.string().min(1),
+  "phone": zod.string().min(1),
+  "email": zod.string().email().min(1),
+  "status": zod.enum(['interested', 'scheduled', 'completed', 'not_interested'])
+})).min(1),
+  "archivedAt": zod.string().nullable(),
+  "createdAt": zod.string()
 })
 
 

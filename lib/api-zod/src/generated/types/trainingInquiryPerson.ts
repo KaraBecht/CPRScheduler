@@ -5,6 +5,7 @@
  * CPR class scheduling platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { TrainingInquiryPersonStatus } from './trainingInquiryPersonStatus';
 
 export interface TrainingInquiryPerson {
   /** @minLength 1 */
@@ -13,4 +14,5 @@ export interface TrainingInquiryPerson {
   phone: string;
   /** @minLength 1 */
   email: string;
+  status: TrainingInquiryPersonStatus;
 }

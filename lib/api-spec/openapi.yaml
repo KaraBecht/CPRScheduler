@@ -420,6 +420,66 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/TrainingInquiry" }
+  /inquiries/{inquiryId}:
+    patch:
+      operationId: updateInquiry
+      tags: [inquiries]
+      parameters:
+        - name: inquiryId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TrainingInquiryUpdate" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TrainingInquiry" }
+    delete:
+      operationId: deleteInquiry
+      tags: [inquiries]
+      parameters:
+        - name: inquiryId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TrainingInquiryDeleteConfirmation" }
+      responses:
+        "204":
+          description: Deleted
+  /inquiries/{inquiryId}/people/{personIndex}:
+    patch:
+      operationId: updateInquiryPersonStatus
+      tags: [inquiries]
+      parameters:
+        - name: inquiryId
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: personIndex
+          in: path
+          required: true
+          schema: { type: integer, minimum: 0 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TrainingInquiryPersonStatusUpdate" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TrainingInquiry" }
   /training-requests:
     post:
       operationId: submitTrainingRequest
@@ -1147,7 +1207,7 @@ components:
 
     TrainingInquiry:
       type: object
-      required: [id, name, phone, division, location, note, people, createdAt]
+      required: [id, name, phone, division, location, note, people, archivedAt, createdAt]
       properties:
         id: { type: integer }
         name: { type: string }
@@ -1159,15 +1219,43 @@ components:
           type: array
           minItems: 1
           items: { $ref: "#/components/schemas/TrainingInquiryPerson" }
+        archivedAt:
+          type: string
+          nullable: true
         createdAt: { type: string }
 
     TrainingInquiryPerson:
       type: object
-      required: [name, phone, email]
+      required: [name, phone, email, status]
       properties:
         name: { type: string, minLength: 1 }
         phone: { type: string, minLength: 1 }
         email: { type: string, format: email, minLength: 1 }
+        status:
+          type: string
+          enum: [interested, scheduled, completed, not_interested]
+
+    TrainingInquiryPersonStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [interested, scheduled, completed, not_interested]
+
+    TrainingInquiryUpdate:
+      type: object
+      required: [archived]
+      properties:
+        archived: { type: boolean }
+
+    TrainingInquiryDeleteConfirmation:
+      type: object
+      required: [confirm]
+      properties:
+        confirm:
+          type: string
+          enum: [DELETE]
 
     TrainingInquiryInput:
       type: object
@@ -1181,7 +1269,15 @@ components:
         people:
           type: array
           minItems: 1
-          items: { $ref: "#/components/schemas/TrainingInquiryPerson" }
+          items: { $ref: "#/components/schemas/TrainingInquiryPersonInput" }
+
+    TrainingInquiryPersonInput:
+      type: object
+      required: [name, phone, email]
+      properties:
+        name: { type: string, minLength: 1 }
+        phone: { type: string, minLength: 1 }
+        email: { type: string, format: email, minLength: 1 }
 
     Certificate:
       type: object

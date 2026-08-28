@@ -4,6 +4,7 @@ export type TrainingInquiryPerson = {
   name: string;
   phone: string;
   email: string;
+  status?: "interested" | "scheduled" | "completed" | "not_interested";
 };
 
 export const trainingInquiriesTable = pgTable("training_inquiries", {
@@ -14,6 +15,7 @@ export const trainingInquiriesTable = pgTable("training_inquiries", {
   location: text("location").notNull(),
   note: text("note").notNull().default(""),
   people: jsonb("people").$type<TrainingInquiryPerson[]>().notNull().default([]),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
