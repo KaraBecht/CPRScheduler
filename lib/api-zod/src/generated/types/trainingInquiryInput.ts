@@ -16,6 +16,7 @@ export interface TrainingInquiryInput {
   division: string;
   /** @minLength 1 */
   location: string;
+  note?: string;
   /** @minItems 1 */
   people?: TrainingInquiryPerson[];
 }

@@ -15,8 +15,14 @@ The multi-person interest dialog must constrain itself to the viewport and scrol
 
 **How to apply:** Keep the dialog height viewport-limited, use an internal scroll region for the people and shared fields, and keep the footer from shrinking away.
 
-Saved training interests can be reopened from their cards and exported as CSV, either individually or as a complete list. Each exported row represents one person and repeats the shared interest details.
+Saved training interests can be reopened from their cards and exported as CSV, either individually or as a complete list. Each exported row represents one person and repeats the shared interest details, including the optional shared note.
 
 **Why:** Admins need to review submitted contact groups later and move the collected information into other workflows.
 
 **How to apply:** Preserve the grouped-person CSV shape when extending interest exports, and keep both per-interest and all-interest exports available to administrators.
+
+Each interest may also include an optional shared note for follow-up context.
+
+**Why:** Early contacts often need context that does not belong to a specific person.
+
+**How to apply:** Keep the note optional, show it on list/detail views when present, and include it in exports.

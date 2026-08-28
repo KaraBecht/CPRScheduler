@@ -41,6 +41,11 @@ const MIGRATIONS: { name: string; sql: string }[] = [
     sql: `ALTER TABLE training_inquiries
           ADD COLUMN IF NOT EXISTS people jsonb NOT NULL DEFAULT '[]'::jsonb`,
   },
+  {
+    name: "add_training_inquiries_note",
+    sql: `ALTER TABLE training_inquiries
+          ADD COLUMN IF NOT EXISTS note text NOT NULL DEFAULT ''`,
+  },
 ];
 
 export async function applyMigrations(): Promise<void> {

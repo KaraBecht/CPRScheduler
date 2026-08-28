@@ -12,6 +12,7 @@ export const trainingInquiriesTable = pgTable("training_inquiries", {
   phone: text("phone").notNull(),
   division: text("division").notNull(),
   location: text("location").notNull(),
+  note: text("note").notNull().default(""),
   people: jsonb("people").$type<TrainingInquiryPerson[]>().notNull().default([]),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

@@ -13,6 +13,7 @@ export interface TrainingInquiry {
   phone: string;
   division: string;
   location: string;
+  note: string;
   /** @minItems 1 */
   people: TrainingInquiryPerson[];
   createdAt: string;

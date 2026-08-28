@@ -22,6 +22,7 @@ function serializeInquiry(row: typeof trainingInquiriesTable.$inferSelect) {
     phone: row.phone,
     division: row.division,
     location: row.location,
+    note: row.note ?? "",
     people,
     createdAt: row.createdAt.toISOString(),
   };
@@ -62,6 +63,7 @@ router.post("/inquiries", async (req, res): Promise<void> => {
       phone: people[0].phone,
       division: parsed.data.division.trim(),
       location: parsed.data.location.trim(),
+      note: parsed.data.note?.trim() ?? "",
       people,
     })
     .returning();

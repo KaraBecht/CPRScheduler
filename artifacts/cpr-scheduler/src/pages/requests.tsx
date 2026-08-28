@@ -327,13 +327,19 @@ function NewInterestDialog() {
     people: [{ name: "", phone: "", email: "" }],
     division: "",
     location: "",
+    note: "",
   });
 
   const create = useCreateInquiry({
     mutation: {
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: getListInquiriesQueryKey() });
-        setForm({ people: [{ name: "", phone: "", email: "" }], division: "", location: "" });
+        setForm({
+          people: [{ name: "", phone: "", email: "" }],
+          division: "",
+          location: "",
+          note: "",
+        });
         setOpen(false);
         toast({ title: "Interest saved" });
       },
@@ -471,6 +477,19 @@ function NewInterestDialog() {
               onChange={(e) => setForm({ ...form, location: e.target.value })}
             />
           </div>
+          <div>
+            <Label htmlFor="interest-note">
+              Note <span className="font-normal text-muted-foreground">(optional)</span>
+            </Label>
+            <Textarea
+              id="interest-note"
+              data-testid="input-interest-note"
+              placeholder="Add any helpful context for follow-up"
+              value={form.note}
+              onChange={(e) => setForm({ ...form, note: e.target.value })}
+              rows={3}
+            />
+          </div>
           </div>
         </div>
         <DialogFooter className="shrink-0">
@@ -487,6 +506,7 @@ function NewInterestDialog() {
                   phone: form.people[0].phone.trim(),
                   division: form.division.trim(),
                   location: form.location.trim(),
+                  note: form.note.trim(),
                   people: form.people.map((person) => ({
                     name: person.name.trim(),
                     phone: person.phone.trim(),
@@ -510,6 +530,7 @@ const INTEREST_EXPORT_HEADERS = [
   "Email",
   "Division",
   "Location",
+  "Note",
   "Saved at",
 ];
 
@@ -524,6 +545,7 @@ function exportTrainingInterests(interests: TrainingInquiry[], filename: string)
         person.email,
         interest.division,
         interest.location,
+        interest.note,
         interest.createdAt,
       ]),
     ),
@@ -597,6 +619,12 @@ function TrainingInterestDialog({
                     <p className="text-sm font-medium mt-1">{interest.location}</p>
                   </div>
                 </div>
+                {interest.note && (
+                  <div className="rounded-md border border-dashed p-3">
+                    <p className="text-xs text-muted-foreground">Note</p>
+                    <p className="text-sm mt-1 whitespace-pre-wrap">{interest.note}</p>
+                  </div>
+                )}
               </div>
             </div>
             <DialogFooter className="shrink-0">
@@ -981,6 +1009,11 @@ export default function Requests() {
                       {inquiry.location}
                     </span>
                   </div>
+                  {inquiry.note && (
+                    <p className="mt-3 text-sm text-muted-foreground line-clamp-2">
+                      <span className="font-medium text-foreground">Note:</span> {inquiry.note}
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             ))}
