@@ -10,7 +10,6 @@ import type { TrainingInquiryPersonStatus } from './trainingInquiryPersonStatus'
 export interface TrainingInquiryPerson {
   /** @minLength 1 */
   name: string;
-  /** @minLength 1 */
   phone: string;
   /** @minLength 1 */
   email: string;

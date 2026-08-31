@@ -25,7 +25,7 @@ function getPeople(row: typeof trainingInquiriesTable.$inferSelect): TrainingInq
       : [{ name: row.name, phone: row.phone, email: "" }];
   return rawPeople.map((person) => ({
     name: person.name,
-    phone: person.phone,
+    phone: typeof person.phone === "string" ? person.phone : "",
     email: "email" in person && typeof person.email === "string" ? person.email : "",
     status: isPersonStatus(person.status) ? person.status : "interested",
   }));
@@ -136,9 +136,38 @@ router.patch("/inquiries/:inquiryId", async (req, res): Promise<void> => {
     return;
   }
 
+  const update: {
+    archivedAt?: Date | null;
+    name?: string;
+    phone?: string;
+    people?: TrainingInquiryPerson[];
+  } = {};
+  if (parsed.data.archived !== undefined) {
+    update.archivedAt = parsed.data.archived ? new Date() : null;
+  }
+  if (parsed.data.people !== undefined) {
+    const people: TrainingInquiryPerson[] = parsed.data.people.map((person) => ({
+      name: person.name.trim(),
+      phone: person.phone?.trim() ?? "",
+      email: person.email.trim(),
+      status: isPersonStatus(person.status) ? person.status : "interested",
+    }));
+    if (people.some((person) => !person.name || !person.email)) {
+      res.status(400).json({ error: "Every person must have a name and email" });
+      return;
+    }
+    update.name = people[0]!.name;
+    update.phone = people[0]!.phone;
+    update.people = people;
+  }
+  if (Object.keys(update).length === 0) {
+    res.status(400).json({ error: "No interest changes provided" });
+    return;
+  }
+
   const [row] = await db
     .update(trainingInquiriesTable)
-    .set({ archivedAt: parsed.data.archived ? new Date() : null })
+    .set(update)
     .where(eq(trainingInquiriesTable.id, inquiryId))
     .returning();
   if (!row) {

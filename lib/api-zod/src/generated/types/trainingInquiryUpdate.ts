@@ -5,7 +5,10 @@
  * CPR class scheduling platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { TrainingInquiryPersonUpdate } from './trainingInquiryPersonUpdate';
 
 export interface TrainingInquiryUpdate {
-  archived: boolean;
+  archived?: boolean;
+  /** @minItems 1 */
+  people?: TrainingInquiryPersonUpdate[];
 }

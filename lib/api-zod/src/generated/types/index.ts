@@ -72,6 +72,8 @@ export * from './trainingInquiryPersonInput';
 export * from './trainingInquiryPersonStatus';
 export * from './trainingInquiryPersonStatusUpdate';
 export * from './trainingInquiryPersonStatusUpdateStatus';
+export * from './trainingInquiryPersonUpdate';
+export * from './trainingInquiryPersonUpdateStatus';
 export * from './trainingInquiryUpdate';
 export * from './trainingRequestInput';
 export * from './trainingRequestInputSessionsItem';

@@ -499,7 +499,6 @@ export const CreateRequestBody = zod.object({
 
 
 
-
 export const ListInquiriesResponseItem = zod.object({
   "id": zod.number(),
   "name": zod.string(),
@@ -509,7 +508,7 @@ export const ListInquiriesResponseItem = zod.object({
   "note": zod.string(),
   "people": zod.array(zod.object({
   "name": zod.string().min(1),
-  "phone": zod.string().min(1),
+  "phone": zod.string(),
   "email": zod.string().email().min(1),
   "status": zod.enum(['interested', 'scheduled', 'completed', 'not_interested'])
 })).min(1),
@@ -545,10 +544,20 @@ export const UpdateInquiryParams = zod.object({
   "inquiryId": zod.coerce.number()
 })
 
-export const UpdateInquiryBody = zod.object({
-  "archived": zod.boolean()
-})
 
+
+
+
+
+export const UpdateInquiryBody = zod.object({
+  "archived": zod.boolean().optional(),
+  "people": zod.array(zod.object({
+  "name": zod.string().min(1),
+  "phone": zod.string().optional(),
+  "email": zod.string().email().min(1),
+  "status": zod.enum(['interested', 'scheduled', 'completed', 'not_interested']).optional()
+})).min(1).optional()
+})
 
 
 
@@ -564,7 +573,7 @@ export const UpdateInquiryResponse = zod.object({
   "note": zod.string(),
   "people": zod.array(zod.object({
   "name": zod.string().min(1),
-  "phone": zod.string().min(1),
+  "phone": zod.string(),
   "email": zod.string().email().min(1),
   "status": zod.enum(['interested', 'scheduled', 'completed', 'not_interested'])
 })).min(1),
@@ -600,7 +609,6 @@ export const UpdateInquiryPersonStatusBody = zod.object({
 
 
 
-
 export const UpdateInquiryPersonStatusResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
@@ -610,7 +618,7 @@ export const UpdateInquiryPersonStatusResponse = zod.object({
   "note": zod.string(),
   "people": zod.array(zod.object({
   "name": zod.string().min(1),
-  "phone": zod.string().min(1),
+  "phone": zod.string(),
   "email": zod.string().email().min(1),
   "status": zod.enum(['interested', 'scheduled', 'completed', 'not_interested'])
 })).min(1),

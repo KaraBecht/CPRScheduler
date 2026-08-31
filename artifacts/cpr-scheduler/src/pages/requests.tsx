@@ -54,7 +54,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth-context";
-import { Plus, Check, X, Share2, Copy, CheckCheck, Trash2, CalendarDays, Download, Upload, ClipboardList, Phone, Mail, Building2, MapPin, Archive, ArchiveRestore } from "lucide-react";
+import { Plus, Check, X, Share2, Copy, CheckCheck, Trash2, CalendarDays, Download, Upload, ClipboardList, Phone, Mail, Building2, MapPin, Archive, ArchiveRestore, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { formatCertificationType, formatDate, timeAgo } from "@/lib/format";
@@ -623,6 +623,8 @@ function TrainingInterestDialog({
   onDeleted: () => void;
 }) {
   const qc = useQueryClient();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editPeople, setEditPeople] = useState<TrainingInquiry["people"]>([]);
   const updatePersonStatus = useUpdateInquiryPersonStatus({
     mutation: {
       onError: () =>
@@ -645,6 +647,60 @@ function TrainingInterestDialog({
   function refreshInterest(updated: TrainingInquiry) {
     onInterestUpdated(updated);
     qc.invalidateQueries({ queryKey: getListInquiriesQueryKey() });
+  }
+
+  function startEditing() {
+    if (!interest) return;
+    setEditPeople(interest.people.map((person) => ({ ...person })));
+    setIsEditing(true);
+  }
+
+  function cancelEditing() {
+    setIsEditing(false);
+    setEditPeople([]);
+  }
+
+  function updateEditPerson(
+    index: number,
+    field: "name" | "phone" | "email",
+    value: string,
+  ) {
+    setEditPeople((current) =>
+      current.map((person, personIndex) =>
+        personIndex === index ? { ...person, [field]: value } : person,
+      ),
+    );
+  }
+
+  function addEditPerson() {
+    setEditPeople((current) => [
+      ...current,
+      { name: "", phone: "", email: "", status: "interested" },
+    ]);
+  }
+
+  function saveEdit() {
+    if (!interest || editPeople.length === 0) return;
+    updateInterest.mutate(
+      {
+        inquiryId: interest.id,
+        data: {
+          people: editPeople.map((person) => ({
+            name: person.name.trim(),
+            phone: person.phone.trim(),
+            email: person.email.trim(),
+            status: person.status,
+          })),
+        },
+      },
+      {
+        onSuccess: (updated) => {
+          refreshInterest(updated);
+          cancelEditing();
+          toast({ title: "Interest updated" });
+        },
+      },
+    );
   }
 
   function changePersonStatus(personIndex: number, status: TrainingInquiryPersonStatus) {
@@ -697,14 +753,22 @@ function TrainingInterestDialog({
   }
 
   return (
-    <Dialog open={interest !== null} onOpenChange={onOpenChange}>
+    <Dialog
+      open={interest !== null}
+      onOpenChange={(open) => {
+        if (!open) cancelEditing();
+        onOpenChange(open);
+      }}
+    >
       <DialogContent className="max-w-lg max-h-[calc(100vh-2rem)] flex flex-col overflow-hidden">
         {interest && (
           <>
             <DialogHeader>
               <DialogTitle>Training interest</DialogTitle>
               <DialogDescription>
-                Review the people and shared details saved for this interest.
+                {isEditing
+                  ? "Update contact details or add people to this interest."
+                  : "Review the people and shared details saved for this interest."}
               </DialogDescription>
             </DialogHeader>
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
@@ -720,58 +784,143 @@ function TrainingInterestDialog({
                     {timeAgo(interest.createdAt)}
                   </span>
                 </div>
-                <div className="space-y-3">
-                  {interest.people.map((person, index) => (
-                    <div key={`${person.phone}-${index}`} className="rounded-md border p-3 space-y-2">
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="text-sm font-medium">Person {index + 1}</p>
-                        <Select
-                          value={person.status}
-                          onValueChange={(value) =>
-                            changePersonStatus(index, value as TrainingInquiryPersonStatus)
-                          }
-                          disabled={updatePersonStatus.isPending}
-                        >
-                          <SelectTrigger
-                            className="h-8 w-44"
-                            data-testid={`select-interest-person-status-${index}`}
-                          >
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {INTEREST_PERSON_STATUS_OPTIONS.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="grid gap-2 sm:grid-cols-2 text-sm">
-                        <div>
-                          <p className="text-xs text-muted-foreground">Name</p>
-                          <p>{person.name}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Phone number</p>
-                          <a className="hover:underline" href={`tel:${person.phone}`}>
-                            {person.phone}
-                          </a>
-                        </div>
-                        <div className="sm:col-span-2">
-                          <p className="text-xs text-muted-foreground">Email</p>
-                          {person.email ? (
-                            <a className="hover:underline" href={`mailto:${person.email}`}>
-                              {person.email}
-                            </a>
-                          ) : (
-                            <p className="text-muted-foreground">Not provided</p>
-                          )}
-                        </div>
-                      </div>
+                {isEditing ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label>People</Label>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={addEditPerson}
+                        data-testid="button-add-edit-interest-person"
+                      >
+                        <Plus className="h-3.5 w-3.5 mr-1.5" /> Add person
+                      </Button>
                     </div>
-                  ))}
-                </div>
+                    {editPeople.map((person, index) => (
+                      <div key={index} className="rounded-md border p-3 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">Person {index + 1}</span>
+                        </div>
+                        <div>
+                          <Label htmlFor={`edit-interest-name-${index}`}>Name</Label>
+                          <Input
+                            id={`edit-interest-name-${index}`}
+                            data-testid={`input-edit-interest-name-${index}`}
+                            value={person.name}
+                            onChange={(e) => updateEditPerson(index, "name", e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor={`edit-interest-phone-${index}`}>
+                            Phone number <span className="font-normal text-muted-foreground">(optional)</span>
+                          </Label>
+                          <Input
+                            id={`edit-interest-phone-${index}`}
+                            type="tel"
+                            data-testid={`input-edit-interest-phone-${index}`}
+                            value={person.phone}
+                            onChange={(e) => updateEditPerson(index, "phone", e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor={`edit-interest-email-${index}`}>Email</Label>
+                          <Input
+                            id={`edit-interest-email-${index}`}
+                            type="email"
+                            data-testid={`input-edit-interest-email-${index}`}
+                            value={person.email}
+                            onChange={(e) => updateEditPerson(index, "email", e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <Label>Status</Label>
+                          <Select
+                            value={person.status}
+                            onValueChange={(value) =>
+                              setEditPeople((current) =>
+                                current.map((entry, personIndex) =>
+                                  personIndex === index
+                                    ? { ...entry, status: value as TrainingInquiryPersonStatus }
+                                    : entry,
+                                ),
+                              )
+                            }
+                          >
+                            <SelectTrigger data-testid={`select-edit-interest-person-status-${index}`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {INTEREST_PERSON_STATUS_OPTIONS.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {interest.people.map((person, index) => (
+                      <div key={`${person.phone}-${index}`} className="rounded-md border p-3 space-y-2">
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-sm font-medium">Person {index + 1}</p>
+                          <Select
+                            value={person.status}
+                            onValueChange={(value) =>
+                              changePersonStatus(index, value as TrainingInquiryPersonStatus)
+                            }
+                            disabled={updatePersonStatus.isPending}
+                          >
+                            <SelectTrigger
+                              className="h-8 w-44"
+                              data-testid={`select-interest-person-status-${index}`}
+                            >
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {INTEREST_PERSON_STATUS_OPTIONS.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid gap-2 sm:grid-cols-2 text-sm">
+                          <div>
+                            <p className="text-xs text-muted-foreground">Name</p>
+                            <p>{person.name}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Phone number</p>
+                            {person.phone ? (
+                              <a className="hover:underline" href={`tel:${person.phone}`}>
+                                {person.phone}
+                              </a>
+                            ) : (
+                              <p className="text-muted-foreground">Not provided</p>
+                            )}
+                          </div>
+                          <div className="sm:col-span-2">
+                            <p className="text-xs text-muted-foreground">Email</p>
+                            {person.email ? (
+                              <a className="hover:underline" href={`mailto:${person.email}`}>
+                                {person.email}
+                              </a>
+                            ) : (
+                              <p className="text-muted-foreground">Not provided</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="rounded-md bg-muted/50 p-3">
                     <p className="text-xs text-muted-foreground">Division</p>
@@ -791,62 +940,86 @@ function TrainingInterestDialog({
               </div>
             </div>
             <DialogFooter className="shrink-0 flex-wrap">
-              <Button
-                variant="outline"
-                onClick={() =>
-                  exportTrainingInterests(
-                    [interest],
-                    `training-interest-${interest.id}-${interest.createdAt.slice(0, 10)}.csv`,
-                  )
-                }
-                data-testid="button-export-interest"
-              >
-                <Download className="h-4 w-4 mr-1.5" /> Export CSV
-              </Button>
-              <Button
-                variant="outline"
-                onClick={toggleArchived}
-                disabled={updateInterest.isPending}
-                data-testid={interest.archivedAt ? "button-restore-interest" : "button-archive-interest"}
-              >
-                {interest.archivedAt ? (
-                  <ArchiveRestore className="h-4 w-4 mr-1.5" />
-                ) : (
-                  <Archive className="h-4 w-4 mr-1.5" />
-                )}
-                {interest.archivedAt ? "Restore" : "Archive"}
-              </Button>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="destructive"
-                    disabled={deleteInterest.isPending}
-                    data-testid="button-delete-interest"
-                  >
-                    <Trash2 className="h-4 w-4 mr-1.5" /> Delete
+              {isEditing ? (
+                <>
+                  <Button variant="outline" onClick={cancelEditing} disabled={updateInterest.isPending}>
+                    Cancel
                   </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete this training interest?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This permanently deletes the interest and every person on it. This action
-                      cannot be undone. Archive it instead if you may need the record later.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={permanentlyDelete}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      data-testid="button-confirm-delete-interest"
-                    >
-                      Permanently delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-              <Button onClick={() => onOpenChange(false)}>Close</Button>
+                  <Button
+                    onClick={saveEdit}
+                    disabled={
+                      editPeople.length === 0 ||
+                      editPeople.some((person) => !person.name.trim() || !person.email.trim()) ||
+                      updateInterest.isPending
+                    }
+                    data-testid="button-save-edit-interest"
+                  >
+                    {updateInterest.isPending ? "Saving…" : "Save changes"}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      exportTrainingInterests(
+                        [interest],
+                        `training-interest-${interest.id}-${interest.createdAt.slice(0, 10)}.csv`,
+                      )
+                    }
+                    data-testid="button-export-interest"
+                  >
+                    <Download className="h-4 w-4 mr-1.5" /> Export CSV
+                  </Button>
+                  <Button variant="outline" onClick={startEditing} data-testid="button-edit-interest">
+                    <Pencil className="h-4 w-4 mr-1.5" /> Edit people
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={toggleArchived}
+                    disabled={updateInterest.isPending}
+                    data-testid={interest.archivedAt ? "button-restore-interest" : "button-archive-interest"}
+                  >
+                    {interest.archivedAt ? (
+                      <ArchiveRestore className="h-4 w-4 mr-1.5" />
+                    ) : (
+                      <Archive className="h-4 w-4 mr-1.5" />
+                    )}
+                    {interest.archivedAt ? "Restore" : "Archive"}
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="destructive"
+                        disabled={deleteInterest.isPending}
+                        data-testid="button-delete-interest"
+                      >
+                        <Trash2 className="h-4 w-4 mr-1.5" /> Delete
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete this training interest?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This permanently deletes the interest and every person on it. This action
+                          cannot be undone. Archive it instead if you may need the record later.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={permanentlyDelete}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          data-testid="button-confirm-delete-interest"
+                        >
+                          Permanently delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                  <Button onClick={() => onOpenChange(false)}>Close</Button>
+                </>
+              )}
             </DialogFooter>
           </>
         )}

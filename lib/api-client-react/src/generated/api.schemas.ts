@@ -385,7 +385,6 @@ export const TrainingInquiryPersonStatus = {
 export interface TrainingInquiryPerson {
   /** @minLength 1 */
   name: string;
-  /** @minLength 1 */
   phone: string;
   /** @minLength 1 */
   email: string;
@@ -419,8 +418,29 @@ export interface TrainingInquiryPersonStatusUpdate {
   status: TrainingInquiryPersonStatusUpdateStatus;
 }
 
+export type TrainingInquiryPersonUpdateStatus = typeof TrainingInquiryPersonUpdateStatus[keyof typeof TrainingInquiryPersonUpdateStatus];
+
+
+export const TrainingInquiryPersonUpdateStatus = {
+  interested: 'interested',
+  scheduled: 'scheduled',
+  completed: 'completed',
+  not_interested: 'not_interested',
+} as const;
+
+export interface TrainingInquiryPersonUpdate {
+  /** @minLength 1 */
+  name: string;
+  phone?: string;
+  /** @minLength 1 */
+  email: string;
+  status?: TrainingInquiryPersonUpdateStatus;
+}
+
 export interface TrainingInquiryUpdate {
-  archived: boolean;
+  archived?: boolean;
+  /** @minItems 1 */
+  people?: TrainingInquiryPersonUpdate[];
 }
 
 export type TrainingInquiryDeleteConfirmationConfirm = typeof TrainingInquiryDeleteConfirmationConfirm[keyof typeof TrainingInquiryDeleteConfirmationConfirm];

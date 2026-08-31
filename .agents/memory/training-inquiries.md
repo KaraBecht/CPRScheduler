@@ -32,3 +32,9 @@ Training interests retain people instead of deleting them when their follow-up o
 **Why:** People grouped on one interest can reach different outcomes, and administrators need historical context without cluttering the active list.
 
 **How to apply:** Hide archived interests from the default Active view, provide an explicit Archived filter, require confirmation for permanent deletion, and include lifecycle state in exports.
+
+Administrators can reopen an interest and edit its people list, including adding contacts later. Existing lifecycle statuses must remain attached to their people; newly added people start as Interested.
+
+**Why:** Interest groups often grow after the first contact is saved, so the initial record should not become a dead end.
+
+**How to apply:** Prefill existing contacts in edit mode, keep phone optional, require name and email, preserve statuses on save, and leave shared division/location/note unchanged unless explicitly expanded later.

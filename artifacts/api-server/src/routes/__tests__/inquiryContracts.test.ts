@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CreateInquiryBody, DeleteInquiryBody } from "@workspace/api-zod";
+import { CreateInquiryBody, DeleteInquiryBody, UpdateInquiryBody } from "@workspace/api-zod";
 
 describe("training interest API contracts", () => {
   it("accepts legacy person input without a lifecycle status", () => {
@@ -40,5 +40,20 @@ describe("training interest API contracts", () => {
     expect(DeleteInquiryBody.safeParse({}).success).toBe(false);
     expect(DeleteInquiryBody.safeParse({ confirm: "delete" }).success).toBe(false);
     expect(DeleteInquiryBody.safeParse({ confirm: "DELETE" }).success).toBe(true);
+  });
+
+  it("accepts a people update without requiring archive state", () => {
+    const result = UpdateInquiryBody.safeParse({
+      people: [
+        {
+          name: "Added Contact",
+          phone: "",
+          email: "added@example.com",
+          status: "interested",
+        },
+      ],
+    });
+
+    expect(result.success).toBe(true);
   });
 });
