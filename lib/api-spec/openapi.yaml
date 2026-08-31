@@ -1268,10 +1268,10 @@ components:
 
     TrainingInquiryInput:
       type: object
-      required: [name, phone, division, location]
+      required: [name, division, location]
       properties:
         name: { type: string, minLength: 1 }
-        phone: { type: string, minLength: 1 }
+        phone: { type: string }
         division: { type: string, minLength: 1 }
         location: { type: string, minLength: 1 }
         note: { type: string }
@@ -1282,10 +1282,10 @@ components:
 
     TrainingInquiryPersonInput:
       type: object
-      required: [name, phone, email]
+      required: [name, email]
       properties:
         name: { type: string, minLength: 1 }
-        phone: { type: string, minLength: 1 }
+        phone: { type: string }
         email: { type: string, format: email, minLength: 1 }
 
     Certificate:

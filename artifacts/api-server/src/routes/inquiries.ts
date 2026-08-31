@@ -63,7 +63,7 @@ router.post("/inquiries", async (req, res): Promise<void> => {
   }
 
   const people: TrainingInquiryPerson[] = (parsed.data.people ?? [
-    { name: parsed.data.name, phone: parsed.data.phone, email: "" },
+    { name: parsed.data.name, phone: parsed.data.phone ?? "", email: "" },
   ]).map((person) => ({
     name: person.name.trim(),
     phone: person.phone.trim(),
@@ -71,8 +71,8 @@ router.post("/inquiries", async (req, res): Promise<void> => {
     status: "interested" as const,
   }));
 
-  if (people.some((person) => !person.name || !person.phone || !person.email)) {
-    res.status(400).json({ error: "Every person must have a name, phone number, and email" });
+  if (people.some((person) => !person.name || !person.email)) {
+    res.status(400).json({ error: "Every person must have a name and email" });
     return;
   }
 

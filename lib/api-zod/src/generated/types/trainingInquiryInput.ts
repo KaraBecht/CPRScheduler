@@ -10,8 +10,7 @@ import type { TrainingInquiryPersonInput } from './trainingInquiryPersonInput';
 export interface TrainingInquiryInput {
   /** @minLength 1 */
   name: string;
-  /** @minLength 1 */
-  phone: string;
+  phone?: string;
   /** @minLength 1 */
   division: string;
   /** @minLength 1 */

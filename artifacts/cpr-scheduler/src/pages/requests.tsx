@@ -366,7 +366,7 @@ function NewInterestDialog() {
   const canSave =
     form.people.length > 0 &&
     form.people.every(
-      (person) => person.name.trim() && person.phone.trim() && person.email.trim(),
+      (person) => person.name.trim() && person.email.trim(),
     ) &&
     form.division.trim() &&
     form.location.trim() &&
@@ -451,7 +451,9 @@ function NewInterestDialog() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor={`inquiry-phone-${index}`}>Phone number</Label>
+                  <Label htmlFor={`inquiry-phone-${index}`}>
+                    Phone number <span className="font-normal text-muted-foreground">(optional)</span>
+                  </Label>
                   <Input
                     id={`inquiry-phone-${index}`}
                     type="tel"

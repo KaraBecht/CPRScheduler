@@ -20,6 +20,22 @@ describe("training interest API contracts", () => {
     expect(result.success).toBe(true);
   });
 
+  it("accepts a new interest person without a phone number", () => {
+    const result = CreateInquiryBody.safeParse({
+      name: "Email Only Contact",
+      division: "FOX Sports",
+      location: "Studio Lot",
+      people: [
+        {
+          name: "Email Only Contact",
+          email: "email-only@example.com",
+        },
+      ],
+    });
+
+    expect(result.success).toBe(true);
+  });
+
   it("requires explicit confirmation before permanent deletion", () => {
     expect(DeleteInquiryBody.safeParse({}).success).toBe(false);
     expect(DeleteInquiryBody.safeParse({ confirm: "delete" }).success).toBe(false);

@@ -527,17 +527,15 @@ export const ListInquiriesResponse = zod.array(ListInquiriesResponseItem)
 
 
 
-
-
 export const CreateInquiryBody = zod.object({
   "name": zod.string().min(1),
-  "phone": zod.string().min(1),
+  "phone": zod.string().optional(),
   "division": zod.string().min(1),
   "location": zod.string().min(1),
   "note": zod.string().optional(),
   "people": zod.array(zod.object({
   "name": zod.string().min(1),
-  "phone": zod.string().min(1),
+  "phone": zod.string().optional(),
   "email": zod.string().email().min(1)
 })).min(1).optional()
 })

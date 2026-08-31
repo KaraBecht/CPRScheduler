@@ -9,8 +9,7 @@
 export interface TrainingInquiryPersonInput {
   /** @minLength 1 */
   name: string;
-  /** @minLength 1 */
-  phone: string;
+  phone?: string;
   /** @minLength 1 */
   email: string;
 }

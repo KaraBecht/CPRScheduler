@@ -437,8 +437,7 @@ export interface TrainingInquiryDeleteConfirmation {
 export interface TrainingInquiryPersonInput {
   /** @minLength 1 */
   name: string;
-  /** @minLength 1 */
-  phone: string;
+  phone?: string;
   /** @minLength 1 */
   email: string;
 }
@@ -446,8 +445,7 @@ export interface TrainingInquiryPersonInput {
 export interface TrainingInquiryInput {
   /** @minLength 1 */
   name: string;
-  /** @minLength 1 */
-  phone: string;
+  phone?: string;
   /** @minLength 1 */
   division: string;
   /** @minLength 1 */
