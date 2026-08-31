@@ -388,6 +388,7 @@ export interface TrainingInquiryPerson {
   phone: string;
   /** @minLength 1 */
   email: string;
+  note: string;
   status: TrainingInquiryPersonStatus;
 }
 
@@ -434,11 +435,15 @@ export interface TrainingInquiryPersonUpdate {
   phone?: string;
   /** @minLength 1 */
   email: string;
+  note?: string;
   status?: TrainingInquiryPersonUpdateStatus;
 }
 
 export interface TrainingInquiryUpdate {
   archived?: boolean;
+  /** @minLength 1 */
+  location?: string;
+  note?: string;
   /** @minItems 1 */
   people?: TrainingInquiryPersonUpdate[];
 }
@@ -460,6 +465,7 @@ export interface TrainingInquiryPersonInput {
   phone?: string;
   /** @minLength 1 */
   email: string;
+  note?: string;
 }
 
 export interface TrainingInquiryInput {

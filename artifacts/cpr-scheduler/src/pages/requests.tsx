@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   useListRequests,
   useCreateRequest,
@@ -338,8 +338,9 @@ function SendTrainingRequestDialog() {
 function NewInterestDialog() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const peopleScrollRef = useRef<HTMLDivElement>(null);
   const [form, setForm] = useState({
-    people: [{ name: "", phone: "", email: "", status: "interested" as const }],
+    people: [{ name: "", phone: "", email: "", note: "", status: "interested" as const }],
     division: "",
     location: "",
     note: "",
@@ -350,7 +351,7 @@ function NewInterestDialog() {
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: getListInquiriesQueryKey() });
         setForm({
-          people: [{ name: "", phone: "", email: "", status: "interested" as const }],
+          people: [{ name: "", phone: "", email: "", note: "", status: "interested" as const }],
           division: "",
           location: "",
           note: "",
@@ -372,13 +373,26 @@ function NewInterestDialog() {
     form.location.trim() &&
     !create.isPending;
 
-  function updatePerson(index: number, field: "name" | "phone" | "email", value: string) {
+  function updatePerson(index: number, field: "name" | "phone" | "email" | "note", value: string) {
     setForm((current) => ({
       ...current,
       people: current.people.map((person, personIndex) =>
         personIndex === index ? { ...person, [field]: value } : person,
       ),
     }));
+  }
+
+  function addPerson() {
+    setForm((current) => ({
+      ...current,
+      people: [
+        { name: "", phone: "", email: "", note: "", status: "interested" as const },
+        ...current.people,
+      ],
+    }));
+    window.requestAnimationFrame(() => {
+      peopleScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    });
   }
 
   return (
@@ -395,7 +409,7 @@ function NewInterestDialog() {
             Save contact details so the team can follow up and create a full training request later.
           </DialogDescription>
         </DialogHeader>
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
+        <div ref={peopleScrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
           <div className="space-y-4">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -405,15 +419,7 @@ function NewInterestDialog() {
                 variant="outline"
                 size="sm"
                 data-testid="button-add-interest-person"
-                onClick={() =>
-                  setForm((current) => ({
-                    ...current,
-                    people: [
-                      ...current.people,
-                      { name: "", phone: "", email: "", status: "interested" as const },
-                    ],
-                  }))
-                }
+                onClick={addPerson}
               >
                 <Plus className="h-3.5 w-3.5 mr-1.5" /> Add person
               </Button>
@@ -474,6 +480,23 @@ function NewInterestDialog() {
                     onChange={(e) => updatePerson(index, "email", e.target.value)}
                   />
                 </div>
+                <div>
+                  <Label htmlFor={`interest-person-note-${index}`}>
+                    Person note <span className="font-normal text-muted-foreground">(optional)</span>
+                  </Label>
+                  <Textarea
+                    id={`interest-person-note-${index}`}
+                    data-testid={
+                      index === 0
+                        ? "input-interest-person-note"
+                        : `input-interest-person-note-${index}`
+                    }
+                    placeholder="Add context specific to this person"
+                    value={person.note}
+                    onChange={(e) => updatePerson(index, "note", e.target.value)}
+                    rows={2}
+                  />
+                </div>
               </div>
             ))}
           </div>
@@ -531,6 +554,7 @@ function NewInterestDialog() {
                     name: person.name.trim(),
                     phone: person.phone.trim(),
                     email: person.email.trim(),
+                    note: person.note.trim(),
                   })),
                 },
               })
@@ -583,6 +607,7 @@ const INTEREST_EXPORT_HEADERS = [
   "Person name",
   "Phone",
   "Email",
+  "Person note",
   "Person status",
   "Division",
   "Location",
@@ -600,6 +625,7 @@ function exportTrainingInterests(interests: TrainingInquiry[], filename: string)
         person.name,
         person.phone,
         person.email,
+        person.note ?? "",
         interestStatusLabel(person.status),
         interest.division,
         interest.location,
@@ -623,8 +649,11 @@ function TrainingInterestDialog({
   onDeleted: () => void;
 }) {
   const qc = useQueryClient();
+  const peopleScrollRef = useRef<HTMLDivElement>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editPeople, setEditPeople] = useState<TrainingInquiry["people"]>([]);
+  const [editLocation, setEditLocation] = useState("");
+  const [editNote, setEditNote] = useState("");
   const updatePersonStatus = useUpdateInquiryPersonStatus({
     mutation: {
       onError: () =>
@@ -652,17 +681,21 @@ function TrainingInterestDialog({
   function startEditing() {
     if (!interest) return;
     setEditPeople(interest.people.map((person) => ({ ...person })));
+    setEditLocation(interest.location);
+    setEditNote(interest.note);
     setIsEditing(true);
   }
 
   function cancelEditing() {
     setIsEditing(false);
     setEditPeople([]);
+    setEditLocation("");
+    setEditNote("");
   }
 
   function updateEditPerson(
     index: number,
-    field: "name" | "phone" | "email",
+    field: "name" | "phone" | "email" | "note",
     value: string,
   ) {
     setEditPeople((current) =>
@@ -674,9 +707,12 @@ function TrainingInterestDialog({
 
   function addEditPerson() {
     setEditPeople((current) => [
+      { name: "", phone: "", email: "", note: "", status: "interested" },
       ...current,
-      { name: "", phone: "", email: "", status: "interested" },
     ]);
+    window.requestAnimationFrame(() => {
+      peopleScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    });
   }
 
   function saveEdit() {
@@ -685,10 +721,13 @@ function TrainingInterestDialog({
       {
         inquiryId: interest.id,
         data: {
+          location: editLocation.trim(),
+          note: editNote.trim(),
           people: editPeople.map((person) => ({
             name: person.name.trim(),
             phone: person.phone.trim(),
             email: person.email.trim(),
+            note: person.note?.trim() ?? "",
             status: person.status,
           })),
         },
@@ -771,7 +810,7 @@ function TrainingInterestDialog({
                   : "Review the people and shared details saved for this interest."}
               </DialogDescription>
             </DialogHeader>
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
+            <div ref={peopleScrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -832,6 +871,20 @@ function TrainingInterestDialog({
                             data-testid={`input-edit-interest-email-${index}`}
                             value={person.email}
                             onChange={(e) => updateEditPerson(index, "email", e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor={`edit-interest-person-note-${index}`}>
+                            Person note{" "}
+                            <span className="font-normal text-muted-foreground">(optional)</span>
+                          </Label>
+                          <Textarea
+                            id={`edit-interest-person-note-${index}`}
+                            data-testid={`input-edit-interest-person-note-${index}`}
+                            placeholder="Add context specific to this person"
+                            value={person.note ?? ""}
+                            onChange={(e) => updateEditPerson(index, "note", e.target.value)}
+                            rows={2}
                           />
                         </div>
                         <div>
@@ -916,6 +969,12 @@ function TrainingInterestDialog({
                               <p className="text-muted-foreground">Not provided</p>
                             )}
                           </div>
+                          {person.note && (
+                            <div className="sm:col-span-2">
+                              <p className="text-xs text-muted-foreground">Person note</p>
+                              <p className="whitespace-pre-wrap">{person.note}</p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -926,17 +985,42 @@ function TrainingInterestDialog({
                     <p className="text-xs text-muted-foreground">Division</p>
                     <p className="text-sm font-medium mt-1">{interest.division}</p>
                   </div>
-                  <div className="rounded-md bg-muted/50 p-3">
-                    <p className="text-xs text-muted-foreground">Location</p>
-                    <p className="text-sm font-medium mt-1">{interest.location}</p>
-                  </div>
+                  {isEditing ? (
+                    <div>
+                      <Label htmlFor="edit-interest-location">Location</Label>
+                      <Input
+                        id="edit-interest-location"
+                        data-testid="input-edit-interest-location"
+                        value={editLocation}
+                        onChange={(e) => setEditLocation(e.target.value)}
+                      />
+                    </div>
+                  ) : (
+                    <div className="rounded-md bg-muted/50 p-3">
+                      <p className="text-xs text-muted-foreground">Location</p>
+                      <p className="text-sm font-medium mt-1">{interest.location}</p>
+                    </div>
+                  )}
                 </div>
-                {interest.note && (
+                {isEditing ? (
+                  <div>
+                    <Label htmlFor="edit-interest-note">
+                      Notes <span className="font-normal text-muted-foreground">(optional)</span>
+                    </Label>
+                    <Textarea
+                      id="edit-interest-note"
+                      data-testid="input-edit-interest-note"
+                      value={editNote}
+                      onChange={(e) => setEditNote(e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+                ) : interest.note ? (
                   <div className="rounded-md border border-dashed p-3">
                     <p className="text-xs text-muted-foreground">Note</p>
                     <p className="text-sm mt-1 whitespace-pre-wrap">{interest.note}</p>
                   </div>
-                )}
+                ) : null}
               </div>
             </div>
             <DialogFooter className="shrink-0 flex-wrap">
@@ -949,6 +1033,7 @@ function TrainingInterestDialog({
                     onClick={saveEdit}
                     disabled={
                       editPeople.length === 0 ||
+                      !editLocation.trim() ||
                       editPeople.some((person) => !person.name.trim() || !person.email.trim()) ||
                       updateInterest.isPending
                     }

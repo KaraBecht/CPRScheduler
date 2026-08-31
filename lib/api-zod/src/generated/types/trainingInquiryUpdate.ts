@@ -9,6 +9,9 @@ import type { TrainingInquiryPersonUpdate } from './trainingInquiryPersonUpdate'
 
 export interface TrainingInquiryUpdate {
   archived?: boolean;
+  /** @minLength 1 */
+  location?: string;
+  note?: string;
   /** @minItems 1 */
   people?: TrainingInquiryPersonUpdate[];
 }

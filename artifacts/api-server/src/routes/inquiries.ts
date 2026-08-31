@@ -27,6 +27,7 @@ function getPeople(row: typeof trainingInquiriesTable.$inferSelect): TrainingInq
     name: person.name,
     phone: typeof person.phone === "string" ? person.phone : "",
     email: "email" in person && typeof person.email === "string" ? person.email : "",
+    note: typeof person.note === "string" ? person.note : "",
     status: isPersonStatus(person.status) ? person.status : "interested",
   }));
 }
@@ -68,6 +69,7 @@ router.post("/inquiries", async (req, res): Promise<void> => {
     name: person.name.trim(),
     phone: person.phone.trim(),
     email: person.email.trim(),
+    note: person.note?.trim() ?? "",
     status: "interested" as const,
   }));
 
@@ -140,16 +142,25 @@ router.patch("/inquiries/:inquiryId", async (req, res): Promise<void> => {
     archivedAt?: Date | null;
     name?: string;
     phone?: string;
+    location?: string;
+    note?: string;
     people?: TrainingInquiryPerson[];
   } = {};
   if (parsed.data.archived !== undefined) {
     update.archivedAt = parsed.data.archived ? new Date() : null;
+  }
+  if (parsed.data.location !== undefined) {
+    update.location = parsed.data.location.trim();
+  }
+  if (parsed.data.note !== undefined) {
+    update.note = parsed.data.note.trim();
   }
   if (parsed.data.people !== undefined) {
     const people: TrainingInquiryPerson[] = parsed.data.people.map((person) => ({
       name: person.name.trim(),
       phone: person.phone?.trim() ?? "",
       email: person.email.trim(),
+      note: person.note?.trim() ?? "",
       status: isPersonStatus(person.status) ? person.status : "interested",
     }));
     if (people.some((person) => !person.name || !person.email)) {

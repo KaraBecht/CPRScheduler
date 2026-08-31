@@ -4,6 +4,7 @@ export type TrainingInquiryPerson = {
   name: string;
   phone: string;
   email: string;
+  note?: string;
   status?: "interested" | "scheduled" | "completed" | "not_interested";
 };
 

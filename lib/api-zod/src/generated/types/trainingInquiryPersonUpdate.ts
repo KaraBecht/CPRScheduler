@@ -13,5 +13,6 @@ export interface TrainingInquiryPersonUpdate {
   phone?: string;
   /** @minLength 1 */
   email: string;
+  note?: string;
   status?: TrainingInquiryPersonUpdateStatus;
 }

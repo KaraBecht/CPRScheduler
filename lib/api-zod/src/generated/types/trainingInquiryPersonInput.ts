@@ -12,4 +12,5 @@ export interface TrainingInquiryPersonInput {
   phone?: string;
   /** @minLength 1 */
   email: string;
+  note?: string;
 }

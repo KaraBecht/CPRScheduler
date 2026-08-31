@@ -44,11 +44,14 @@ describe("training interest API contracts", () => {
 
   it("accepts a people update without requiring archive state", () => {
     const result = UpdateInquiryBody.safeParse({
+      location: "Updated Studio",
+      note: "Follow up next month",
       people: [
         {
           name: "Added Contact",
           phone: "",
           email: "added@example.com",
+          note: "Prefers morning sessions",
           status: "interested",
         },
       ],

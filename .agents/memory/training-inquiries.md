@@ -3,11 +3,11 @@ name: Training interest records
 description: Product distinction between lightweight interest contacts and complete class requests.
 ---
 
-Display preliminary records as training “interests,” while retaining the existing inquiry API and storage identifiers for compatibility. One interest may group multiple people, each with a name and email plus an optional phone number, while division and location are shared. Do not require certification, dates, or attendee counts until the interest becomes a full request.
+Display preliminary records as training “interests,” while retaining the existing inquiry API and storage identifiers for compatibility. One interest may group multiple people, each with a name and email plus an optional phone number and person-specific note, while division and location are shared. Do not require certification, dates, or attendee counts until the interest becomes a full request.
 
 **Why:** Admins need to capture calls and early interest before enough scheduling information exists to create a complete training request, and several contacts from the same division and location may be involved.
 
-**How to apply:** Use “interest” in user-facing copy. Preserve grouped contacts with individual email and optional phone details plus shared division/location, separate from the approval and scheduling workflow.
+**How to apply:** Use “interest” in user-facing copy. Preserve grouped contacts with individual email, optional phone, and optional note details plus shared division/location, separate from the approval and scheduling workflow.
 
 The multi-person interest dialog must constrain itself to the viewport and scroll its form body independently, leaving the save/cancel actions reachable.
 
@@ -37,4 +37,4 @@ Administrators can reopen an interest and edit its people list, including adding
 
 **Why:** Interest groups often grow after the first contact is saved, so the initial record should not become a dead end.
 
-**How to apply:** Prefill existing contacts in edit mode, keep phone optional, require name and email, preserve statuses on save, and leave shared division/location/note unchanged unless explicitly expanded later.
+**How to apply:** Prefill existing contacts in edit mode, keep phone and person notes optional, require name and email, preserve statuses on save, insert new people at the top, allow shared location/note edits, and keep division read-only.
