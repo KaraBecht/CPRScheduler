@@ -59,4 +59,8 @@ describe("training interest API contracts", () => {
 
     expect(result.success).toBe(true);
   });
+
+  it("requires at least one person when updating a people list", () => {
+    expect(UpdateInquiryBody.safeParse({ people: [] }).success).toBe(false);
+  });
 });

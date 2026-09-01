@@ -37,4 +37,10 @@ Administrators can reopen an interest and edit its people list, including adding
 
 **Why:** Interest groups often grow after the first contact is saved, so the initial record should not become a dead end.
 
-**How to apply:** Prefill existing contacts in edit mode, keep phone and person notes optional, require name and email, preserve statuses on save, insert new people at the top, allow shared location/note edits, and keep division read-only.
+**How to apply:** Prefill existing contacts in edit mode, keep phone and person notes optional, require name and email, preserve statuses on save, insert new people at the top, allow shared location/note edits, allow removing people while requiring at least one, and keep division read-only.
+
+People forms display a live tally that updates immediately as contacts are added or removed.
+
+**Why:** When several person cards are in a scrollable dialog, admins need an immediate count without counting cards manually.
+
+**How to apply:** Show the current form-state count at the top of both the new-interest and edit-interest dialogs, not only the last saved count.

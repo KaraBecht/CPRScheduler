@@ -413,7 +413,9 @@ function NewInterestDialog() {
           <div className="space-y-4">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label>People</Label>
+              <Label data-testid="text-new-interest-people-count">
+                People ({form.people.length})
+              </Label>
               <Button
                 type="button"
                 variant="outline"
@@ -806,7 +808,7 @@ function TrainingInterestDialog({
               <DialogTitle>Training interest</DialogTitle>
               <DialogDescription>
                 {isEditing
-                  ? "Update contact details or add people to this interest."
+                  ? "Update contact details, add people, or remove people from this interest."
                   : "Review the people and shared details saved for this interest."}
               </DialogDescription>
             </DialogHeader>
@@ -814,8 +816,11 @@ function TrainingInterestDialog({
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-semibold">
-                      {interest.people.length} {interest.people.length === 1 ? "person" : "people"}
+                    <h3 className="font-semibold" data-testid="text-edit-interest-people-count">
+                      {isEditing ? editPeople.length : interest.people.length}{" "}
+                      {(isEditing ? editPeople.length : interest.people.length) === 1
+                        ? "person"
+                        : "people"}
                     </h3>
                     {interest.archivedAt && <Badge variant="secondary">Archived</Badge>}
                   </div>
@@ -841,6 +846,21 @@ function TrainingInterestDialog({
                       <div key={index} className="rounded-md border p-3 space-y-3">
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium">Person {index + 1}</span>
+                          {editPeople.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                setEditPeople((current) =>
+                                  current.filter((_, personIndex) => personIndex !== index),
+                                )
+                              }
+                              data-testid={`button-remove-edit-interest-person-${index}`}
+                            >
+                              <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Remove
+                            </Button>
+                          )}
                         </div>
                         <div>
                           <Label htmlFor={`edit-interest-name-${index}`}>Name</Label>
