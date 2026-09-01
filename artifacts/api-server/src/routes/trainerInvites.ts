@@ -1,5 +1,7 @@
 import { Router, type IRouter } from "express";
 import { recordTrainerResponse } from "../lib/trainerNotifications";
+import { db, trainerInvitationsTable, usersTable } from "@workspace/db";
+import { and, eq } from "drizzle-orm";
 
 const router: IRouter = Router();
 
@@ -91,6 +93,60 @@ router.get("/trainer-invite/:token/decline", async (req, res) => {
   res.send(
     responsePage("Class Declined", "Thank you for letting us know. Your response has been recorded and we will find another instructor for this class.", "#dc2626", result.classId),
   );
+});
+
+router.post("/classes/:classId/trainer-response", async (req, res) => {
+  const classId = Number.parseInt(req.params.classId, 10);
+  if (!Number.isInteger(classId) || classId <= 0) {
+    res.status(400).json({ error: "Invalid class ID" });
+    return;
+  }
+  const body = req.body as { userId?: unknown; response?: unknown };
+  if (
+    !Number.isInteger(body.userId) ||
+    (body.userId as number) <= 0 ||
+    (body.response !== "accepted" && body.response !== "declined")
+  ) {
+    res.status(400).json({ error: "A valid userId and response are required" });
+    return;
+  }
+  const userId = body.userId as number;
+  const response = body.response;
+  const [invite] = await db
+    .select()
+    .from(trainerInvitationsTable)
+    .where(and(
+      eq(trainerInvitationsTable.classId, classId),
+      eq(trainerInvitationsTable.userId, userId),
+    ))
+    .limit(1);
+
+  if (!invite) {
+    res.status(404).json({ error: "Trainer invitation not found" });
+    return;
+  }
+  if (invite.status !== "pending") {
+    res.status(409).json({ error: "This invitation has already been answered" });
+    return;
+  }
+
+  await recordTrainerResponse(invite.token, response, req.log);
+  const [updated] = await db
+    .select({
+      id: trainerInvitationsTable.id,
+      userId: trainerInvitationsTable.userId,
+      trainerName: usersTable.name,
+      status: trainerInvitationsTable.status,
+      respondedAt: trainerInvitationsTable.respondedAt,
+    })
+    .from(trainerInvitationsTable)
+    .innerJoin(usersTable, eq(trainerInvitationsTable.userId, usersTable.id))
+    .where(eq(trainerInvitationsTable.id, invite.id));
+
+  res.json({
+    ...updated,
+    respondedAt: updated?.respondedAt?.toISOString() ?? null,
+  });
 });
 
 export default router;

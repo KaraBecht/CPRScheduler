@@ -63,6 +63,8 @@ export * from './rosterResult';
 export * from './studentDashboard';
 export * from './trainerInvitation';
 export * from './trainerInviteStatus';
+export * from './trainerResponseInput';
+export * from './trainerResponseInputResponse';
 export * from './trainingInquiry';
 export * from './trainingInquiryDeleteConfirmation';
 export * from './trainingInquiryDeleteConfirmationConfirm';

@@ -57,6 +57,8 @@ import type {
   RequestorDashboard,
   RosterAttendee,
   StudentDashboard,
+  TrainerInvitation,
+  TrainerResponseInput,
   TrainingInquiry,
   TrainingInquiryDeleteConfirmation,
   TrainingInquiryInput,
@@ -843,6 +845,72 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getDeleteClassMutationOptions(options));
+    }
+
+export const getRespondToTrainerInvitationUrl = (classId: number,) => {
+
+
+
+
+  return `/api/classes/${classId}/trainer-response`
+}
+
+export const respondToTrainerInvitation = async (classId: number,
+    trainerResponseInput: TrainerResponseInput, options?: RequestInit): Promise<TrainerInvitation> => {
+
+  return customFetch<TrainerInvitation>(getRespondToTrainerInvitationUrl(classId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      trainerResponseInput,)
+  }
+);}
+
+
+
+
+export const getRespondToTrainerInvitationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof respondToTrainerInvitation>>, TError,{classId: number;data: BodyType<TrainerResponseInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof respondToTrainerInvitation>>, TError,{classId: number;data: BodyType<TrainerResponseInput>}, TContext> => {
+
+const mutationKey = ['respondToTrainerInvitation'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof respondToTrainerInvitation>>, {classId: number;data: BodyType<TrainerResponseInput>}> = (props) => {
+          const {classId,data} = props ?? {};
+
+          return  respondToTrainerInvitation(classId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RespondToTrainerInvitationMutationResult = NonNullable<Awaited<ReturnType<typeof respondToTrainerInvitation>>>
+    export type RespondToTrainerInvitationMutationBody = BodyType<TrainerResponseInput>
+    export type RespondToTrainerInvitationMutationError = ErrorType<void>
+
+    export const useRespondToTrainerInvitation = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof respondToTrainerInvitation>>, TError,{classId: number;data: BodyType<TrainerResponseInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof respondToTrainerInvitation>>,
+        TError,
+        {classId: number;data: BodyType<TrainerResponseInput>},
+        TContext
+      > => {
+      return useMutation(getRespondToTrainerInvitationMutationOptions(options));
     }
 
 export const getListClassEnrollmentsUrl = (classId: number,) => {

@@ -9,12 +9,14 @@ import {
   useCreateClass,
   useUpdateClass,
   useDeleteClass,
+  useRespondToTrainerInvitation,
   useListUsers,
   getGetClassQueryKey,
   getGetClassRosterQueryKey,
   getListClassesQueryKey,
   getGetAdminDashboardQueryKey,
   getGetStudentDashboardQueryKey,
+  getGetInstructorDashboardQueryKey,
   type CertificationType,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -202,6 +204,30 @@ export default function ClassDetail() {
       onError: () => toast({ title: "Could not update class", variant: "destructive" }),
     },
   });
+  const respondToInvite = useRespondToTrainerInvitation({
+    mutation: {
+      onSuccess: (_, variables) => {
+        qc.invalidateQueries({ queryKey: getGetClassQueryKey(classId) });
+        if (userId) {
+          qc.invalidateQueries({
+            queryKey: getGetInstructorDashboardQueryKey(userId),
+          });
+        }
+        toast({
+          title:
+            variables.data.response === "accepted"
+              ? "Class accepted"
+              : "Class declined",
+        });
+      },
+      onError: () =>
+        toast({
+          title: "Could not record your response",
+          description: "Refresh the page and try again.",
+          variant: "destructive",
+        }),
+    },
+  });
 
   function openEdit() {
     if (!cls) return;
@@ -302,6 +328,10 @@ export default function ClassDetail() {
   const canManage = role === "administrator" || role === "instructor";
   const studentEnrollment = enrollments.find((e) => e.studentId === userId);
   const signInEntries = (rosterData?.entries ?? []).filter((e) => e.name.trim() !== "");
+  const currentTrainerInvitation =
+    role === "instructor" && userId
+      ? cls.trainerInvitations?.find((invite) => invite.userId === userId)
+      : undefined;
 
   return (
     <>
@@ -414,6 +444,62 @@ export default function ClassDetail() {
           </div>
         }
       />
+
+      {currentTrainerInvitation && (
+        <Card className="mb-6 border-primary/20">
+          <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-medium">Your instructor assignment</p>
+              <p className="text-sm text-muted-foreground">
+                {currentTrainerInvitation.status === "pending"
+                  ? "Please confirm whether you can teach this class."
+                  : currentTrainerInvitation.status === "accepted"
+                    ? "You accepted this class."
+                    : "You declined this class."}
+              </p>
+            </div>
+            {currentTrainerInvitation.status === "pending" ? (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  disabled={respondToInvite.isPending}
+                  data-testid="button-decline-trainer-invite"
+                  onClick={() =>
+                    respondToInvite.mutate({
+                      classId,
+                      data: { userId: userId!, response: "declined" },
+                    })
+                  }
+                >
+                  <X className="mr-1.5 h-4 w-4" /> Decline
+                </Button>
+                <Button
+                  disabled={respondToInvite.isPending}
+                  data-testid="button-accept-trainer-invite"
+                  onClick={() =>
+                    respondToInvite.mutate({
+                      classId,
+                      data: { userId: userId!, response: "accepted" },
+                    })
+                  }
+                >
+                  <Check className="mr-1.5 h-4 w-4" /> Accept
+                </Button>
+              </div>
+            ) : (
+              <Badge
+                className={
+                  currentTrainerInvitation.status === "accepted"
+                    ? "bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/10"
+                    : "bg-red-500/10 text-red-700 hover:bg-red-500/10"
+                }
+              >
+                {currentTrainerInvitation.status === "accepted" ? "Accepted" : "Declined"}
+              </Badge>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {role === "administrator" &&
         (cls.location === "TBD" ||
@@ -1008,15 +1094,8 @@ export default function ClassDetail() {
           </CardContent>
         </Card>
       </div>
-      {canManage && (() => {
-        // Once a class is confirmed/scheduled and a trainer is assigned, hide
-        // pending invitations — they no longer reflect actionable state.
-        const hasAssignedTrainer =
-          (cls.instructors && cls.instructors.length > 0) || !!cls.instructorId;
-        const classIsLocked = ["confirmed", "scheduled", "completed"].includes(cls.status);
-        const visibleInvitations = (cls.trainerInvitations ?? []).filter(
-          (inv) => !(classIsLocked && hasAssignedTrainer && inv.status === "pending"),
-        );
+      {role === "administrator" && (() => {
+        const visibleInvitations = cls.trainerInvitations ?? [];
         return visibleInvitations.length > 0 ? (
         <Card className="mt-6">
           <CardHeader>
@@ -1044,7 +1123,7 @@ export default function ClassDetail() {
                     </Badge>
                   )}
                   {inv.status === "pending" && (
-                    <Badge variant="secondary">Inquiry</Badge>
+                    <Badge variant="secondary">Awaiting response</Badge>
                   )}
                 </div>
               ))}

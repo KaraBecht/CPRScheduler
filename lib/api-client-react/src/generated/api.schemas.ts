@@ -142,6 +142,12 @@ export interface ClassSession {
   description?: string | null;
   /** @nullable */
   businessUnit?: string | null;
+  /** @nullable */
+  contactName?: string | null;
+  /** @nullable */
+  contactPhone?: string | null;
+  /** @nullable */
+  contactEmail?: string | null;
 }
 
 export type TrainerInviteStatus = typeof TrainerInviteStatus[keyof typeof TrainerInviteStatus];
@@ -159,6 +165,19 @@ export interface TrainerInvitation {
   trainerName: string;
   status: TrainerInviteStatus;
   respondedAt?: string | null;
+}
+
+export type TrainerResponseInputResponse = typeof TrainerResponseInputResponse[keyof typeof TrainerResponseInputResponse];
+
+
+export const TrainerResponseInputResponse = {
+  accepted: 'accepted',
+  declined: 'declined',
+} as const;
+
+export interface TrainerResponseInput {
+  userId: number;
+  response: TrainerResponseInputResponse;
 }
 
 export interface Enrollment {
@@ -191,6 +210,9 @@ export interface ClassInput {
   status?: ClassStatus;
   description?: string;
   businessUnit?: string;
+  contactName?: string;
+  contactPhone?: string;
+  contactEmail?: string;
 }
 
 export type RosterResult = typeof RosterResult[keyof typeof RosterResult];
@@ -250,6 +272,9 @@ export interface ClassUpdate {
   instructorIds?: number[];
   description?: string;
   businessUnit?: string;
+  contactName?: string;
+  contactPhone?: string;
+  contactEmail?: string;
   status?: ClassStatus;
 }
 

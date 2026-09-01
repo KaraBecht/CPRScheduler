@@ -9,6 +9,7 @@ import {
   certificatesTable,
   classRosterTable,
   locationsTable,
+  classInstructorsTable,
 } from "@workspace/db";
 import { and, or, eq, gte, sql, desc, asc, ne, inArray } from "drizzle-orm";
 import { autoCompletePastClasses } from "../lib/autoComplete";
@@ -298,13 +299,18 @@ router.get("/dashboard/instructor/:instructorId", async (req, res) => {
     .where(eq(usersTable.id, id));
   if (!instructor) { res.status(404).json({ error: "Not found" }); return; }
   const today = new Date().toISOString().split("T")[0]!;
+  const joinedClassIds = db
+    .select({ classId: classInstructorsTable.classId })
+    .from(classInstructorsTable)
+    .where(eq(classInstructorsTable.userId, id));
+  const assignedToInstructor = sql`(${classesTable.instructorId} = ${id} OR ${classesTable.id} IN (${joinedClassIds}))`;
   const allRows = await db
     .select()
     .from(classesTable)
-    .where(eq(classesTable.instructorId, id))
+    .where(assignedToInstructor)
     .orderBy(asc(classesTable.date));
   const upcomingRows = allRows.filter(
-    (c) => c.date >= today && c.status === "scheduled",
+    (c) => c.date >= today && ["scheduled", "confirmed"].includes(c.status),
   );
   const pastRows = allRows.filter(
     (c) => c.date < today || c.status === "completed",
@@ -318,13 +324,13 @@ router.get("/dashboard/instructor/:instructorId", async (req, res) => {
     })
     .from(enrollmentsTable)
     .innerJoin(classesTable, eq(enrollmentsTable.classId, classesTable.id))
-    .where(eq(classesTable.instructorId, id));
+    .where(assignedToInstructor);
 
   const [certsIssued] = await db
     .select({ n: sql<number>`count(*)::int` })
     .from(certificatesTable)
     .innerJoin(classesTable, eq(certificatesTable.classId, classesTable.id))
-    .where(eq(classesTable.instructorId, id));
+    .where(assignedToInstructor);
 
   res.json({
     instructor: serializeUser(instructor),

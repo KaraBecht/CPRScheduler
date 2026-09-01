@@ -30,4 +30,10 @@ export interface ClassSession {
   description?: string | null;
   /** @nullable */
   businessUnit?: string | null;
+  /** @nullable */
+  contactName?: string | null;
+  /** @nullable */
+  contactPhone?: string | null;
+  /** @nullable */
+  contactEmail?: string | null;
 }

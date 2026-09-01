@@ -197,6 +197,29 @@ paths:
       responses:
         "204": { description: Deleted }
 
+  /classes/{classId}/trainer-response:
+    post:
+      operationId: respondToTrainerInvitation
+      tags: [classes]
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TrainerResponseInput" }
+      responses:
+        "200":
+          description: Response recorded
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TrainerInvitation" }
+        "404": { description: Invitation not found }
+        "409": { description: Invitation already answered }
+
   /classes/{classId}/enrollments:
     get:
       operationId: listClassEnrollments
@@ -916,6 +939,9 @@ components:
               name: { type: string }
         description: { type: ["string", "null"] }
         businessUnit: { type: ["string", "null"] }
+        contactName: { type: ["string", "null"] }
+        contactPhone: { type: ["string", "null"] }
+        contactEmail: { type: ["string", "null"] }
 
     TrainerInviteStatus:
       type: string
@@ -930,6 +956,15 @@ components:
         trainerName: { type: string }
         status: { $ref: "#/components/schemas/TrainerInviteStatus" }
         respondedAt: { type: string, nullable: true }
+
+    TrainerResponseInput:
+      type: object
+      required: [userId, response]
+      properties:
+        userId: { type: integer }
+        response:
+          type: string
+          enum: [accepted, declined]
 
     ClassDetail:
       allOf:
@@ -961,6 +996,9 @@ components:
         status: { $ref: "#/components/schemas/ClassStatus" }
         description: { type: string }
         businessUnit: { type: string }
+        contactName: { type: string }
+        contactPhone: { type: string }
+        contactEmail: { type: string }
 
     RosterResult:
       type: string
@@ -1042,6 +1080,9 @@ components:
           items: { type: integer }
         description: { type: string }
         businessUnit: { type: string }
+        contactName: { type: string }
+        contactPhone: { type: string }
+        contactEmail: { type: string }
         status: { $ref: "#/components/schemas/ClassStatus" }
 
     Enrollment:

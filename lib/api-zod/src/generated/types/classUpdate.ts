@@ -19,5 +19,8 @@ export interface ClassUpdate {
   instructorIds?: number[];
   description?: string;
   businessUnit?: string;
+  contactName?: string;
+  contactPhone?: string;
+  contactEmail?: string;
   status?: ClassStatus;
 }

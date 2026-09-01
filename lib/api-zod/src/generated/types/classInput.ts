@@ -22,4 +22,7 @@ export interface ClassInput {
   status?: ClassStatus;
   description?: string;
   businessUnit?: string;
+  contactName?: string;
+  contactPhone?: string;
+  contactEmail?: string;
 }
