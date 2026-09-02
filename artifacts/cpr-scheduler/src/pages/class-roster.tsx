@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth-context";
-import * as XLSX from "xlsx";
+import { parseRosterSpreadsheet } from "@/lib/roster-import";
 
 type RosterResult = "pass" | "fail" | null;
 type Entry = {
@@ -41,26 +41,6 @@ type Entry = {
   result: RosterResult;
   cardSent: boolean;
 };
-
-// ─── Spreadsheet / CSV parser ─────────────────────────────────────────────────
-
-const NAME_HINTS = ["name", "first", "last", "student", "attendee"];
-const EMAIL_HINTS = ["email"];
-
-/**
- * Scan the first few rows to find the real header row.
- * Handles files where row 0 is a title/label (e.g. "CPR,,,,") and
- * the actual column headers live in row 1 or 2.
- */
-function detectHeaderRow(rawRows: string[][]): number {
-  for (let i = 0; i < Math.min(rawRows.length, 6); i++) {
-    const row = rawRows[i]!.map((c) => String(c).toLowerCase().trim());
-    const hasNameHint = row.some((c) => NAME_HINTS.some((h) => c.includes(h)));
-    const hasEmailHint = row.some((c) => EMAIL_HINTS.some((h) => c.includes(h)));
-    if (hasNameHint || hasEmailHint) return i;
-  }
-  return 0; // fallback: treat row 0 as headers
-}
 
 function parseRosterJson(text: string): { name: string; email: string; phone: string; result?: string | null; cardSent?: boolean }[] {
   const data = JSON.parse(text) as Record<string, unknown>;
@@ -78,73 +58,6 @@ function parseRosterJson(text: string): { name: string; email: string; phone: st
       result: typeof e["result"] === "string" ? e["result"] : null,
       cardSent: Boolean(e["cardSent"]),
     }));
-}
-
-async function parseSpreadsheet(
-  file: File,
-): Promise<{ name: string; email: string; phone: string }[]> {
-  const buf = await file.arrayBuffer();
-  const wb = XLSX.read(buf, { type: "array" });
-  const wsName = wb.SheetNames[0];
-  if (!wsName) throw new Error("Workbook has no sheets");
-  const ws = wb.Sheets[wsName]!;
-
-  // Get every row as a plain string array first so we can detect the header row
-  const rawRows = XLSX.utils.sheet_to_json<string[]>(ws, {
-    header: 1,
-    defval: "",
-    raw: false,
-  });
-
-  const headerIdx = detectHeaderRow(rawRows);
-  const headers = (rawRows[headerIdx] ?? []).map((c) => String(c).trim());
-  const dataRows = rawRows.slice(headerIdx + 1);
-
-  /**
-   * Return the first non-empty cell value whose header contains any of the
-   * provided keywords (case-insensitive substring match).
-   */
-  const get = (row: string[], ...keywords: string[]): string => {
-    for (let ci = 0; ci < headers.length; ci++) {
-      const h = (headers[ci] ?? "").toLowerCase();
-      if (keywords.some((kw) => h.includes(kw))) {
-        return String(row[ci] ?? "").trim();
-      }
-    }
-    return "";
-  };
-
-  return dataRows
-    .map((row) => {
-      // 1. Look for a combined "Full Name", "Name", "Student Name" column
-      let name = "";
-      for (let ci = 0; ci < headers.length; ci++) {
-        const h = (headers[ci] ?? "").toLowerCase().trim();
-        if (
-          h === "name" ||
-          h === "full name" ||
-          h === "fullname" ||
-          h === "student name" ||
-          h === "attendee name"
-        ) {
-          name = String(row[ci] ?? "").trim();
-          if (name) break;
-        }
-      }
-
-      // 2. Fall back to First Name + Last Name columns
-      if (!name) {
-        const first = get(row, "first name", "firstname", "first");
-        const last = get(row, "last name", "lastname", "surname", "last");
-        name = `${first} ${last}`.trim();
-      }
-
-      const email = get(row, "email");
-      const phone = get(row, "phone", "mobile", "cell", "telephone");
-
-      return { name, email, phone };
-    })
-    .filter((r) => r.name.length > 0);
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -238,7 +151,7 @@ export default function ClassRoster() {
         const text = await file.text();
         parsed = parseRosterJson(text);
       } else {
-        parsed = await parseSpreadsheet(file);
+        parsed = await parseRosterSpreadsheet(file);
       }
 
       if (parsed.length === 0) {
@@ -373,7 +286,7 @@ export default function ClassRoster() {
           <input
             ref={fileInputRef}
             type="file"
-            accept=".json,.xlsx,.xls,.csv"
+            accept=".json,.xlsx,.xlsm,.csv"
             className="hidden"
             onChange={handleFileChange}
           />
@@ -387,7 +300,7 @@ export default function ClassRoster() {
             <Upload className="h-3.5 w-3.5 mr-1.5" />
             {importing ? "Reading file…" : "Import from file"}
           </Button>
-          <span className="text-xs text-muted-foreground">.json (offline form) or .xlsx / .csv</span>
+          <span className="text-xs text-muted-foreground">.json (offline form), .xlsx / .xlsm, or .csv</span>
 
           {/* Download offline roster form (pre-filled with this class's details) */}
           <Button

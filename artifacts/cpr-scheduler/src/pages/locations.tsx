@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearch } from "wouter";
-import { read as xlsxRead, utils as xlsxUtils } from "xlsx";
 import {
   useListLocations,
   useCreateLocation,
@@ -19,6 +18,7 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { downloadCsv, isoToDate } from "@/lib/export-csv";
+import { readFirstWorksheetRows } from "@/lib/spreadsheet";
 import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -353,20 +353,10 @@ function parseCsv(text: string): CsvRow[] {
     .filter((r) => CSV_COLUMNS.some((c) => r[c] !== ""));
 }
 
-function parseXlsxBuffer(buffer: ArrayBuffer): CsvRow[] {
-  const workbook = xlsxRead(buffer, { type: "array" });
-  const sheetName = workbook.SheetNames[0];
-  if (!sheetName) return [];
-  const sheet = workbook.Sheets[sheetName];
-  if (!sheet) return [];
-
+async function parseXlsxBuffer(buffer: ArrayBuffer): Promise<CsvRow[]> {
   // Read as a 2-D array so we can skip any title rows that appear before
   // the real header row (e.g. "CPR Training 2026" title rows).
-  const raw = xlsxUtils.sheet_to_json<string[]>(sheet, {
-    header: 1,
-    defval: "",
-    raw: false,
-  });
+  const raw = await readFirstWorksheetRows(buffer);
 
   // Find the first row that contains a cell normalising to "name" — that
   // is the true header row.
@@ -402,14 +392,31 @@ function CsvImportDialog({ onImported }: { onImported: () => void }) {
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const isXlsx = /\.(xlsx|xls|xlsm|xlsb)$/i.test(file.name);
+    if (/\.(xls|xlsb)$/i.test(file.name)) {
+      toast({
+        title: "Legacy Excel format not supported",
+        description: "Save the file as .xlsx or CSV and try again.",
+        variant: "destructive",
+      });
+      e.target.value = "";
+      return;
+    }
+    const isXlsx = /\.(xlsx|xlsm)$/i.test(file.name);
     const reader = new FileReader();
     if (isXlsx) {
-      reader.onload = (ev) => {
+      reader.onload = async (ev) => {
         const buffer = ev.target?.result as ArrayBuffer;
-        const parsed = parseXlsxBuffer(buffer);
-        setRows(parsed);
-        setResults(null);
+        try {
+          const parsed = await parseXlsxBuffer(buffer);
+          setRows(parsed);
+          setResults(null);
+        } catch {
+          toast({
+            title: "Could not read spreadsheet",
+            description: "Please upload an .xlsx, .xlsm, or CSV file.",
+            variant: "destructive",
+          });
+        }
       };
       reader.readAsArrayBuffer(file);
     } else {
@@ -533,12 +540,12 @@ function CsvImportDialog({ onImported }: { onImported: () => void }) {
           <Upload className="h-7 w-7 text-muted-foreground" />
           <p className="text-sm font-medium">Click to choose a file</p>
           <p className="text-xs text-muted-foreground">
-            CSV <span className="mx-1 text-muted-foreground/50">·</span> Excel (.xlsx, .xls)
+            CSV <span className="mx-1 text-muted-foreground/50">·</span> Excel (.xlsx, .xlsm)
           </p>
           <input
             ref={fileRef}
             type="file"
-            accept=".csv,text/csv,.xlsx,.xls,.xlsm,.xlsb,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+            accept=".csv,text/csv,.xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel.sheet.macroEnabled.12"
             className="hidden"
             onChange={handleFile}
             data-testid="input-csv-file"
