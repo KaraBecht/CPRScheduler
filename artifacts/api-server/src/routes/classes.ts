@@ -11,7 +11,7 @@ import {
   locationsTable,
   trainerInvitationsTable,
 } from "@workspace/db";
-import { and, eq, gte, ilike, ne, or, sql, desc, asc, isNotNull, inArray } from "drizzle-orm";
+import { and, eq, gte, ilike, ne, not, or, sql, desc, asc, isNotNull, inArray } from "drizzle-orm";
 import {
   CreateClassBody,
   UpdateClassBody,
@@ -279,6 +279,26 @@ router.patch("/classes/:classId", async (req, res) => {
         .insert(classInstructorsTable)
         .values(instructorIds.map((userId) => ({ classId, userId })))
         .onConflictDoNothing();
+
+      // Once a trainer is assigned to an upcoming class, pending invitations
+      // for other trainers are no longer actionable. Keep the assigned
+      // trainer's pending invitation so they can still accept or decline.
+      const today = new Date().toISOString().split("T")[0]!;
+      if (
+        row.date >= today &&
+        (row.status === "confirmed" || row.status === "scheduled")
+      ) {
+        await db
+          .delete(trainerInvitationsTable)
+          .where(
+            and(
+              eq(trainerInvitationsTable.classId, classId),
+              eq(trainerInvitationsTable.status, "pending"),
+              not(inArray(trainerInvitationsTable.userId, instructorIds)),
+            ),
+          );
+      }
+
       sendImmediateReminderIfWithin24h(row, instructorIds, req.log).catch((err) =>
         req.log.error({ err, classId }, "Immediate instructor reminder error"),
       );
