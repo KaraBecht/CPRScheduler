@@ -245,14 +245,22 @@ router.patch("/classes/:classId", async (req, res) => {
 
   // Capture old status before the update so we can detect status transitions
   const [oldRow] = await db
-    .select({ status: classesTable.status })
+    .select({ status: classesTable.status, date: classesTable.date })
     .from(classesTable)
     .where(eq(classesTable.id, classId));
 
   const { instructorIds, ...classData } = body;
-  const updateData: typeof classData & { instructorId?: number | null } = {
+  const updateData: typeof classData & {
+    instructorId?: number | null;
+    sevenDayReminderClaimedAt?: Date | null;
+    sevenDayReminderSentAt?: Date | null;
+  } = {
     ...classData,
   };
+  if (body.date !== undefined && oldRow && oldRow.date !== body.date) {
+    updateData.sevenDayReminderClaimedAt = null;
+    updateData.sevenDayReminderSentAt = null;
+  }
   if (instructorIds !== undefined) {
     updateData.instructorId = instructorIds[0] ?? null;
   }

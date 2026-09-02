@@ -1,1 +1,2 @@
 - [Training interest records](training-inquiries.md) — Keep preliminary interests separate from full class requests until scheduling details are known.
+- [Development schema push](development-schema-push.md) — Do not force Drizzle’s destructive prompt caused by the legacy users-email constraint mismatch.

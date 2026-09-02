@@ -43,6 +43,8 @@ export const classesTable = pgTable("classes", {
   contactEmail: text("contact_email"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   completionEmailSentAt: timestamp("completion_email_sent_at"),
+  sevenDayReminderClaimedAt: timestamp("seven_day_reminder_claimed_at"),
+  sevenDayReminderSentAt: timestamp("seven_day_reminder_sent_at"),
 });
 
 export type ClassRow = typeof classesTable.$inferSelect;
