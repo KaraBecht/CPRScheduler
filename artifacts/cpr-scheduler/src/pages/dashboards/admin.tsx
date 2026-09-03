@@ -153,6 +153,7 @@ export function AdminDashboardPage() {
   const { data: dash, isLoading } = useGetAdminDashboard();
   const { data: activity = [] } = useGetActivityFeed();
   const { data: reminders = [] } = useListReminders({ status: "pending" });
+  const [certificateView, setCertificateView] = useState<"total" | "active" | "inactive">("total");
   if (isLoading || !dash) {
     return (
       <>
@@ -177,6 +178,23 @@ export function AdminDashboardPage() {
   }));
 
   const hasLocationAlerts = dash.locationsExpiring > 0 || dash.locationsExpired > 0;
+  const certificateMetric = {
+    total: {
+      label: "Total certificates",
+      value: dash.certificatesIssued,
+      hint: `${dash.certificatesThisMonth} this month · ${dash.certificatesYTD} YTD`,
+    },
+    active: {
+      label: "Active certificates",
+      value: dash.activeCertificates,
+      hint: `${dash.inactiveCertificates} inactive · ${dash.certificatesIssued} total`,
+    },
+    inactive: {
+      label: "Inactive certificates",
+      value: dash.inactiveCertificates,
+      hint: `${dash.activeCertificates} active · ${dash.certificatesIssued} total`,
+    },
+  }[certificateView];
 
   // Reminders due today or overdue (triggerDate <= today)
   const today = new Date().toISOString().split("T")[0]!;
@@ -189,8 +207,31 @@ export function AdminDashboardPage() {
         title="Dashboard"
         subtitle="Real-time view of classes, students, and incoming training requests."
       />
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <p className="text-sm font-medium text-muted-foreground">Certificate totals</p>
+        <div
+          className="inline-flex rounded-lg border border-border bg-muted/40 p-1"
+          role="group"
+          aria-label="Choose certificate total"
+        >
+          {(["total", "active", "inactive"] as const).map((view) => (
+            <Button
+              key={view}
+              type="button"
+              size="sm"
+              variant={certificateView === view ? "default" : "ghost"}
+              className="h-7 px-3 text-xs capitalize"
+              aria-pressed={certificateView === view}
+              onClick={() => setCertificateView(view)}
+              data-testid={`certificate-view-${view}`}
+            >
+              {view}
+            </Button>
+          ))}
+        </div>
+      </div>
       {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-4 items-stretch">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4 items-stretch">
         <StatCard
           label="Upcoming classes"
           value={dash.upcomingClasses}
@@ -207,13 +248,22 @@ export function AdminDashboardPage() {
           testId="stat-pending-requests"
         />
         <StatCard
-          label="Active certificates"
-          value={dash.activeCertificates}
-          hint={`${dash.certificatesThisMonth} this month · ${dash.certificatesYTD} YTD`}
+          label={certificateMetric.label}
+          value={certificateMetric.value}
+          hint={certificateMetric.hint}
           icon={Award}
           tone="success"
           href="/certificates"
           testId="stat-certificates"
+        />
+        <StatCard
+          label="Taught, no certificate"
+          value={dash.peopleTaughtWithoutCertificate}
+          hint="Attended or graded, but no card recorded"
+          icon={GraduationCap}
+          tone="warning"
+          href="/classes?tab=completed"
+          testId="stat-taught-without-certificate"
         />
       </div>
       {/* Location cert-status alerts */}
@@ -333,8 +383,8 @@ export function AdminDashboardPage() {
                 <span className="text-xs text-muted-foreground text-center">Classes taught</span>
               </div>
               <div className="flex flex-col items-center gap-0.5 px-4">
-                <span className="text-2xl font-bold text-foreground">{dash.activeCertificates}</span>
-                <span className="text-xs text-muted-foreground text-center">Active Certifications</span>
+                <span className="text-2xl font-bold text-foreground">{certificateMetric.value}</span>
+                <span className="text-xs text-muted-foreground text-center">{certificateMetric.label}</span>
               </div>
               <div className="flex flex-col items-center gap-0.5 px-4">
                 <span className="text-2xl font-bold text-foreground">{dash.locationsThisYear}</span>

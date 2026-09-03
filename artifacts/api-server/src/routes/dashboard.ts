@@ -11,7 +11,7 @@ import {
   locationsTable,
   classInstructorsTable,
 } from "@workspace/db";
-import { and, or, eq, gte, sql, desc, asc, ne, inArray } from "drizzle-orm";
+import { and, or, eq, gte, sql, desc, asc, ne, inArray, isNotNull } from "drizzle-orm";
 import { autoCompletePastClasses } from "../lib/autoComplete";
 
 const DEFAULT_CLASS_DURATION_MIN = 180;
@@ -81,7 +81,10 @@ router.get("/dashboard/admin", async (_req, res) => {
     [{ totalInstructors }],
     [{ totalLocations }],
     [{ pendingRequests }],
-    [{ certificatesIssued }],
+    [{ certificatesIssuedReal }],
+    [{ certificatesIssuedRoster }],
+    [{ attendedWithoutCertificate }],
+    [{ rosterWithoutCertificate }],
     [{ certificatesThisMonthReal }],
     [{ certificatesYTDReal }],
     [{ certificatesThisMonthRoster }],
@@ -119,8 +122,36 @@ router.get("/dashboard/admin", async (_req, res) => {
         ),
       ),
     db
-      .select({ certificatesIssued: sql<number>`count(*)::int` })
+      .select({ certificatesIssuedReal: sql<number>`count(*)::int` })
       .from(certificatesTable),
+    db
+      .select({ certificatesIssuedRoster: sql<number>`count(*)::int` })
+      .from(classRosterTable)
+      .where(
+        and(
+          eq(classRosterTable.cardSent, true),
+          ne(sql`trim(${classRosterTable.name})`, ""),
+        ),
+      ),
+    db
+      .select({ attendedWithoutCertificate: sql<number>`count(*)::int` })
+      .from(enrollmentsTable)
+      .where(
+        and(
+          eq(enrollmentsTable.status, "attended"),
+          eq(enrollmentsTable.certificateIssued, false),
+        ),
+      ),
+    db
+      .select({ rosterWithoutCertificate: sql<number>`count(*)::int` })
+      .from(classRosterTable)
+      .where(
+        and(
+          ne(sql`trim(${classRosterTable.name})`, ""),
+          isNotNull(classRosterTable.result),
+          eq(classRosterTable.cardSent, false),
+        ),
+      ),
     // Real certs this month
     db
       .select({ certificatesThisMonthReal: sql<number>`count(*)::int` })
@@ -222,6 +253,10 @@ router.get("/dashboard/admin", async (_req, res) => {
     ([certType, count]) => ({ certType, count }),
   );
   const activeCertificates = activeCertsByType.reduce((s, r) => s + r.count, 0);
+  const certificatesIssued = certificatesIssuedReal + certificatesIssuedRoster;
+  const inactiveCertificates = Math.max(0, certificatesIssued - activeCertificates);
+  const peopleTaughtWithoutCertificate =
+    attendedWithoutCertificate + rosterWithoutCertificate;
   const totalStudents = activeStudents;
 
   // Compute location-level cert status
@@ -278,6 +313,8 @@ router.get("/dashboard/admin", async (_req, res) => {
     pendingRequests,
     certificatesIssued,
     activeCertificates,
+    inactiveCertificates,
+    peopleTaughtWithoutCertificate,
     activeCertsByType,
     certificatesThisMonth,
     certificatesYTD,

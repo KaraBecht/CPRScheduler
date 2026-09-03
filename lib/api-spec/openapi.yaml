@@ -1395,6 +1395,8 @@ components:
           pendingRequests,
           certificatesIssued,
           activeCertificates,
+          inactiveCertificates,
+          peopleTaughtWithoutCertificate,
           certificatesThisMonth,
           certificatesYTD,
           enrollmentsThisMonth,
@@ -1416,6 +1418,8 @@ components:
         pendingRequests: { type: integer }
         certificatesIssued: { type: integer }
         activeCertificates: { type: integer }
+        inactiveCertificates: { type: integer }
+        peopleTaughtWithoutCertificate: { type: integer }
         activeCertsByType:
           type: array
           items:
