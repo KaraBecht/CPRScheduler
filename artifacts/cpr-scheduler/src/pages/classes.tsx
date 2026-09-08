@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearch } from "wouter";
 import {
   useListClasses,
@@ -8,6 +8,7 @@ import {
   getListClassesQueryKey,
   type CertificationType,
   type ClassSession,
+  useListLocations,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "@/components/PageHeader";
@@ -77,6 +78,7 @@ import {
 } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { DEFAULT_TIME_ZONE, TIME_ZONE_OPTIONS } from "@/lib/timezones";
 
 const CERT_TYPES: CertificationType[] = [
   "cpr_aed_first_aid",
@@ -100,6 +102,7 @@ function CreateClassDialog() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const { data: instructors = [] } = useListUsers({ role: "instructor" });
+  const { data: locations = [] } = useListLocations();
   const [title, setTitle] = useState("");
   const [certificationType, setCertificationType] =
     useState<CertificationType>("cpr_aed_first_aid");
@@ -112,7 +115,16 @@ function CreateClassDialog() {
     { date: "", startTime: "09:00" },
   ]);
   const [status, setStatus] = useState<string>("confirmed");
+  const [timeZone, setTimeZone] = useState(DEFAULT_TIME_ZONE);
   const maxInstructors = Math.ceil(capacity / 10);
+
+  useEffect(() => {
+    const matchingLocation = locations.find(
+      (candidate) =>
+        candidate.name.trim().toLowerCase() === title.trim().toLowerCase(),
+    );
+    if (matchingLocation) setTimeZone(matchingLocation.timeZone ?? DEFAULT_TIME_ZONE);
+  }, [locations, title]);
 
   const reset = () => {
     setTitle("");
@@ -124,6 +136,7 @@ function CreateClassDialog() {
     setBusinessUnit("");
     setSlots([{ date: "", startTime: "09:00" }]);
     setStatus("confirmed");
+    setTimeZone(DEFAULT_TIME_ZONE);
   };
 
   const create = useCreateClass({
@@ -155,6 +168,7 @@ function CreateClassDialog() {
             date: slot.date,
             startTime: slot.startTime,
             location,
+            timeZone,
             capacity,
             instructorIds: instructorIds.length > 0 ? instructorIds : undefined,
             description,
@@ -248,6 +262,24 @@ function CreateClassDialog() {
               onChange={setLocation}
               placeholder="Address"
             />
+          </div>
+          <div>
+            <Label>Time zone</Label>
+            <Select value={timeZone} onValueChange={setTimeZone}>
+              <SelectTrigger data-testid="select-class-time-zone">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {TIME_ZONE_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Automatically set from the matching location when available.
+            </p>
           </div>
           <div>
             <Label>

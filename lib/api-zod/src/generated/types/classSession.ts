@@ -15,6 +15,8 @@ export interface ClassSession {
   certificationType: CertificationType;
   date: string;
   startTime: string;
+  /** IANA time zone for the class location. Defaults to America/Los_Angeles. */
+  timeZone: string;
   /** @nullable */
   endTime?: string | null;
   location: string;

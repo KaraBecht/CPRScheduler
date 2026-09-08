@@ -15,4 +15,6 @@ export interface LocationInput {
   contactPhone?: string;
   notes?: string;
   businessUnit?: string;
+  /** IANA time zone for the location. Defaults to America/Los_Angeles. */
+  timeZone?: string;
 }

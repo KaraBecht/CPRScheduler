@@ -13,6 +13,7 @@ import {
   UpdateLocationBody,
   CreateLocationNoteBody,
 } from "@workspace/api-zod";
+import { isValidTimeZone } from "../lib/timeZones";
 
 const router: IRouter = Router();
 
@@ -91,6 +92,7 @@ async function buildDetail(loc: typeof locationsTable.$inferSelect) {
     id: loc.id,
     name: loc.name,
     address: loc.address,
+    timeZone: loc.timeZone,
     contactName: loc.contactName,
     contactEmail: loc.contactEmail,
     contactPhone: loc.contactPhone,
@@ -124,11 +126,16 @@ router.get("/locations", async (req, res) => {
 // POST /locations
 router.post("/locations", async (req, res) => {
   const body = CreateLocationBody.parse(req.body);
+  if (body.timeZone !== undefined && !isValidTimeZone(body.timeZone)) {
+    res.status(400).json({ error: "Invalid IANA time zone" });
+    return;
+  }
   const [row] = await db
     .insert(locationsTable)
     .values({
       name: body.name,
       address: body.address ?? null,
+      timeZone: body.timeZone,
       contactName: body.contactName ?? null,
       contactEmail: body.contactEmail ?? null,
       contactPhone: body.contactPhone ?? null,
@@ -157,6 +164,10 @@ router.get("/locations/:locationId", async (req, res) => {
 router.patch("/locations/:locationId", async (req, res) => {
   const id = parseInt(req.params.locationId, 10);
   const body = UpdateLocationBody.parse(req.body);
+  if (body.timeZone !== undefined && !isValidTimeZone(body.timeZone)) {
+    res.status(400).json({ error: "Invalid IANA time zone" });
+    return;
+  }
   const [existing] = await db
     .select()
     .from(locationsTable)
@@ -170,6 +181,7 @@ router.patch("/locations/:locationId", async (req, res) => {
     .set({
       name: body.name ?? existing.name,
       address: body.address !== undefined ? body.address : existing.address,
+      timeZone: body.timeZone !== undefined ? body.timeZone : existing.timeZone,
       contactName:
         body.contactName !== undefined ? body.contactName : existing.contactName,
       contactEmail:

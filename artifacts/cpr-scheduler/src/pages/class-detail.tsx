@@ -87,6 +87,7 @@ import {
 } from "@/lib/format";
 import { toast } from "@/hooks/use-toast";
 import { useState, useMemo, useEffect } from "react";
+import { DEFAULT_TIME_ZONE, TIME_ZONE_OPTIONS } from "@/lib/timezones";
 
 const BUSINESS_UNITS = [
   "FOX Digital",
@@ -140,6 +141,7 @@ export default function ClassDetail() {
     certificationType: "cpr_aed_first_aid" as CertificationType,
     date: "",
     startTime: "",
+    timeZone: DEFAULT_TIME_ZONE,
     endTime: "",
     location: "",
     capacity: 10,
@@ -242,6 +244,7 @@ export default function ClassDetail() {
       certificationType: cls.certificationType as CertificationType,
       date: cls.date,
       startTime: cls.startTime,
+      timeZone: cls.timeZone ?? DEFAULT_TIME_ZONE,
       endTime: cls.endTime ?? "",
       location: cls.location === "TBD" ? "" : cls.location,
       capacity: cls.capacity,
@@ -275,6 +278,7 @@ export default function ClassDetail() {
           certificationType: editForm.certificationType,
           date: editForm.date || undefined,
           startTime: editForm.startTime || undefined,
+          timeZone: editForm.timeZone,
           endTime: editForm.endTime || undefined,
           location: editForm.location || "TBD",
           capacity: editForm.capacity,
@@ -294,6 +298,7 @@ export default function ClassDetail() {
             certificationType: editForm.certificationType,
             date: slot.date,
             startTime: slot.startTime,
+            timeZone: editForm.timeZone,
             endTime: editForm.endTime || undefined,
             location: editForm.location || "TBD",
             capacity: editForm.capacity,
@@ -636,6 +641,27 @@ export default function ClassDetail() {
                 value={editForm.location}
                 onChange={(v) => setEditForm({ ...editForm, location: v })}
               />
+            </div>
+            <div>
+              <Label>Time zone</Label>
+              <Select
+                value={editForm.timeZone}
+                onValueChange={(v) => setEditForm({ ...editForm, timeZone: v })}
+              >
+                <SelectTrigger data-testid="select-edit-time-zone">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIME_ZONE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Reminders use the class location’s local time.
+              </p>
             </div>
             <div>
               {(() => {

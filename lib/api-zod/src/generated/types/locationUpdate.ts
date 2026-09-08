@@ -15,4 +15,6 @@ export interface LocationUpdate {
   contactPhone?: string;
   notes?: string;
   businessUnit?: string;
+  /** IANA time zone for the location. */
+  timeZone?: string;
 }

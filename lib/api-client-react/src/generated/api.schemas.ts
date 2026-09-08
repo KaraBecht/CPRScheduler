@@ -127,6 +127,8 @@ export interface ClassSession {
   certificationType: CertificationType;
   date: string;
   startTime: string;
+  /** IANA time zone for the class location. Defaults to America/Los_Angeles. */
+  timeZone: string;
   /** @nullable */
   endTime?: string | null;
   location: string;
@@ -202,6 +204,8 @@ export interface ClassInput {
   certificationType: CertificationType;
   date: string;
   startTime: string;
+  /** IANA time zone for the class location. */
+  timeZone?: string;
   endTime?: string;
   location: string;
   /** @minimum 1 */
@@ -266,6 +270,8 @@ export interface ClassUpdate {
   certificationType?: CertificationType;
   date?: string;
   startTime?: string;
+  /** IANA time zone for the class location. */
+  timeZone?: string;
   endTime?: string;
   location?: string;
   capacity?: number;
@@ -627,6 +633,7 @@ export interface Location {
   name: string;
   /** @nullable */
   address?: string | null;
+  timeZone?: string;
   /** @nullable */
   contactName?: string | null;
   /** @nullable */
@@ -651,6 +658,7 @@ export interface LocationDetail {
   name: string;
   /** @nullable */
   address?: string | null;
+  timeZone: string;
   /** @nullable */
   contactName?: string | null;
   /** @nullable */
@@ -682,6 +690,8 @@ export interface LocationInput {
   contactPhone?: string;
   notes?: string;
   businessUnit?: string;
+  /** IANA time zone for the location. Defaults to America/Los_Angeles. */
+  timeZone?: string;
 }
 
 export interface LocationUpdate {
@@ -693,6 +703,8 @@ export interface LocationUpdate {
   contactPhone?: string;
   notes?: string;
   businessUnit?: string;
+  /** IANA time zone for the location. */
+  timeZone?: string;
 }
 
 export interface LocationNoteInput {

@@ -198,6 +198,7 @@ router.patch("/requests/:requestId", async (req, res) => {
             date: session.date,
             startTime: session.startTime,
             location: locationName,
+            timeZone: existingLoc?.timeZone,
             capacity: existing.attendeeCount,
             status: (session.status ?? "confirmed") as "being_scheduled" | "pending_schedule" | "confirmed" | "completed" | "cancelled" | "scheduled",
           })

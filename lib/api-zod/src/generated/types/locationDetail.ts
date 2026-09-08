@@ -13,6 +13,7 @@ export interface LocationDetail {
   name: string;
   /** @nullable */
   address?: string | null;
+  timeZone: string;
   /** @nullable */
   contactName?: string | null;
   /** @nullable */

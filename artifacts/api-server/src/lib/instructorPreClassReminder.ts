@@ -59,15 +59,17 @@ function localIsoDate(date: Date, timeZone = CLASS_TIME_ZONE): string {
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
-function nextIsoDate(date: string): string {
+function shiftIsoDate(date: string, days: number): string {
   const [year, month, day] = date.split("-").map(Number);
-  const next = new Date(Date.UTC(year!, month! - 1, day! + 1));
-  return next.toISOString().split("T")[0]!;
+  const shifted = new Date(Date.UTC(year!, month! - 1, day! + days));
+  return shifted.toISOString().split("T")[0]!;
 }
 
 export function classStartInstant(
-  cls: Pick<typeof classesTable.$inferSelect, "date" | "startTime">,
-  timeZone = CLASS_TIME_ZONE,
+  cls: Pick<typeof classesTable.$inferSelect, "date" | "startTime"> & {
+    timeZone?: string | null;
+  },
+  timeZone = cls.timeZone ?? CLASS_TIME_ZONE,
 ): Date {
   const [year, month, day] = cls.date.split("-").map(Number);
   const [hour, minute] = cls.startTime.split(":").map(Number);
@@ -93,11 +95,12 @@ export function classStartInstant(
 }
 
 export function isClassWithin24Hours(
-  cls: Pick<typeof classesTable.$inferSelect, "date" | "startTime">,
+  cls: Pick<typeof classesTable.$inferSelect, "date" | "startTime"> & {
+    timeZone?: string | null;
+  },
   now = new Date(),
-  timeZone = CLASS_TIME_ZONE,
 ): boolean {
-  const untilStart = classStartInstant(cls, timeZone).getTime() - now.getTime();
+  const untilStart = classStartInstant(cls).getTime() - now.getTime();
   return untilStart > 0 && untilStart <= REMINDER_WINDOW_MS;
 }
 
@@ -532,8 +535,11 @@ async function sendRemindersForClass(
 
 export async function sendInstructorPreClassReminders(): Promise<void> {
   const now = new Date();
-  const startDate = localIsoDate(now);
-  const endDate = nextIsoDate(startDate);
+  // A UTC date plus/minus one day covers every IANA timezone while avoiding
+  // an unbounded scan of old classes. The final check uses each class's zone.
+  const utcDate = localIsoDate(now, "UTC");
+  const startDate = shiftIsoDate(utcDate, -1);
+  const endDate = shiftIsoDate(utcDate, 2);
 
   const classes = await db
     .select()

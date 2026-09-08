@@ -86,6 +86,7 @@ import { formatDate } from "@/lib/format";
 import { toast } from "@/hooks/use-toast";
 import { MapboxAddressInput } from "@/components/MapboxAddressInput";
 import { cn } from "@/lib/utils";
+import { DEFAULT_TIME_ZONE, TIME_ZONE_OPTIONS } from "@/lib/timezones";
 import {
   Select,
   SelectContent,
@@ -682,6 +683,7 @@ type LocationForm = {
   contactPhone: string;
   notes: string;
   businessUnit: string;
+  timeZone: string;
 };
 
 const EMPTY_FORM: LocationForm = {
@@ -692,6 +694,7 @@ const EMPTY_FORM: LocationForm = {
   contactPhone: "",
   notes: "",
   businessUnit: "",
+  timeZone: DEFAULT_TIME_ZONE,
 };
 
 function LocationFormDialog({
@@ -774,6 +777,27 @@ function LocationFormDialog({
               value={form.address}
               onChange={(v) => setForm({ ...form, address: v })}
             />
+          </div>
+          <div>
+            <Label>Time zone</Label>
+            <Select
+              value={form.timeZone}
+              onValueChange={(v) => setForm({ ...form, timeZone: v })}
+            >
+              <SelectTrigger data-testid="select-location-time-zone">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {TIME_ZONE_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="mt-1 text-xs text-muted-foreground">
+              New classes at this location use this time zone.
+            </p>
           </div>
 
           {/* Business unit */}
@@ -884,14 +908,17 @@ type ClassForm = {
   capacity: string;
   instructorId: string;
   status: string;
+  timeZone: string;
 };
 
 function ScheduleClassDialog({
   locationName,
+  timeZone,
   onCreated,
   trigger,
 }: {
   locationName: string;
+  timeZone: string;
   onCreated: () => void;
   trigger?: React.ReactNode;
 }) {
@@ -905,12 +932,13 @@ function ScheduleClassDialog({
     capacity: "10",
     instructorId: "",
     status: "confirmed",
+    timeZone,
   });
 
   const { data: instructors = [] } = useListUsers({ role: "instructor" });
 
   function handleOpen(v: boolean) {
-    if (v) setForm({ title: locationName, date: "", startTime: "09:00", certificationType: "cpr_aed_first_aid", capacity: "10", instructorId: "", status: "confirmed" });
+    if (v) setForm({ title: locationName, date: "", startTime: "09:00", certificationType: "cpr_aed_first_aid", capacity: "10", instructorId: "", status: "confirmed", timeZone });
     setOpen(v);
   }
 
@@ -1014,6 +1042,7 @@ function ScheduleClassDialog({
                   capacity: Number(form.capacity),
                   instructorIds: form.instructorId ? [Number(form.instructorId)] : undefined,
                   status: form.status as ClassSession["status"],
+                  timeZone: form.timeZone,
                 },
               })
             }
@@ -1049,6 +1078,7 @@ function EditClassDialog({
     title: cls.title,
     date: cls.date,
     startTime: cls.startTime,
+    timeZone: cls.timeZone ?? DEFAULT_TIME_ZONE,
     certificationType: cls.certificationType,
     capacity: String(cls.capacity),
     status: cls.status,
@@ -1063,6 +1093,7 @@ function EditClassDialog({
         title: cls.title,
         date: cls.date,
         startTime: cls.startTime,
+        timeZone: cls.timeZone ?? DEFAULT_TIME_ZONE,
         certificationType: cls.certificationType,
         capacity: String(cls.capacity),
         status: cls.status,
@@ -1151,6 +1182,24 @@ function EditClassDialog({
             </select>
           </div>
           <div>
+            <Label>Time zone</Label>
+            <Select
+              value={form.timeZone}
+              onValueChange={(v) => setForm({ ...form, timeZone: v })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {TIME_ZONE_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
             <Label>Status</Label>
             <select
               className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
@@ -1187,6 +1236,7 @@ function EditClassDialog({
                   title: form.title.trim(),
                   date: form.date,
                   startTime: form.startTime,
+                  timeZone: form.timeZone,
                   certificationType: form.certificationType as ClassSession["certificationType"],
                   capacity: Number(form.capacity),
                   status: form.status as ClassSession["status"],
@@ -1421,6 +1471,7 @@ function LocationCard({ loc }: { loc: LocationDetail }) {
                 contactPhone: loc.contactPhone ?? "",
                 notes: loc.notes ?? "",
                 businessUnit: loc.businessUnit ?? "",
+                timeZone: loc.timeZone ?? DEFAULT_TIME_ZONE,
               }}
               trigger={
                 <Button
@@ -1443,6 +1494,7 @@ function LocationCard({ loc }: { loc: LocationDetail }) {
                     contactPhone: form.contactPhone || undefined,
                     notes: form.notes || undefined,
                     businessUnit: form.businessUnit || undefined,
+                    timeZone: form.timeZone,
                   },
                 })
               }
@@ -1586,6 +1638,7 @@ function LocationCard({ loc }: { loc: LocationDetail }) {
             ) : (
               <ScheduleClassDialog
                 locationName={loc.name}
+                timeZone={loc.timeZone ?? DEFAULT_TIME_ZONE}
                 onCreated={() => {}}
                 trigger={
                   <button className="italic hover:not-italic hover:underline underline-offset-2 cursor-pointer">
@@ -1634,7 +1687,7 @@ function LocationCard({ loc }: { loc: LocationDetail }) {
                 <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Classes
                 </h4>
-                <ScheduleClassDialog locationName={loc.name} onCreated={() => {}} />
+                <ScheduleClassDialog locationName={loc.name} timeZone={loc.timeZone ?? DEFAULT_TIME_ZONE} onCreated={() => {}} />
               </div>
               <LocationClasses locationName={loc.name} />
             </div>
@@ -2006,6 +2059,7 @@ export default function Locations() {
                     contactPhone: form.contactPhone || undefined,
                     notes: form.notes || undefined,
                     businessUnit: form.businessUnit || undefined,
+                    timeZone: form.timeZone,
                   },
                 })
               }

@@ -24,6 +24,7 @@ import { sendTrainerInvitations } from "../lib/trainerNotifications";
 import { sendClassNotifications, type ClassInfo } from "../lib/classNotifications";
 import { sendCompletionRoster } from "../lib/completionRoster";
 import { sendImmediateReminderIfWithin24h } from "../lib/instructorPreClassReminder";
+import { isValidTimeZone } from "../lib/timeZones";
 
 const router: IRouter = Router();
 
@@ -35,6 +36,7 @@ const router: IRouter = Router();
 async function ensureLocationExists(row: {
   title: string;
   location?: string | null;
+  timeZone?: string | null;
   businessUnit?: string | null;
 }) {
   const name = row.title.trim();
@@ -52,9 +54,25 @@ async function ensureLocationExists(row: {
     .values({
       name,
       address: row.location?.trim() || null,
+      timeZone: row.timeZone ?? undefined,
       notes: notes ?? null,
     })
     .onConflictDoNothing();
+}
+
+async function resolveClassTimeZone(
+  title: string,
+  requestedTimeZone?: string,
+): Promise<string | undefined> {
+  if (requestedTimeZone !== undefined) return requestedTimeZone;
+
+  const [location] = await db
+    .select({ timeZone: locationsTable.timeZone })
+    .from(locationsTable)
+    .where(ilike(locationsTable.name, title.trim()))
+    .limit(1);
+
+  return location?.timeZone;
 }
 
 async function serializeClass(row: typeof classesTable.$inferSelect) {
@@ -103,6 +121,7 @@ async function serializeClass(row: typeof classesTable.$inferSelect) {
     certificationType: row.certificationType,
     date: row.date,
     startTime: row.startTime,
+    timeZone: row.timeZone,
     endTime: row.endTime,
     location: row.location,
     capacity: row.capacity,
@@ -156,8 +175,16 @@ router.get("/classes", async (req, res) => {
 
 router.post("/classes", async (req, res) => {
   const body = CreateClassBody.parse(req.body);
+  if (body.timeZone !== undefined && !isValidTimeZone(body.timeZone)) {
+    res.status(400).json({ error: "Invalid IANA time zone" });
+    return;
+  }
   const { instructorIds, ...classData } = body;
-  const [row] = await db.insert(classesTable).values(classData).returning();
+  const timeZone = await resolveClassTimeZone(body.title, body.timeZone);
+  const [row] = await db
+    .insert(classesTable)
+    .values({ ...classData, timeZone })
+    .returning();
   if (instructorIds && instructorIds.length > 0) {
     await db
       .insert(classInstructorsTable)
@@ -250,11 +277,16 @@ router.patch("/classes/:classId", async (req, res) => {
       status: classesTable.status,
       date: classesTable.date,
       startTime: classesTable.startTime,
+      timeZone: classesTable.timeZone,
     })
     .from(classesTable)
     .where(eq(classesTable.id, classId));
 
   const { instructorIds, ...classData } = body;
+  if (body.timeZone !== undefined && !isValidTimeZone(body.timeZone)) {
+    res.status(400).json({ error: "Invalid IANA time zone" });
+    return;
+  }
   const updateData: typeof classData & {
     instructorId?: number | null;
     sevenDayReminderClaimedAt?: Date | null;
@@ -278,7 +310,8 @@ router.patch("/classes/:classId", async (req, res) => {
   const scheduleChanged =
     oldRow &&
     ((body.date !== undefined && oldRow.date !== row.date) ||
-      (body.startTime !== undefined && oldRow.startTime !== row.startTime));
+      (body.startTime !== undefined && oldRow.startTime !== row.startTime) ||
+      (body.timeZone !== undefined && oldRow.timeZone !== row.timeZone));
   if (scheduleChanged) {
     await db
       .delete(instructorPreClassRemindersTable)

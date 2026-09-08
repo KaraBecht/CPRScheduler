@@ -19,6 +19,16 @@ const MIGRATIONS: { name: string; sql: string }[] = [
           ADD COLUMN IF NOT EXISTS contact_email text`,
   },
   {
+    name: "add_location_time_zones",
+    sql: `ALTER TABLE locations
+          ADD COLUMN IF NOT EXISTS time_zone text NOT NULL DEFAULT 'America/Los_Angeles'`,
+  },
+  {
+    name: "add_class_time_zones",
+    sql: `ALTER TABLE classes
+          ADD COLUMN IF NOT EXISTS time_zone text NOT NULL DEFAULT 'America/Los_Angeles'`,
+  },
+  {
     name: "backfill_locations_business_unit_from_notes",
     sql: `UPDATE locations
           SET business_unit = (regexp_match(notes, 'Business Unit:\\s*(.+)'))[1]

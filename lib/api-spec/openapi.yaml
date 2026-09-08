@@ -911,6 +911,7 @@ components:
           certificationType,
           date,
           startTime,
+          timeZone,
           location,
           capacity,
           enrolledCount,
@@ -922,6 +923,9 @@ components:
         certificationType: { $ref: "#/components/schemas/CertificationType" }
         date: { type: string }
         startTime: { type: string }
+        timeZone:
+          type: string
+          description: IANA time zone for the class location. Defaults to America/Los_Angeles.
         endTime: { type: ["string", "null"] }
         location: { type: string }
         capacity: { type: integer }
@@ -987,6 +991,9 @@ components:
         certificationType: { $ref: "#/components/schemas/CertificationType" }
         date: { type: string }
         startTime: { type: string }
+        timeZone:
+          type: string
+          description: IANA time zone for the class location.
         endTime: { type: string }
         location: { type: string }
         capacity: { type: integer, minimum: 1 }
@@ -1072,6 +1079,9 @@ components:
         certificationType: { $ref: "#/components/schemas/CertificationType" }
         date: { type: string }
         startTime: { type: string }
+        timeZone:
+          type: string
+          description: IANA time zone for the class location.
         endTime: { type: string }
         location: { type: string }
         capacity: { type: integer }
@@ -1545,6 +1555,7 @@ components:
         id: { type: integer }
         name: { type: string }
         address: { type: ["string", "null"] }
+        timeZone: { type: string }
         contactName: { type: ["string", "null"] }
         contactEmail: { type: ["string", "null"] }
         contactPhone: { type: ["string", "null"] }
@@ -1563,11 +1574,12 @@ components:
 
     LocationDetail:
       type: object
-      required: [id, name, createdAt, updatedAt, notes_log, lastClassDate, expiringCertificates]
+      required: [id, name, timeZone, createdAt, updatedAt, notes_log, lastClassDate, expiringCertificates]
       properties:
         id: { type: integer }
         name: { type: string }
         address: { type: ["string", "null"] }
+        timeZone: { type: string }
         contactName: { type: ["string", "null"] }
         contactEmail: { type: ["string", "null"] }
         contactPhone: { type: ["string", "null"] }
@@ -1596,6 +1608,9 @@ components:
         contactPhone: { type: string }
         notes: { type: string }
         businessUnit: { type: string }
+        timeZone:
+          type: string
+          description: IANA time zone for the location. Defaults to America/Los_Angeles.
 
     LocationUpdate:
       type: object
@@ -1607,6 +1622,9 @@ components:
         contactPhone: { type: string }
         notes: { type: string }
         businessUnit: { type: string }
+        timeZone:
+          type: string
+          description: IANA time zone for the location.
 
     LocationNoteInput:
       type: object

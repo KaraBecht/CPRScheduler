@@ -6,10 +6,13 @@ import {
   timestamp,
 } from "drizzle-orm/pg-core";
 
+export const DEFAULT_LOCATION_TIME_ZONE = "America/Los_Angeles";
+
 export const locationsTable = pgTable("locations", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   address: text("address"),
+  timeZone: text("time_zone").notNull().default(DEFAULT_LOCATION_TIME_ZONE),
   contactName: text("contact_name"),
   contactEmail: text("contact_email"),
   contactPhone: text("contact_phone"),

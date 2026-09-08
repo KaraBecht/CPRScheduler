@@ -13,6 +13,8 @@ export interface ClassUpdate {
   certificationType?: CertificationType;
   date?: string;
   startTime?: string;
+  /** IANA time zone for the class location. */
+  timeZone?: string;
   endTime?: string;
   location?: string;
   capacity?: number;

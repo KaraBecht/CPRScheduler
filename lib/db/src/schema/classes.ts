@@ -10,6 +10,8 @@ import {
 } from "drizzle-orm/pg-core";
 import { usersTable } from "./users";
 
+export const DEFAULT_TIME_ZONE = "America/Los_Angeles";
+
 export const certificationTypeEnum = pgEnum("certification_type", [
   "cpr_aed_first_aid",
   "stop_the_bleed",
@@ -31,6 +33,7 @@ export const classesTable = pgTable("classes", {
   certificationType: certificationTypeEnum("certification_type").notNull(),
   date: date("date").notNull(),
   startTime: text("start_time").notNull(),
+  timeZone: text("time_zone").notNull().default(DEFAULT_TIME_ZONE),
   endTime: text("end_time"),
   location: text("location").notNull(),
   capacity: integer("capacity").notNull(),
