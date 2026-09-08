@@ -51,6 +51,18 @@ const MIGRATIONS: { name: string; sql: string }[] = [
     sql: `ALTER TABLE training_inquiries
           ADD COLUMN IF NOT EXISTS archived_at timestamptz`,
   },
+  {
+    name: "create_instructor_pre_class_reminders",
+    sql: `CREATE TABLE IF NOT EXISTS instructor_pre_class_reminders (
+      id serial PRIMARY KEY,
+      class_id integer NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+      instructor_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      claimed_at timestamp,
+      sent_at timestamp,
+      created_at timestamp NOT NULL DEFAULT now(),
+      UNIQUE (class_id, instructor_id)
+    )`,
+  },
 ];
 
 export async function applyMigrations(): Promise<void> {

@@ -1,19 +1,20 @@
 /**
  * 24-hour pre-class instructor reminder:
- *   1. Finds confirmed/scheduled classes happening tomorrow.
+ *   1. Finds confirmed/scheduled classes starting within the next 24 hours.
  *   2. Emails each assigned active instructor with the roster sign-in link.
  *   3. Sends a confirmation to admin sub-role users listing who was notified.
  *
- * Runs daily via scheduleInstructorPreClassReminders().
+ * Runs hourly via scheduleInstructorPreClassReminders().
  */
 
-import { and, eq, inArray, isNotNull } from "drizzle-orm";
+import { and, eq, gte, inArray, isNotNull, isNull, lte } from "drizzle-orm";
 import fs from "node:fs";
 import path from "node:path";
 import {
   db,
   classesTable,
   classInstructorsTable,
+  instructorPreClassRemindersTable,
   trainerInvitationsTable,
   usersTable,
 } from "@workspace/db";
@@ -26,8 +27,78 @@ import { buildCalendarLinks, calendarHtml, calendarText } from "./calendarLinks"
 // Helpers
 // ---------------------------------------------------------------------------
 
-function isoDate(d: Date): string {
-  return d.toISOString().split("T")[0]!;
+const CLASS_TIME_ZONE =
+  process.env["CLASS_TIME_ZONE"] || "America/Los_Angeles";
+const REMINDER_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+function datePartsInTimeZone(date: Date, timeZone = CLASS_TIME_ZONE) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((part) => part.type === type)?.value);
+  return {
+    year: value("year"),
+    month: value("month"),
+    day: value("day"),
+    hour: value("hour"),
+    minute: value("minute"),
+    second: value("second"),
+  };
+}
+
+function localIsoDate(date: Date, timeZone = CLASS_TIME_ZONE): string {
+  const { year, month, day } = datePartsInTimeZone(date, timeZone);
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function nextIsoDate(date: string): string {
+  const [year, month, day] = date.split("-").map(Number);
+  const next = new Date(Date.UTC(year!, month! - 1, day! + 1));
+  return next.toISOString().split("T")[0]!;
+}
+
+export function classStartInstant(
+  cls: Pick<typeof classesTable.$inferSelect, "date" | "startTime">,
+  timeZone = CLASS_TIME_ZONE,
+): Date {
+  const [year, month, day] = cls.date.split("-").map(Number);
+  const [hour, minute] = cls.startTime.split(":").map(Number);
+  const targetAsUtc = Date.UTC(year!, month! - 1, day!, hour!, minute!, 0);
+  let candidate = targetAsUtc;
+
+  // Iteratively correct the UTC candidate until formatting it in the class's
+  // business timezone produces the stored local date and time.
+  for (let i = 0; i < 3; i++) {
+    const observed = datePartsInTimeZone(new Date(candidate), timeZone);
+    const observedAsUtc = Date.UTC(
+      observed.year,
+      observed.month - 1,
+      observed.day,
+      observed.hour,
+      observed.minute,
+      observed.second,
+    );
+    candidate += targetAsUtc - observedAsUtc;
+  }
+
+  return new Date(candidate);
+}
+
+export function isClassWithin24Hours(
+  cls: Pick<typeof classesTable.$inferSelect, "date" | "startTime">,
+  now = new Date(),
+  timeZone = CLASS_TIME_ZONE,
+): boolean {
+  const untilStart = classStartInstant(cls, timeZone).getTime() - now.getTime();
+  return untilStart > 0 && untilStart <= REMINDER_WINDOW_MS;
 }
 
 function appBaseUrl(): string {
@@ -122,7 +193,7 @@ export function buildInstructorEmail(
     ? `${formatTime12(cls.startTime)} – ${formatTime12(cls.endTime)}`
     : formatTime12(cls.startTime);
 
-  const subject = `Reminder: You're teaching tomorrow — ${cls.title} (${formattedDate})`;
+  const subject = `Reminder: Upcoming CPR class — ${cls.title} (${formattedDate})`;
 
   const cal = buildCalendarLinks(
     { classId: cls.id, title: cls.title, certificationType: cls.certificationType, date: cls.date, startTime: cls.startTime, endTime: cls.endTime, location: cls.location },
@@ -132,7 +203,7 @@ export function buildInstructorEmail(
   const text = [
     `Hi ${instructorName},`,
     ``,
-    `This is your 24-hour reminder for the CPR class you are scheduled to teach tomorrow.`,
+    `This is your reminder for the CPR class you are scheduled to teach within the next 24 hours.`,
     ``,
     `CLASS DETAILS`,
     `  Organization:  ${cls.title}`,
@@ -157,12 +228,12 @@ export function buildInstructorEmail(
   const html = `
 <div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#111827">
   <div style="background:#1d4ed8;padding:20px 24px;border-radius:8px 8px 0 0">
-    <h1 style="margin:0;color:#fff;font-size:18px">You're Teaching Tomorrow</h1>
+    <h1 style="margin:0;color:#fff;font-size:18px">Upcoming CPR Class</h1>
     <p style="margin:4px 0 0;color:#bfdbfe;font-size:13px">PulsePoint CPR Hub — Instructor Reminder</p>
   </div>
   <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px">
     <p style="margin:0 0 16px">Hi <strong>${instructorName}</strong>,</p>
-    <p style="margin:0 0 20px">This is your 24-hour reminder for the CPR class you are scheduled to teach tomorrow.</p>
+    <p style="margin:0 0 20px">This is your reminder for the CPR class you are scheduled to teach within the next 24 hours.</p>
 
     <h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin:0 0 8px">Class Details</h2>
     <table style="border-collapse:collapse;margin-bottom:24px">
@@ -210,7 +281,7 @@ function buildAdminConfirmationEmail(
   const text = [
     `Hi ${adminName},`,
     ``,
-    `A 24-hour pre-class reminder was sent to the following instructor(s) for tomorrow's class:`,
+    `A pre-class reminder was sent to the following instructor(s) for a class starting within the next 24 hours:`,
     ``,
     `  Instructor(s): ${nameList}`,
     `  Organization:  ${cls.title}`,
@@ -230,7 +301,7 @@ function buildAdminConfirmationEmail(
   </div>
   <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px">
     <p style="margin:0 0 16px">Hi <strong>${adminName}</strong>,</p>
-    <p style="margin:0 0 20px">A 24-hour pre-class reminder was sent to the following instructor(s) for tomorrow's class:</p>
+    <p style="margin:0 0 20px">A pre-class reminder was sent to the following instructor(s) for a class starting within the next 24 hours:</p>
 
     <h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin:0 0 8px">Class Details</h2>
     <table style="border-collapse:collapse;margin-bottom:24px">
@@ -250,7 +321,6 @@ function buildAdminConfirmationEmail(
   return { subject, text, html };
 }
 
-const sentReminderKeys = new Set<string>();
 async function getClassInstructors(
   cls: typeof classesTable.$inferSelect,
 ): Promise<{ id: number; name: string; email: string }[]> {
@@ -298,39 +368,199 @@ async function getClassInstructors(
   return [];
 }
 
+type ReminderLog = {
+  info: (...args: unknown[]) => void;
+  warn: (...args: unknown[]) => void;
+  error: (...args: unknown[]) => void;
+};
+
+async function claimInstructorReminder(
+  classId: number,
+  instructorId: number,
+): Promise<boolean> {
+  const claimedAt = new Date();
+  const [inserted] = await db
+    .insert(instructorPreClassRemindersTable)
+    .values({ classId, instructorId, claimedAt })
+    .onConflictDoNothing()
+    .returning({ id: instructorPreClassRemindersTable.id });
+
+  if (inserted) return true;
+
+  const [claimed] = await db
+    .update(instructorPreClassRemindersTable)
+    .set({ claimedAt })
+    .where(
+      and(
+        eq(instructorPreClassRemindersTable.classId, classId),
+        eq(instructorPreClassRemindersTable.instructorId, instructorId),
+        isNull(instructorPreClassRemindersTable.sentAt),
+        isNull(instructorPreClassRemindersTable.claimedAt),
+      ),
+    )
+    .returning({ id: instructorPreClassRemindersTable.id });
+
+  return Boolean(claimed);
+}
+
+async function releaseInstructorReminderClaim(
+  classId: number,
+  instructorId: number,
+): Promise<void> {
+  await db
+    .update(instructorPreClassRemindersTable)
+    .set({ claimedAt: null })
+    .where(
+      and(
+        eq(instructorPreClassRemindersTable.classId, classId),
+        eq(instructorPreClassRemindersTable.instructorId, instructorId),
+        isNull(instructorPreClassRemindersTable.sentAt),
+      ),
+    );
+}
+
+async function markInstructorReminderSent(
+  classId: number,
+  instructorId: number,
+): Promise<void> {
+  await db
+    .update(instructorPreClassRemindersTable)
+    .set({ claimedAt: null, sentAt: new Date() })
+    .where(
+      and(
+        eq(instructorPreClassRemindersTable.classId, classId),
+        eq(instructorPreClassRemindersTable.instructorId, instructorId),
+      ),
+    );
+}
+
+async function sendRemindersForClass(
+  cls: typeof classesTable.$inferSelect,
+  instructors: { id: number; name: string; email: string }[],
+  log: ReminderLog,
+): Promise<void> {
+  if (!isClassWithin24Hours(cls)) return;
+
+  const signinUrl = `${appBaseUrl()}/roster-signin/${cls.id}`;
+  const rosterUrl = `${appBaseUrl()}/classes/${cls.id}/signin-sheet`;
+  const attachment = buildRosterAttachment(cls);
+  const notifiedNames: string[] = [];
+
+  for (const instructor of instructors) {
+    const claimed = await claimInstructorReminder(cls.id, instructor.id);
+    if (!claimed) {
+      continue;
+    }
+
+    try {
+      const content = buildInstructorEmail(
+        instructor.name,
+        cls,
+        signinUrl,
+        rosterUrl,
+      );
+      const ok = await sendEmail(
+        {
+          to: instructor.email,
+          ...content,
+          attachments: attachment ? [attachment] : [],
+        },
+        logger,
+      );
+
+      if (!ok) {
+        await releaseInstructorReminderClaim(cls.id, instructor.id);
+        log.error(
+          { instructorId: instructor.id, classId: cls.id },
+          "Instructor pre-class reminder failed — claim released for retry",
+        );
+        continue;
+      }
+
+      await markInstructorReminderSent(cls.id, instructor.id);
+      notifiedNames.push(instructor.name);
+    } catch (err) {
+      await releaseInstructorReminderClaim(cls.id, instructor.id);
+      log.error(
+        { err, instructorId: instructor.id, classId: cls.id },
+        "Instructor pre-class reminder failed — claim released for retry",
+      );
+    }
+  }
+
+  if (notifiedNames.length === 0) return;
+
+  const admins = await db
+    .select({ name: usersTable.name, email: usersTable.email })
+    .from(usersTable)
+    .where(
+      and(
+        eq(usersTable.role, "administrator"),
+        eq(usersTable.adminRole, "admin"),
+        isNotNull(usersTable.email),
+      ),
+    ) as { name: string; email: string }[];
+
+  for (const admin of admins) {
+    const content = buildAdminConfirmationEmail(
+      admin.name,
+      cls,
+      notifiedNames,
+      signinUrl,
+    );
+    await sendEmail({ to: admin.email, ...content }, logger).catch((err) =>
+      log.error(
+        { err, to: admin.email, classId: cls.id },
+        "Instructor pre-class reminder admin confirmation failed",
+      ),
+    );
+  }
+
+  log.info(
+    {
+      classId: cls.id,
+      instructors: notifiedNames,
+      adminCount: admins.length,
+    },
+    "Instructor pre-class reminder sent",
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Main send function
 // ---------------------------------------------------------------------------
 
 export async function sendInstructorPreClassReminders(): Promise<void> {
-  const tomorrow = new Date();
-  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
-  const targetDate = isoDate(tomorrow);
+  const now = new Date();
+  const startDate = localIsoDate(now);
+  const endDate = nextIsoDate(startDate);
 
   const classes = await db
     .select()
     .from(classesTable)
     .where(
       and(
-        eq(classesTable.date, targetDate),
+        gte(classesTable.date, startDate),
+        lte(classesTable.date, endDate),
         inArray(classesTable.status, ["confirmed", "scheduled"]),
       ),
     );
+  const dueClasses = classes.filter((cls) => isClassWithin24Hours(cls, now));
 
-  if (classes.length === 0) {
-    logger.debug({ targetDate }, "Instructor pre-class reminder: no classes tomorrow");
+  if (dueClasses.length === 0) {
+    logger.debug(
+      { startDate, endDate },
+      "Instructor pre-class reminder: no classes within 24 hours",
+    );
     return;
   }
 
-  // Admin sub-role recipients — fetched once for all classes (only those with an email address)
-  const admins = await db
-    .select({ name: usersTable.name, email: usersTable.email })
-    .from(usersTable)
-    .where(and(eq(usersTable.role, "administrator"), eq(usersTable.adminRole, "admin"), isNotNull(usersTable.email))) as { name: string; email: string }[];
+  logger.info(
+    { count: dueClasses.length },
+    "Instructor pre-class reminder: classes found within 24 hours",
+  );
 
-  logger.info({ targetDate, count: classes.length }, "Instructor pre-class reminder: sending");
-
-  for (const cls of classes) {
+  for (const cls of dueClasses) {
     const instructors = await getClassInstructors(cls);
 
     if (instructors.length === 0) {
@@ -338,47 +568,13 @@ export async function sendInstructorPreClassReminders(): Promise<void> {
       continue;
     }
 
-    const signinUrl = `${appBaseUrl()}/roster-signin/${cls.id}`;
-    const rosterUrl = `${appBaseUrl()}/classes/${cls.id}/signin-sheet`;
-
-    // Email each instructor — skip any already sent via the immediate path
-    const toNotify = instructors.filter(i => !sentReminderKeys.has(reminderKey(cls.id, i.id)));
-    if (toNotify.length === 0) {
-      logger.debug({ classId: cls.id }, "Instructor pre-class reminder: already sent via immediate path, skipping");
-      continue;
-    }
-
-    const attachment = buildRosterAttachment(cls);
-    for (const instructor of toNotify) {
-      const content = buildInstructorEmail(instructor.name, cls, signinUrl, rosterUrl);
-      const ok = await sendEmail({ to: instructor.email, ...content, attachments: attachment ? [attachment] : [] }, logger);
-      if (!ok) {
-        logger.error({ instructorId: instructor.id, classId: cls.id }, "Instructor pre-class reminder failed — will retry on next daily run");
-      } else {
-        sentReminderKeys.add(reminderKey(cls.id, instructor.id));
-      }
-    }
-
-    // Confirm to each admin
-    const instructorNames = toNotify.map(i => i.name);
-    for (const admin of admins) {
-      const content = buildAdminConfirmationEmail(admin.name, cls, instructorNames, signinUrl);
-      await sendEmail({ to: admin.email, ...content }, logger).catch(err =>
-        logger.error({ err, to: admin.email, classId: cls.id }, "Instructor pre-class reminder admin confirm failed"),
-      );
-    }
-
-    logger.info(
-      { classId: cls.id, instructors: instructorNames, adminCount: admins.length },
-      "Instructor pre-class reminder sent",
-    );
+    await sendRemindersForClass(cls, instructors, logger);
   }
 }
 
 /**
  * If `cls` starts within the next 24 hours, sends pre-class reminders to any
- * of the supplied `instructorIds` that haven't already received one this
- * server process (dedup against the daily job via `sentReminderKeys`).
+ * of the supplied `instructorIds` that haven't already received one.
  */
 export async function sendImmediateReminderIfWithin24h(
   cls: typeof classesTable.$inferSelect,
@@ -388,85 +584,36 @@ export async function sendImmediateReminderIfWithin24h(
   // Only send for active classes — mirrors the status filter used by the daily job
   if (cls.status !== "confirmed" && cls.status !== "scheduled") return;
 
-  // Is the class within the next 24 hours?
-  const now = Date.now();
-  const classStart = new Date(`${cls.date}T${cls.startTime}:00Z`).getTime();
-  const in24h = now + 24 * 60 * 60 * 1000;
-  if (classStart > in24h || classStart < now) {
-    // Either more than 24 h away (daily job will handle it) or already passed
-    return;
-  }
-
-  // Which of the supplied instructors haven't been reminded yet?
-  const unsent = instructorIds.filter(id => !sentReminderKeys.has(reminderKey(cls.id, id)));
-  if (unsent.length === 0) return;
+  if (!isClassWithin24Hours(cls)) return;
 
   // Fetch instructor records — only those with an email address
   const instructors = await db
     .select({ id: usersTable.id, name: usersTable.name, email: usersTable.email })
     .from(usersTable)
-    .where(and(inArray(usersTable.id, unsent), eq(usersTable.isActive, true), isNotNull(usersTable.email))) as { id: number; name: string; email: string }[];
+    .where(and(inArray(usersTable.id, instructorIds), eq(usersTable.isActive, true), isNotNull(usersTable.email))) as { id: number; name: string; email: string }[];
 
   if (instructors.length === 0) {
     log.warn({ classId: cls.id }, "Immediate instructor reminder: no active instructors with email found, skipping");
     return;
   }
 
-  const signinUrl = `${appBaseUrl()}/roster-signin/${cls.id}`;
-  const rosterUrl = `${appBaseUrl()}/classes/${cls.id}/signin-sheet`;
-
-  // Fetch admins for the confirmation copy (only those with an email address)
-  const admins = await db
-    .select({ name: usersTable.name, email: usersTable.email })
-    .from(usersTable)
-    .where(and(eq(usersTable.role, "administrator"), eq(usersTable.adminRole, "admin"), isNotNull(usersTable.email))) as { name: string; email: string }[];
-
-  const notifiedNames: string[] = [];
-  const attachment = buildRosterAttachment(cls);
-  for (const instructor of instructors) {
-    const content = buildInstructorEmail(instructor.name, cls, signinUrl, rosterUrl);
-    const ok = await sendEmail({ to: instructor.email, ...content, attachments: attachment ? [attachment] : [] }, logger);
-    if (ok) {
-      sentReminderKeys.add(reminderKey(cls.id, instructor.id));
-      notifiedNames.push(instructor.name);
-    } else {
-      logger.error(
-        { instructorId: instructor.id, classId: cls.id },
-        "Immediate instructor reminder failed — daily job will retry if class is still tomorrow",
-      );
-    }
-  }
-
-  if (notifiedNames.length === 0) return;
-
-  for (const admin of admins) {
-    const content = buildAdminConfirmationEmail(admin.name, cls, notifiedNames, signinUrl);
-    await sendEmail({ to: admin.email, ...content }, logger);
-  }
-
-  log.info(
-    { classId: cls.id, instructors: notifiedNames, adminCount: admins.length },
-    "Immediate instructor reminder sent (class within 24 h)",
-  );
+  await sendRemindersForClass(cls, instructors, log);
 }
 export function scheduleInstructorPreClassReminders(): void {
-  const MS_PER_DAY = 24 * 60 * 60 * 1000;
+  const MS_PER_HOUR = 60 * 60 * 1000;
 
-  // First check after 1 hour (avoids firing on every server restart)
+  // Durable claims make repeated checks safe. Keep the one-hour startup delay
+  // to avoid sending from short-lived development processes, then run hourly.
   setTimeout(() => {
     sendInstructorPreClassReminders().catch(err =>
       logger.error({ err }, "Instructor pre-class reminder initial check failed"),
     );
     setInterval(() => {
       sendInstructorPreClassReminders().catch(err =>
-        logger.error({ err }, "Instructor pre-class reminder daily check failed"),
+        logger.error({ err }, "Instructor pre-class reminder hourly check failed"),
       );
-    }, MS_PER_DAY);
-  }, 60 * 60 * 1000);
+    }, MS_PER_HOUR);
+  }, MS_PER_HOUR);
 
-  logger.info("Instructor pre-class reminder job scheduled (daily, first check in 1 hour)");
-}
-
-function reminderKey(classId: number, instructorId: number): string {
-  return `${classId}-${instructorId}`;
+  logger.info("Instructor pre-class reminder job scheduled (hourly, first check in 1 hour)");
 }

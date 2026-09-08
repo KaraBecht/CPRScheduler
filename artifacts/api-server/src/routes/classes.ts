@@ -10,6 +10,7 @@ import {
   certificatesTable,
   locationsTable,
   trainerInvitationsTable,
+  instructorPreClassRemindersTable,
 } from "@workspace/db";
 import { and, eq, gte, ilike, ne, not, or, sql, desc, asc, isNotNull, inArray } from "drizzle-orm";
 import {
@@ -245,7 +246,11 @@ router.patch("/classes/:classId", async (req, res) => {
 
   // Capture old status before the update so we can detect status transitions
   const [oldRow] = await db
-    .select({ status: classesTable.status, date: classesTable.date })
+    .select({
+      status: classesTable.status,
+      date: classesTable.date,
+      startTime: classesTable.startTime,
+    })
     .from(classesTable)
     .where(eq(classesTable.id, classId));
 
@@ -270,6 +275,15 @@ router.patch("/classes/:classId", async (req, res) => {
     .where(eq(classesTable.id, classId))
     .returning();
   if (!row) { res.status(404).json({ error: "Class not found" }); return; }
+  const scheduleChanged =
+    oldRow &&
+    ((body.date !== undefined && oldRow.date !== row.date) ||
+      (body.startTime !== undefined && oldRow.startTime !== row.startTime));
+  if (scheduleChanged) {
+    await db
+      .delete(instructorPreClassRemindersTable)
+      .where(eq(instructorPreClassRemindersTable.classId, classId));
+  }
   if (instructorIds !== undefined) {
     await db
       .delete(classInstructorsTable)
