@@ -97,6 +97,13 @@ const MIGRATIONS: { name: string; sql: string }[] = [
     name: "add_checklist_email_claims",
     sql: `ALTER TABLE checklist_email_deliveries ADD COLUMN IF NOT EXISTS claimed_at timestamptz`,
   },
+  {
+    name: "add_checklist_default_keys",
+    sql: `ALTER TABLE class_checklist_items ADD COLUMN IF NOT EXISTS default_key text;
+      CREATE UNIQUE INDEX IF NOT EXISTS class_checklist_items_class_default_key
+      ON class_checklist_items(class_id, default_key)
+      WHERE default_key IS NOT NULL`,
+  },
 ];
 
 export async function applyMigrations(): Promise<void> {

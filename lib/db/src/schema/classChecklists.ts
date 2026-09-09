@@ -8,6 +8,7 @@ export const classChecklistItemsTable = pgTable("class_checklist_items", {
   id: serial("id").primaryKey(),
   classId: integer("class_id").notNull().references(() => classesTable.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
+  defaultKey: text("default_key"),
   description: text("description"),
   assigneeId: integer("assignee_id").references(() => usersTable.id),
   assignedBy: integer("assigned_by").references(() => usersTable.id),
@@ -16,7 +17,7 @@ export const classChecklistItemsTable = pgTable("class_checklist_items", {
   completedAt: timestamp("completed_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+}, (t) => [unique().on(t.classId, t.defaultKey)]);
 
 export const classChecklistHistoryTable = pgTable("class_checklist_history", {
   id: serial("id").primaryKey(),

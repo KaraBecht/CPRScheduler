@@ -536,7 +536,7 @@ export default function ClassDetail() {
             )}
             {checklist.length === 0 ? <p className="text-sm text-muted-foreground">No checklist items yet.</p> : checklist.map(item => (
               <div key={item.id} className="flex flex-col gap-3 rounded border p-3 sm:flex-row sm:items-center sm:justify-between">
-                <div><p className="font-medium">{item.title}</p><p className="text-xs text-muted-foreground">{item.assignee?.name ?? "Unassigned"} · {item.status}</p></div>
+                <div><p className="font-medium">{item.title} {item.defaultKey && Number(item.defaultKey.split("-")[1]) >= 17 && <Badge variant="outline" className="ml-1 text-[10px]">Pre-packing check</Badge>}</p><p className="text-xs text-muted-foreground">{item.assignee?.name ?? "Unassigned"} · {item.status}</p></div>
                 <div className="flex gap-2">
                   {item.assigneeId === userId && item.status === "pending" && <Button size="sm" onClick={() => updateChecklist.mutate({ itemId: item.id, data: { currentUserId: userId!, action: "accept" } })}>Accept</Button>}
                   {item.assigneeId === userId && item.status === "accepted" && <Button size="sm" onClick={() => updateChecklist.mutate({ itemId: item.id, data: { currentUserId: userId!, action: "complete" } })}>Complete</Button>}

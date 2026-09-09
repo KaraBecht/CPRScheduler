@@ -961,6 +961,7 @@ components:
         id: { type: integer }
         classId: { type: integer }
         title: { type: string }
+        defaultKey: { type: ["string", "null"] }
         description: { type: ["string", "null"] }
         assigneeId: { type: ["integer", "null"] }
         assignedBy: { type: ["integer", "null"] }

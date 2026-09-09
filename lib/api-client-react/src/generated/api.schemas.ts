@@ -140,6 +140,8 @@ export interface ChecklistItem {
   classId: number;
   title: string;
   /** @nullable */
+  defaultKey?: string | null;
+  /** @nullable */
   description?: string | null;
   /** @nullable */
   assigneeId?: number | null;
