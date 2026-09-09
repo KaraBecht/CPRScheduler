@@ -8,6 +8,7 @@ import {
   MapPin,
   Users,
   User as UserIcon,
+  Globe2,
   Trash2,
   TriangleAlert,
 } from "lucide-react";
@@ -17,6 +18,7 @@ import {
   formatTime,
 } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { formatTimeZone } from "@/lib/timezones";
 
 // Cert-type → accent color (medical palette)
 const CERT_COLOR: Record<string, string> = {
@@ -114,6 +116,10 @@ export function ClassCard({
                   {formatTime(session.startTime)}
                   {session.endTime ? ` – ${formatTime(session.endTime)}` : ""}
                 </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Globe2 className="h-3.5 w-3.5 shrink-0" style={{ color: accent }} />
+                <span className="truncate">{formatTimeZone(session.timeZone)}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <MapPin className="h-3.5 w-3.5 shrink-0" style={{ color: accent }} />

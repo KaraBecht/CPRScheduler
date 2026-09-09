@@ -78,6 +78,7 @@ import {
   Link2,
   Check,
   ExternalLink,
+  Globe2,
   Phone,
   Mail,
 } from "lucide-react";
@@ -91,7 +92,7 @@ import {
 } from "@/lib/format";
 import { toast } from "@/hooks/use-toast";
 import { useState, useMemo, useEffect } from "react";
-import { DEFAULT_TIME_ZONE, TIME_ZONE_OPTIONS } from "@/lib/timezones";
+import { DEFAULT_TIME_ZONE, TIME_ZONE_OPTIONS, formatTimeZone } from "@/lib/timezones";
 
 const BUSINESS_UNITS = [
   "FOX Digital",
@@ -945,6 +946,10 @@ export default function ClassDetail() {
                 {formatTime(cls.startTime)}
                 {cls.endTime ? ` – ${formatTime(cls.endTime)}` : ""}
               </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Globe2 className="h-4 w-4 text-muted-foreground" />
+              <span>{formatTimeZone(cls.timeZone)}</span>
             </div>
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4 text-muted-foreground" />

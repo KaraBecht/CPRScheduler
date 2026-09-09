@@ -58,7 +58,7 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/auth-context";
 import { useListUsers } from "@workspace/api-client-react";
-import { Plus, Trash2, LayoutGrid, CalendarDays, ChevronLeft, ChevronRight, X, Search, SlidersHorizontal, ClipboardList, MapPin, Clock, TriangleAlert } from "lucide-react";
+import { Plus, Trash2, LayoutGrid, CalendarDays, ChevronLeft, ChevronRight, X, Search, SlidersHorizontal, ClipboardList, MapPin, Clock, Globe2, TriangleAlert } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { formatCertificationType, certificationDuration, formatDate, formatTime } from "@/lib/format";
 import { Link } from "wouter";
@@ -78,7 +78,7 @@ import {
 } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { DEFAULT_TIME_ZONE, TIME_ZONE_OPTIONS } from "@/lib/timezones";
+import { DEFAULT_TIME_ZONE, TIME_ZONE_OPTIONS, formatTimeZone } from "@/lib/timezones";
 
 const CERT_TYPES: CertificationType[] = [
   "cpr_aed_first_aid",
@@ -584,7 +584,10 @@ function CalendarView({ classes }: { classes: ClassSession[] }) {
                     )}
                     title={`${cls.title} — ${cls.startTime} @ ${cls.location}`}
                   >
-                    {cls.title}
+                    <span className="block truncate">{cls.title}</span>
+                    <span className="block truncate text-[10px] font-normal opacity-75">
+                      {formatTimeZone(cls.timeZone)}
+                    </span>
                   </div>
                 </Link>
               ))}
@@ -1045,6 +1048,10 @@ function MyScheduleCard({ session }: { session: ClassSession }) {
               {formatTime(session.startTime ?? "")}
               {session.endTime ? ` – ${formatTime(session.endTime)}` : ""}
             </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Globe2 className="h-3.5 w-3.5 shrink-0" style={{ color: accent }} />
+            <span className="truncate">{formatTimeZone(session.timeZone)}</span>
           </div>
           {session.location && session.location !== "TBD" && (
             <div className="flex items-center gap-1.5">
