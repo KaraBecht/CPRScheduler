@@ -11,6 +11,7 @@ import {
 import { sendEmail, buildRequestEmail, buildRequestorConfirmationEmail } from "../lib/sendgrid";
 import { sendClassNotifications, type ClassInfo, type RequestorInfo } from "../lib/classNotifications";
 import { sendTrainerInvitations } from "../lib/trainerNotifications";
+import { launchClassChecklist } from "../lib/classChecklist";
 import { serializeClass } from "./classes";
 
 const router: IRouter = Router();
@@ -253,6 +254,7 @@ router.patch("/requests/:requestId", async (req, res) => {
         },
         req.log,
       ).catch(() => {});
+      launchClassChecklist(cls.id, req.log).catch((err) => req.log.error({ err, classId: cls.id }, "Checklist launch failed"));
     }
 
     res.json({ ...serializedRequest, createdClasses: serializedClasses });

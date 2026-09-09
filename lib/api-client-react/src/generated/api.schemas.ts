@@ -116,6 +116,73 @@ export interface UserUpdate {
   isActive?: boolean;
 }
 
+export type ChecklistStatus = typeof ChecklistStatus[keyof typeof ChecklistStatus];
+
+
+export const ChecklistStatus = {
+  pending: 'pending',
+  accepted: 'accepted',
+  completed: 'completed',
+} as const;
+
+/**
+ * @nullable
+ */
+export type ChecklistItemAssignee = {
+  id?: number;
+  name?: string;
+} | null;
+
+export type ChecklistItemHistoryItem = { [key: string]: unknown };
+
+export interface ChecklistItem {
+  id: number;
+  classId: number;
+  title: string;
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  assigneeId?: number | null;
+  /** @nullable */
+  assignedBy?: number | null;
+  status: ChecklistStatus;
+  /** @nullable */
+  acceptedAt?: string | null;
+  /** @nullable */
+  completedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  /** @nullable */
+  assignee?: ChecklistItemAssignee;
+  history?: ChecklistItemHistoryItem[];
+}
+
+export interface ChecklistItemInput {
+  /** @minLength 1 */
+  title: string;
+  description?: string;
+  assigneeId?: number;
+  currentUserId: number;
+}
+
+export type ChecklistItemUpdateAction = typeof ChecklistItemUpdateAction[keyof typeof ChecklistItemUpdateAction];
+
+
+export const ChecklistItemUpdateAction = {
+  accept: 'accept',
+  pass: 'pass',
+  complete: 'complete',
+  delete: 'delete',
+} as const;
+
+export interface ChecklistItemUpdate {
+  currentUserId: number;
+  action?: ChecklistItemUpdateAction;
+  assigneeId?: number;
+  title?: string;
+  description?: string;
+}
+
 export type ClassSessionInstructorsItem = {
   id: number;
   name: string;

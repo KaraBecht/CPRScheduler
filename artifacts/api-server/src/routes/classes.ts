@@ -25,6 +25,7 @@ import { sendClassNotifications, type ClassInfo } from "../lib/classNotification
 import { sendCompletionRoster } from "../lib/completionRoster";
 import { sendImmediateReminderIfWithin24h } from "../lib/instructorPreClassReminder";
 import { isValidTimeZone } from "../lib/timeZones";
+import { launchClassChecklist } from "../lib/classChecklist";
 
 const router: IRouter = Router();
 
@@ -213,6 +214,7 @@ router.post("/classes", async (req, res) => {
       req.log,
     ).catch(() => {});
     ensureLocationExists(row).catch(() => {});
+    launchClassChecklist(row.id, req.log).catch((err) => req.log.error({ err, classId: row.id }, "Checklist launch failed"));
   }
 
   res.status(201).json(await serializeClass(row));
@@ -369,6 +371,9 @@ router.patch("/classes/:classId", async (req, res) => {
       req.log,
     ).catch(() => {});
     ensureLocationExists(row).catch(() => {});
+  }
+  if ((row.status === "confirmed" || row.status === "scheduled") && (statusChanged || instructorIds !== undefined)) {
+    launchClassChecklist(row.id, req.log).catch((err) => req.log.error({ err, classId }, "Checklist launch failed"));
   }
 
   // When a class is marked complete, email the full roster to the instructor(s)

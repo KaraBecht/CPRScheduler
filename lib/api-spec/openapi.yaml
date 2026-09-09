@@ -220,6 +220,54 @@ paths:
         "404": { description: Invitation not found }
         "409": { description: Invitation already answered }
 
+  /classes/{classId}/checklist:
+    get:
+      operationId: listClassChecklist
+      tags: [classes]
+      parameters:
+        - { name: classId, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: Checklist items
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/ChecklistItem" } }
+    post:
+      operationId: createChecklistItem
+      tags: [classes]
+      parameters:
+        - { name: classId, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ChecklistItemInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChecklistItem" }
+
+  /checklist-items/{itemId}:
+    patch:
+      operationId: updateChecklistItem
+      tags: [classes]
+      parameters:
+        - { name: itemId, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ChecklistItemUpdate" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChecklistItem" }
+        "204": { description: Deleted }
+
   /classes/{classId}/enrollments:
     get:
       operationId: listClassEnrollments
@@ -901,6 +949,55 @@ components:
         bio: { type: string }
         avatarUrl: { type: string }
         isActive: { type: boolean }
+
+    ChecklistStatus:
+      type: string
+      enum: [pending, accepted, completed]
+
+    ChecklistItem:
+      type: object
+      required: [id, classId, title, status, createdAt, updatedAt]
+      properties:
+        id: { type: integer }
+        classId: { type: integer }
+        title: { type: string }
+        description: { type: ["string", "null"] }
+        assigneeId: { type: ["integer", "null"] }
+        assignedBy: { type: ["integer", "null"] }
+        status: { $ref: "#/components/schemas/ChecklistStatus" }
+        acceptedAt: { type: ["string", "null"], format: date-time }
+        completedAt: { type: ["string", "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        assignee:
+          type: ["object", "null"]
+          properties:
+            id: { type: integer }
+            name: { type: string }
+        history:
+          type: array
+          items: { type: object }
+
+    ChecklistItemInput:
+      type: object
+      required: [title, currentUserId]
+      properties:
+        title: { type: string, minLength: 1 }
+        description: { type: string }
+        assigneeId: { type: integer }
+        currentUserId: { type: integer }
+
+    ChecklistItemUpdate:
+      type: object
+      required: [currentUserId]
+      properties:
+        currentUserId: { type: integer }
+        action:
+          type: string
+          enum: [accept, pass, complete, delete]
+        assigneeId: { type: integer }
+        title: { type: string }
+        description: { type: string }
 
     ClassSession:
       type: object

@@ -13,6 +13,7 @@ import remindersRouter from "./reminders";
 import trainerInvitesRouter from "./trainerInvites";
 import adminRouter from "./admin";
 import inquiriesRouter from "./inquiries";
+import checklistsRouter from "./checklists";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use(remindersRouter);
 router.use(trainerInvitesRouter);
 router.use(adminRouter);
 router.use(inquiriesRouter);
+router.use(checklistsRouter);
 
 export default router;

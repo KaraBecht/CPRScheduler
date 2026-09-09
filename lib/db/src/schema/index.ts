@@ -9,3 +9,4 @@ export * from "./reminders";
 export * from "./trainerInvitations";
 export * from "./trainingInquiries";
 export * from "./instructorPreClassReminders";
+export * from "./classChecklists";

@@ -11,6 +11,10 @@ import {
   useDeleteClass,
   useRespondToTrainerInvitation,
   useListUsers,
+  useListClassChecklist,
+  useCreateChecklistItem,
+  useUpdateChecklistItem,
+  getListClassChecklistQueryKey,
   getGetClassQueryKey,
   getGetClassRosterQueryKey,
   getListClassesQueryKey,
@@ -119,6 +123,15 @@ export default function ClassDetail() {
 
   const { data: students = [] } = useListUsers({ role: "student" });
   const { data: instructors = [] } = useListUsers({ role: "instructor" });
+  const { data: administrators = [] } = useListUsers({ role: "administrator" });
+  const { data: checklist = [] } = useListClassChecklist(classId);
+  const [checklistTitle, setChecklistTitle] = useState("");
+  const [checklistAssignee, setChecklistAssignee] = useState("");
+  const [passTargets, setPassTargets] = useState<Record<number, string>>({});
+  const checklistUsers = [...administrators, ...instructors].filter((u, i, a) => u.isActive && a.findIndex(x => x.id === u.id) === i);
+  const refreshChecklist = () => qc.invalidateQueries({ queryKey: getListClassChecklistQueryKey(classId) });
+  const createChecklist = useCreateChecklistItem({ mutation: { onSuccess: () => { setChecklistTitle(""); refreshChecklist(); }, onError: () => toast({ title: "Could not create checklist item", variant: "destructive" }) } });
+  const updateChecklist = useUpdateChecklistItem({ mutation: { onSuccess: refreshChecklist, onError: () => toast({ title: "Could not update checklist item", variant: "destructive" }) } });
   const [enrollStudentId, setEnrollStudentId] = useState<string>("");
   const [linkCopied, setLinkCopied] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -337,6 +350,7 @@ export default function ClassDetail() {
     role === "instructor" && userId
       ? cls.trainerInvitations?.find((invite) => invite.userId === userId)
       : undefined;
+  const checklistVisible = role === "administrator" || checklist.some(i => i.assigneeId === userId);
 
   return (
     <>
@@ -502,6 +516,35 @@ export default function ClassDetail() {
                 {currentTrainerInvitation.status === "accepted" ? "Accepted" : "Declined"}
               </Badge>
             )}
+          </CardContent>
+        </Card>
+      )}
+      {checklistVisible && (
+        <Card className="mb-6">
+          <CardHeader><CardTitle className="flex items-center gap-2"><ClipboardList className="h-5 w-5" /> Class checklist</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            {role === "administrator" && (
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input className="min-w-0 flex-1" placeholder="Checklist item" value={checklistTitle} onChange={e => setChecklistTitle(e.target.value)} />
+                <Select value={checklistAssignee || "none"} onValueChange={setChecklistAssignee}>
+                  <SelectTrigger className="w-full sm:w-48"><SelectValue placeholder="Assign to" /></SelectTrigger>
+                  <SelectContent><SelectItem value="none">Unassigned</SelectItem>{checklistUsers.map(u => <SelectItem key={u.id} value={String(u.id)}>{u.name}</SelectItem>)}</SelectContent>
+                </Select>
+                <Button disabled={!checklistTitle.trim() || createChecklist.isPending} onClick={() => createChecklist.mutate({ classId, data: { title: checklistTitle.trim(), assigneeId: checklistAssignee && checklistAssignee !== "none" ? Number(checklistAssignee) : undefined, currentUserId: userId! } })}><Plus className="h-4 w-4" /></Button>
+              </div>
+            )}
+            {checklist.length === 0 ? <p className="text-sm text-muted-foreground">No checklist items yet.</p> : checklist.map(item => (
+              <div key={item.id} className="flex flex-col gap-3 rounded border p-3 sm:flex-row sm:items-center sm:justify-between">
+                <div><p className="font-medium">{item.title}</p><p className="text-xs text-muted-foreground">{item.assignee?.name ?? "Unassigned"} · {item.status}</p></div>
+                <div className="flex gap-2">
+                  {item.assigneeId === userId && item.status === "pending" && <Button size="sm" onClick={() => updateChecklist.mutate({ itemId: item.id, data: { currentUserId: userId!, action: "accept" } })}>Accept</Button>}
+                  {item.assigneeId === userId && item.status === "accepted" && <Button size="sm" onClick={() => updateChecklist.mutate({ itemId: item.id, data: { currentUserId: userId!, action: "complete" } })}>Complete</Button>}
+                  {item.assigneeId === userId && item.status !== "completed" && <><Select value={passTargets[item.id] || "none"} onValueChange={v => setPassTargets(p => ({ ...p, [item.id]: v }))}><SelectTrigger className="w-36 h-9"><SelectValue placeholder="Pass to..." /></SelectTrigger><SelectContent><SelectItem value="none">Pass to...</SelectItem>{checklistUsers.filter(u => u.id !== userId).map(u => <SelectItem key={u.id} value={String(u.id)}>{u.name}</SelectItem>)}</SelectContent></Select><Button size="sm" variant="outline" disabled={!passTargets[item.id] || passTargets[item.id] === "none"} onClick={() => updateChecklist.mutate({ itemId: item.id, data: { currentUserId: userId!, action: "pass", assigneeId: Number(passTargets[item.id]) } })}>Pass</Button></>}
+                  {role === "administrator" && item.assigneeId !== userId && item.status !== "completed" && <><Select value={passTargets[item.id] || "none"} onValueChange={v => setPassTargets(p => ({ ...p, [item.id]: v }))}><SelectTrigger className="w-36 h-9"><SelectValue placeholder="Reassign..." /></SelectTrigger><SelectContent><SelectItem value="none">Reassign to...</SelectItem>{checklistUsers.filter(u => u.id !== item.assigneeId).map(u => <SelectItem key={u.id} value={String(u.id)}>{u.name}</SelectItem>)}</SelectContent></Select><Button size="sm" variant="outline" disabled={!passTargets[item.id] || passTargets[item.id] === "none"} onClick={() => updateChecklist.mutate({ itemId: item.id, data: { currentUserId: userId!, assigneeId: Number(passTargets[item.id]) } })}>Reassign</Button></>}
+                  {role === "administrator" && <Button size="sm" variant="outline" onClick={() => updateChecklist.mutate({ itemId: item.id, data: { currentUserId: userId!, action: "delete" } })}><Trash2 className="h-4 w-4" /></Button>}
+                </div>
+              </div>
+            ))}
           </CardContent>
         </Card>
       )}

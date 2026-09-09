@@ -73,6 +73,30 @@ const MIGRATIONS: { name: string; sql: string }[] = [
       UNIQUE (class_id, instructor_id)
     )`,
   },
+  {
+    name: "create_class_checklists",
+    sql: `CREATE TABLE IF NOT EXISTS class_checklist_items (
+      id serial PRIMARY KEY, class_id integer NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+      title text NOT NULL, description text, assignee_id integer REFERENCES users(id),
+      assigned_by integer REFERENCES users(id), status text NOT NULL DEFAULT 'pending',
+      accepted_at timestamptz, completed_at timestamptz, created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
+    CREATE TABLE IF NOT EXISTS class_checklist_history (
+      id serial PRIMARY KEY, item_id integer NOT NULL REFERENCES class_checklist_items(id) ON DELETE CASCADE,
+      from_user_id integer REFERENCES users(id), to_user_id integer REFERENCES users(id),
+      action text NOT NULL, actor_id integer REFERENCES users(id), created_at timestamptz NOT NULL DEFAULT now()
+    );
+    CREATE TABLE IF NOT EXISTS checklist_email_deliveries (
+      id serial PRIMARY KEY, class_id integer NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+      email text NOT NULL, sent_at timestamptz, created_at timestamptz NOT NULL DEFAULT now(),
+      UNIQUE(class_id, email)
+    )`,
+  },
+  {
+    name: "add_checklist_email_claims",
+    sql: `ALTER TABLE checklist_email_deliveries ADD COLUMN IF NOT EXISTS claimed_at timestamptz`,
+  },
 ];
 
 export async function applyMigrations(): Promise<void> {

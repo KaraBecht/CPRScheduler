@@ -329,6 +329,103 @@ export const RespondToTrainerInvitationResponse = zod.object({
 })
 
 
+export const ListClassChecklistParams = zod.object({
+  "classId": zod.coerce.number().int()
+})
+
+export const ListClassChecklistResponseItem = zod.object({
+  "id": zod.number().int(),
+  "classId": zod.number().int(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "assigneeId": zod.number().int().nullish(),
+  "assignedBy": zod.number().int().nullish(),
+  "status": zod.enum(['pending', 'accepted', 'completed']),
+  "acceptedAt": zod.coerce.date().nullish(),
+  "completedAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date(),
+  "assignee": zod.object({
+  "id": zod.number().int().optional(),
+  "name": zod.string().optional()
+}).nullish(),
+  "history": zod.array(zod.object({
+
+}).passthrough()).optional()
+})
+export const ListClassChecklistResponse = zod.array(ListClassChecklistResponseItem)
+
+
+export const CreateChecklistItemParams = zod.object({
+  "classId": zod.coerce.number().int()
+})
+
+
+
+
+export const CreateChecklistItemBody = zod.object({
+  "title": zod.string().min(1),
+  "description": zod.string().optional(),
+  "assigneeId": zod.number().int().optional(),
+  "currentUserId": zod.number().int()
+})
+
+export const CreateChecklistItemResponse = zod.object({
+  "id": zod.number().int(),
+  "classId": zod.number().int(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "assigneeId": zod.number().int().nullish(),
+  "assignedBy": zod.number().int().nullish(),
+  "status": zod.enum(['pending', 'accepted', 'completed']),
+  "acceptedAt": zod.coerce.date().nullish(),
+  "completedAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date(),
+  "assignee": zod.object({
+  "id": zod.number().int().optional(),
+  "name": zod.string().optional()
+}).nullish(),
+  "history": zod.array(zod.object({
+
+}).passthrough()).optional()
+})
+
+
+export const UpdateChecklistItemParams = zod.object({
+  "itemId": zod.coerce.number().int()
+})
+
+export const UpdateChecklistItemBody = zod.object({
+  "currentUserId": zod.number().int(),
+  "action": zod.enum(['accept', 'pass', 'complete', 'delete']).optional(),
+  "assigneeId": zod.number().int().optional(),
+  "title": zod.string().optional(),
+  "description": zod.string().optional()
+})
+
+export const UpdateChecklistItemResponse = zod.object({
+  "id": zod.number().int(),
+  "classId": zod.number().int(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "assigneeId": zod.number().int().nullish(),
+  "assignedBy": zod.number().int().nullish(),
+  "status": zod.enum(['pending', 'accepted', 'completed']),
+  "acceptedAt": zod.coerce.date().nullish(),
+  "completedAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date(),
+  "assignee": zod.object({
+  "id": zod.number().int().optional(),
+  "name": zod.string().optional()
+}).nullish(),
+  "history": zod.array(zod.object({
+
+}).passthrough()).optional()
+})
+
+
 export const ListClassEnrollmentsParams = zod.object({
   "classId": zod.coerce.number().int()
 })
