@@ -6,6 +6,8 @@ import {
   useDeleteClass,
   useUpdateClass,
   getListClassesQueryKey,
+  getListLocationsQueryKey,
+  getGetAdminDashboardQueryKey,
   type CertificationType,
   type ClassSession,
   useListLocations,
@@ -630,6 +632,8 @@ function OverdueClassesBanner({ classes }: { classes: ClassSession[] }) {
     mutation: {
       onSuccess: (_d, vars) => {
         qc.invalidateQueries({ queryKey: getListClassesQueryKey() });
+        qc.invalidateQueries({ queryKey: getListLocationsQueryKey() });
+        qc.invalidateQueries({ queryKey: getGetAdminDashboardQueryKey() });
         const action = pending?.action ?? "completed";
         toast({ title: action === "completed" ? "Class marked as completed" : "Class cancelled" });
         setDismissed((s) => new Set([...s, vars.classId]));

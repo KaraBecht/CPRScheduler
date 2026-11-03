@@ -1983,7 +1983,9 @@ export default function Locations() {
   const [certFilter, setCertFilter] = useState<"" | "expiring" | "expired">(
     paramCert === "expiring" || paramCert === "expired" ? paramCert : ""
   );
-  const { data: locations = [], isLoading } = useListLocations();
+  const { data: locations = [], isLoading } = useListLocations({
+    query: { queryKey: getListLocationsQueryKey(), refetchOnMount: "always", refetchInterval: 60_000 },
+  });
 
   const create = useCreateLocation({
     mutation: {

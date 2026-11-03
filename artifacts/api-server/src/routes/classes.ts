@@ -217,6 +217,7 @@ router.post("/classes", async (req, res) => {
     launchClassChecklist(row.id, req.log).catch((err) => req.log.error({ err, classId: row.id }, "Checklist launch failed"));
   }
 
+  if (row.status === "completed") await ensureLocationExists(row);
   res.status(201).json(await serializeClass(row));
 });
 
@@ -377,6 +378,7 @@ router.patch("/classes/:classId", async (req, res) => {
   }
 
   // When a class is marked complete, email the full roster to the instructor(s)
+  if (row.status === "completed") await ensureLocationExists(row);
   if (statusChanged && row.status === "completed") {
     sendCompletionRoster(row, req.log).catch(() => {});
   }

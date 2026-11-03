@@ -36,7 +36,8 @@ async function buildDetail(loc: typeof locationsTable.$inferSelect) {
     )
     .orderBy(desc(classesTable.date));
 
-  const lastClass = matchedClasses[0] ?? null;
+  // Upcoming/cancelled sessions must not replace the latest completed training.
+  const lastClass = matchedClasses.find((c) => c.status === "completed") ?? null;
 
   // Expiring certificates: those tied to classes at this location, expiring within 6 months
   const classIds = matchedClasses.map((c) => c.id);

@@ -18,6 +18,7 @@ import {
   getGetClassQueryKey,
   getGetClassRosterQueryKey,
   getListClassesQueryKey,
+  getListLocationsQueryKey,
   getGetAdminDashboardQueryKey,
   getGetStudentDashboardQueryKey,
   getGetInstructorDashboardQueryKey,
@@ -175,6 +176,8 @@ export default function ClassDetail() {
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: getGetClassQueryKey(classId) });
+    qc.invalidateQueries({ queryKey: getListLocationsQueryKey() });
+    qc.invalidateQueries({ queryKey: getListClassesQueryKey() });
     qc.invalidateQueries({ queryKey: getGetAdminDashboardQueryKey() });
     if (userId)
       qc.invalidateQueries({ queryKey: getGetStudentDashboardQueryKey(userId) });
