@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import { parseId } from "../lib/errors";
 import { db, requestsTable, usersTable, classesTable, locationsTable } from "@workspace/db";
 import { and, eq, desc, ilike } from "drizzle-orm";
+import { locationNameCondition } from "../lib/locationMatching";
 import {
   CreateRequestBody,
   UpdateRequestBody,
@@ -186,7 +187,7 @@ router.patch("/requests/:requestId", async (req, res) => {
     const [existingLoc] = await db
       .select()
       .from(locationsTable)
-      .where(ilike(locationsTable.name, locationName))
+      .where(locationNameCondition(locationName))
       .limit(1);
     const { updatedRequest, createdClassRows } = await db.transaction(async (tx) => {
       const insertedClasses: typeof classesTable.$inferSelect[] = [];

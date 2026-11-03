@@ -86,6 +86,7 @@ import { formatDate } from "@/lib/format";
 import { toast } from "@/hooks/use-toast";
 import { MapboxAddressInput } from "@/components/MapboxAddressInput";
 import { cn } from "@/lib/utils";
+import { LocationMergeDialog } from "@/components/LocationMergeDialog";
 import { DEFAULT_TIME_ZONE, TIME_ZONE_OPTIONS } from "@/lib/timezones";
 import {
   Select,
@@ -2042,8 +2043,9 @@ export default function Locations() {
         title="Locations"
         subtitle="Training venues, contacts, and scheduling history."
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <LocationsExportDialog locations={locations} />
+            <LocationMergeDialog locations={locations} />
             <CsvImportDialog onImported={() => qc.invalidateQueries({ queryKey: getListLocationsQueryKey() })} />
             <LocationFormDialog
               trigger={

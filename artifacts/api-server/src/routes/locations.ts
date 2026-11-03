@@ -7,13 +7,16 @@ import {
   certificatesTable,
   classRosterTable,
 } from "@workspace/db";
-import { eq, desc, ilike, lte, or } from "drizzle-orm";
+import { eq, desc, ilike, lte, or, inArray, asc } from "drizzle-orm";
 import {
   CreateLocationBody,
   UpdateLocationBody,
   CreateLocationNoteBody,
+  MergeLocationsBody,
 } from "@workspace/api-zod";
 import { isValidTimeZone } from "../lib/timeZones";
+import { locationClassCondition } from "../lib/locationMatching";
+import { resolveLocationMerge } from "../lib/locationMerge";
 
 const router: IRouter = Router();
 
@@ -29,10 +32,7 @@ async function buildDetail(loc: typeof locationsTable.$inferSelect) {
     .select()
     .from(classesTable)
     .where(
-      or(
-        ilike(classesTable.location, `%${loc.name}%`),
-        ilike(classesTable.title, `%${loc.name}%`),
-      )
+      locationClassCondition([loc.name, ...loc.aliases])
     )
     .orderBy(desc(classesTable.date));
 
@@ -181,6 +181,9 @@ router.patch("/locations/:locationId", async (req, res) => {
     .update(locationsTable)
     .set({
       name: body.name ?? existing.name,
+      aliases: body.name && body.name !== existing.name
+        ? [...new Set([...existing.aliases, existing.name])]
+        : existing.aliases,
       address: body.address !== undefined ? body.address : existing.address,
       timeZone: body.timeZone !== undefined ? body.timeZone : existing.timeZone,
       contactName:
@@ -200,6 +203,56 @@ router.patch("/locations/:locationId", async (req, res) => {
     .where(eq(locationsTable.id, id))
     .returning();
   res.json(await buildDetail(row));
+});
+
+// Confirmed merges are atomic. Original details are retained in the note log.
+router.post("/locations/:locationId/merge", async (req, res): Promise<void> => {
+  const targetId = Number(req.params.locationId);
+  const parsed = MergeLocationsBody.safeParse(req.body);
+  if (!Number.isSafeInteger(targetId) || targetId < 1 || !parsed.success ||
+      parsed.data.sourceId === targetId || parsed.data.sourceId < 1) {
+    res.status(400).json({ error: "Select two different valid locations." });
+    return;
+  }
+  const body = parsed.data;
+  const result = await db.transaction(async (tx) => {
+    const rows = await tx.select().from(locationsTable)
+      .where(inArray(locationsTable.id, [targetId, body.sourceId]))
+      .orderBy(asc(locationsTable.id)).for("update");
+    const target = rows.find((r) => r.id === targetId);
+    const source = rows.find((r) => r.id === body.sourceId);
+    if (!target || !source) return { error: "A location no longer exists. Reload and review again.", status: 409 } as const;
+    if (target.updatedAt.toISOString() !== body.targetUpdatedAt ||
+        source.updatedAt.toISOString() !== body.sourceUpdatedAt) {
+      return { error: "Location details changed. Reload and review the merge again.", status: 409 } as const;
+    }
+    let values;
+    try {
+      values = resolveLocationMerge(target, source, body.choices);
+    } catch (error) {
+      return { error: (error as Error).message, status: 400 } as const;
+    }
+    const aliases = [...new Set([
+      ...target.aliases, ...source.aliases, target.name, source.name,
+    ])].filter((name) => name !== values.name);
+    const [merged] = await tx.update(locationsTable).set({
+      ...values, name: values.name!, timeZone: values.timeZone!,
+      aliases, updatedAt: new Date(),
+    }).where(eq(locationsTable.id, targetId)).returning();
+    await tx.update(locationNotesTable).set({ locationId: targetId })
+      .where(eq(locationNotesTable.locationId, source.id));
+    await tx.insert(locationNotesTable).values({
+      locationId: targetId,
+      body: `Merged "${source.name}" (location ${source.id}) into "${target.name}" (location ${target.id}). Resulting name: "${merged!.name}". Original location details (before merge):\n${JSON.stringify({ target, source }, null, 2)}`,
+    });
+    await tx.delete(locationsTable).where(eq(locationsTable.id, source.id));
+    return { row: merged! } as const;
+  });
+  if (result.status !== undefined) {
+    res.status(result.status).json({ error: result.error });
+    return;
+  }
+  res.json(await buildDetail(result.row));
 });
 
 // DELETE /locations/:locationId

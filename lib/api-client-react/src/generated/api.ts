@@ -52,6 +52,7 @@ import type {
   ListUsersParams,
   LocationDetail,
   LocationInput,
+  LocationMergeInput,
   LocationNote,
   LocationNoteInput,
   LocationUpdate,
@@ -3507,6 +3508,81 @@ export const useDeleteLocation = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteLocationMutationOptions(options));
+    }
+
+export const getMergeLocationsUrl = (locationId: number,) => {
+
+
+
+
+  return `/api/locations/${locationId}/merge`
+}
+
+export const mergeLocations = async (locationId: number,
+    locationMergeInput: LocationMergeInput, options?: Parameters<typeof customFetch>[1]): Promise<LocationDetail> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return customFetch<LocationDetail>(getMergeLocationsUrl(locationId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(locationMergeInput)
+  }
+);}
+
+
+
+
+
+export const getMergeLocationsMutationKey = () => ['mergeLocations'] as const;
+
+export const getMergeLocationsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof mergeLocations>>, TError,MergeLocationsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof mergeLocations>>, TError,MergeLocationsMutationVariables, TContext> => {
+
+const mutationKey = getMergeLocationsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof mergeLocations>>, MergeLocationsMutationVariables> = (props) => {
+          const {locationId,data} = props ?? {};
+
+          return  mergeLocations(locationId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MergeLocationsMutationResult = NonNullable<Awaited<ReturnType<typeof mergeLocations>>>
+    export type MergeLocationsMutationBody = BodyType<LocationMergeInput>
+    export type MergeLocationsMutationError = ErrorType<void>
+    export type MergeLocationsMutationVariables = {locationId: number;data: BodyType<LocationMergeInput>}
+
+    export const useMergeLocations = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof mergeLocations>>, TError,MergeLocationsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof mergeLocations>>,
+        TError,
+        MergeLocationsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getMergeLocationsMutationOptions(options));
     }
 
 export const getCreateLocationNoteUrl = (locationId: number,) => {

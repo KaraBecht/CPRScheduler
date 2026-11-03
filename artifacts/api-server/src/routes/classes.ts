@@ -26,6 +26,7 @@ import { sendCompletionRoster } from "../lib/completionRoster";
 import { sendImmediateReminderIfWithin24h } from "../lib/instructorPreClassReminder";
 import { isValidTimeZone } from "../lib/timeZones";
 import { launchClassChecklist } from "../lib/classChecklist";
+import { locationClassCondition, locationNameCondition } from "../lib/locationMatching";
 
 const router: IRouter = Router();
 
@@ -45,7 +46,7 @@ async function ensureLocationExists(row: {
   const existing = await db
     .select({ id: locationsTable.id })
     .from(locationsTable)
-    .where(ilike(locationsTable.name, name))
+    .where(locationNameCondition(name))
     .limit(1);
   if (existing.length > 0) return;
 
@@ -70,7 +71,7 @@ async function resolveClassTimeZone(
   const [location] = await db
     .select({ timeZone: locationsTable.timeZone })
     .from(locationsTable)
-    .where(ilike(locationsTable.name, title.trim()))
+    .where(locationNameCondition(title.trim()))
     .limit(1);
 
   return location?.timeZone;
@@ -158,12 +159,11 @@ router.get("/classes", async (req, res) => {
     conditions.push(gte(classesTable.date, today));
   }
   if (params.location) {
-    conditions.push(
-      or(
-        ilike(classesTable.location, `%${params.location}%`),
-        ilike(classesTable.title, `%${params.location}%`),
-      )!
-    );
+    const [location] = await db.select().from(locationsTable)
+      .where(locationNameCondition(params.location)).limit(1);
+    conditions.push(locationClassCondition(
+      location ? [location.name, ...location.aliases] : [params.location],
+    )!);
   }
   const rows = await db
     .select()

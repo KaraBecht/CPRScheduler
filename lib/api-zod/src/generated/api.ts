@@ -1803,6 +1803,57 @@ export const DeleteLocationParams = zod.object({
 export const DeleteLocationResponse = zod.void()
 
 
+export const MergeLocationsParams = zod.object({
+  "locationId": zod.coerce.number().int()
+})
+
+export const MergeLocationsBody = zod.object({
+  "sourceId": zod.number().int(),
+  "targetUpdatedAt": zod.string(),
+  "sourceUpdatedAt": zod.string(),
+  "choices": zod.record(zod.string(), zod.enum(['target', 'source', 'both']))
+})
+
+export const MergeLocationsResponse = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "address": zod.string().nullish(),
+  "timeZone": zod.string(),
+  "contactName": zod.string().nullish(),
+  "contactEmail": zod.string().nullish(),
+  "contactPhone": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "businessUnit": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string(),
+  "notes_log": zod.array(zod.object({
+  "id": zod.number().int(),
+  "locationId": zod.number().int(),
+  "body": zod.string(),
+  "createdAt": zod.string()
+})),
+  "lastClassDate": zod.string().nullable(),
+  "lastClassTitle": zod.string().nullish(),
+  "lastClassId": zod.number().int().nullish(),
+  "expiringCertificates": zod.array(zod.object({
+  "id": zod.number().int(),
+  "studentId": zod.number().int(),
+  "studentName": zod.string(),
+  "studentEmail": zod.string().nullish(),
+  "studentPhone": zod.string().nullish(),
+  "studentOrganization": zod.string().nullish(),
+  "classId": zod.number().int().nullish(),
+  "classTitle": zod.string().nullish(),
+  "classLocation": zod.string().nullish(),
+  "classBusinessUnit": zod.string().nullish(),
+  "certificationType": zod.enum(['cpr_aed_first_aid', 'stop_the_bleed', 'cpr_aed_first_aid_stop_the_bleed']),
+  "certificateNumber": zod.string(),
+  "issuedDate": zod.string(),
+  "expiryDate": zod.string()
+}))
+})
+
+
 /**
  * @summary Add a communication note to a location
  */

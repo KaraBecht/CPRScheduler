@@ -776,6 +776,15 @@ export interface LocationUpdate {
   timeZone?: string;
 }
 
+export type LocationMergeInputChoices = {[key: string]: 'target' | 'source' | 'both'};
+
+export interface LocationMergeInput {
+  sourceId: number;
+  targetUpdatedAt: string;
+  sourceUpdatedAt: string;
+  choices: LocationMergeInputChoices;
+}
+
 export interface LocationNoteInput {
   /** @minLength 1 */
   body: string;

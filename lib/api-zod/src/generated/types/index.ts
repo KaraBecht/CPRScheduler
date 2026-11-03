@@ -56,6 +56,8 @@ export * from './listUsersParams';
 export * from './location';
 export * from './locationDetail';
 export * from './locationInput';
+export * from './locationMergeInput';
+export * from './locationMergeInputChoices';
 export * from './locationNote';
 export * from './locationNoteInput';
 export * from './locationUpdate';

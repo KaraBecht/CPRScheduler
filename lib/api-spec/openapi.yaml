@@ -782,6 +782,32 @@ paths:
         "204": { description: Deleted }
         "404": { description: Not found }
 
+  /locations/{locationId}/merge:
+    post:
+      operationId: mergeLocations
+      tags: [Locations]
+      parameters:
+        - name: locationId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LocationMergeInput"
+      responses:
+        "200":
+          description: Merged location with preserved class aliases and notes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LocationDetail"
+        "400":
+          description: Invalid merge or unresolved conflict
+        "409":
+          description: A location changed; reload and review again
   /locations/{locationId}/notes:
     post:
       operationId: createLocationNote
@@ -1724,6 +1750,18 @@ components:
           type: string
           description: IANA time zone for the location.
 
+    LocationMergeInput:
+      type: object
+      required: [sourceId, targetUpdatedAt, sourceUpdatedAt, choices]
+      properties:
+        sourceId: { type: integer }
+        targetUpdatedAt: { type: string }
+        sourceUpdatedAt: { type: string }
+        choices:
+          type: object
+          additionalProperties:
+            type: string
+            enum: [target, source, both]
     LocationNoteInput:
       type: object
       required: [body]

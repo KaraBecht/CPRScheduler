@@ -11,6 +11,7 @@ export const DEFAULT_LOCATION_TIME_ZONE = "America/Los_Angeles";
 export const locationsTable = pgTable("locations", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
+  aliases: text("aliases").array().notNull().default([]),
   address: text("address"),
   timeZone: text("time_zone").notNull().default(DEFAULT_LOCATION_TIME_ZONE),
   contactName: text("contact_name"),

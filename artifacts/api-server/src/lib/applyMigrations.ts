@@ -8,6 +8,10 @@ import { logger } from "./logger";
  */
 const MIGRATIONS: { name: string; sql: string }[] = [
   {
+    name: "add_location_aliases",
+    sql: `ALTER TABLE locations ADD COLUMN IF NOT EXISTS aliases text[] NOT NULL DEFAULT '{}'`,
+  },
+  {
     name: "add_locations_business_unit",
     sql: `ALTER TABLE locations ADD COLUMN IF NOT EXISTS business_unit text`,
   },
