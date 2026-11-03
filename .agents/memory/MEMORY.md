@@ -1,3 +1,4 @@
 - [Training interest records](training-inquiries.md) — Keep preliminary interests separate from full class requests until scheduling details are known.
 - [Development schema push](development-schema-push.md) — Do not force Drizzle’s destructive prompt caused by the legacy users-email constraint mismatch.
-- [Generated API client outputs](generated-api-client-outputs.md) — Source schemas can be ahead of checked-in declaration output; verify frontend changes with the Vite build too.
+- [Generated API client outputs](generated-api-client-outputs.md) — Source schemas can be ahead of declaration output; force a library rebuild after major type-library upgrades.
+- [Legacy glob compatibility](legacy-glob-compatibility.md) — Security upgrades to minimatch need legacy glob integration tests, not just spreadsheet buffer tests.
